@@ -373,6 +373,14 @@ function accessFields(array $record, array $provinces): void
     <label class="admin-check"><input type="checkbox" name="enabled" value="1" <?= (int)($record['enabled'] ?? 1) ? 'checked' : '' ?>> เปิดให้เข้าใช้งาน</label>
     <?php
 }
+function workspaceThaiShortDate(string $value): string
+{
+    $date = new DateTimeImmutable($value,new DateTimeZone('Asia/Bangkok'));
+    $days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    $months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return $days[(int)$date->format('w')].'ที่ '.$date->format('j').' '.$months[(int)$date->format('n')-1].' '.((int)$date->format('Y')+543);
+}
+
 function workspaceThaiMonth(string $month): string
 {
     $months = [1=>'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -730,7 +738,7 @@ function workspaceInfo(string $page, ?array $release = null): void
      <div><dt>ชื่อที่ใช้ติดต่อ</dt><dd><?= esc($scannedRequest['contact_name']) ?></dd></div>
      <div><dt>เบอร์โทร</dt><dd><a href="tel:<?= esc($scannedRequest['phone']) ?>"><?= esc($scannedRequest['phone']) ?></a></dd></div>
      <div><dt>วันที่สะดวก</dt><dd><?= esc($scannedRequest['preferred_date'] ?? 'ไม่ระบุ') ?></dd></div>
-     <div><dt>เวลาที่ส่งคำขอ</dt><dd><?= esc($scannedRequest['submitted_at']) ?></dd></div>
+     <div><dt>เวลาที่ส่งคำขอ</dt><dd><?= esc(workspaceThaiShortDate($scannedRequest['submitted_at']).' เวลา '.substr($scannedRequest['submitted_at'],11,5).' น.') ?></dd></div>
      <?php if ($scannedRequest['appointment_at']): ?><div><dt>วันนัด</dt><dd><?= esc(anemiaAppointmentLabel($scannedRequest['appointment_at'],$scannedRequest['appointment_slot'])) ?></dd></div><?php endif; ?>
      <?php if ($scannedRequest['checked_in_at']): ?><div><dt>เวลาเช็กอิน</dt><dd><?= esc($scannedRequest['checked_in_at']) ?></dd></div><?php endif; ?>
     </dl>
@@ -783,7 +791,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <?php if (!$contactQueue): ?><p>ยังไม่มีคำขอ</p><?php else: ?>
   <div class="tablewrap"><table class="admin-table contact-queue-table"><thead><tr><th>เลขคำขอ / เวลาส่ง</th><th>หน่วยบริการ / ความประสงค์</th><th>ข้อมูลติดต่อ</th><th>สถานะ</th></tr></thead><tbody>
   <?php foreach ($contactQueue as $item): ?><tr>
-   <th scope="row"><?= esc($item['receipt']) ?><br><small><?= esc($item['submitted_at']) ?></small></th>
+   <th scope="row"><?= esc($item['receipt']) ?><br><small><time datetime="<?= esc(str_replace(' ','T',$item['submitted_at']).'+07:00') ?>" title="<?= esc('ส่งเวลา '.substr($item['submitted_at'],11,5).' น.') ?>"><?= esc(workspaceThaiShortDate($item['submitted_at'])) ?></time></small></th>
    <td><?= esc($item['facility']) ?><br><small><?= $item['request_kind']==='appointment'?'ขอนัดเข้าตรวจ':'ให้ติดต่อกลับ' ?><?= $item['preferred_date']?' · '.esc($item['preferred_date']):'' ?></small></td>
    <td><?= esc($item['contact_name']) ?><br><a href="tel:<?= esc($item['phone']) ?>"><?= esc($item['phone']) ?></a></td>
    <td><button type="button" class="action queue-timeline-trigger" data-queue-timeline="<?= esc($item['receipt']) ?>" aria-haspopup="dialog"><?= workspaceIcon('history') ?><span><?= $item['overdue']?'เลยวันนัด · รอตรวจสอบ':esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span><?= workspaceIcon('next') ?></button></td>

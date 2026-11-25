@@ -1544,6 +1544,8 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .queue-timeline-dialog .contact-queue-state select {min-width:0;flex:1;}
 [data-workflow-round] {margin-top:.75rem;}
 [data-workflow-round] fieldset {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;border:0;padding:0;margin:.6rem 0;}
+[data-workflow-round] fieldset[hidden] {display:none;}
+[data-contact-time] select {margin:.2rem 0 0;padding:.3rem .5rem;}
 [data-workflow-round] fieldset label {display:block;border:1px solid var(--line);border-radius:.7rem;padding:.5rem;cursor:pointer;}
 [data-workflow-round] fieldset label:has(input:checked) {border-color:var(--violet);}
 [data-round-count] {display:block;color:var(--muted);}

@@ -8,9 +8,10 @@
  const message=dialog.querySelector('[data-timeline-message]');
  const states=form.elements.state;
  const labels=new Map([...states.options].filter(option=>option.value).map(option=>[option.value,option.textContent]));
- const dateField=dialog.querySelector('[data-workflow-date]');
- const dateInput=dateField.querySelector('input');
  const roundField=dialog.querySelector('[data-workflow-round]');
+ const slotField=roundField.querySelector('[data-round-slots]');
+ const contactTime=roundField.querySelector('[data-contact-time]');
+ const timeInputs=[...contactTime.querySelectorAll('select')];
  const calendar=roundField.querySelector('details');
  const calendarBody=calendar.querySelector('[data-round-calendar]');
  const dayInput=form.elements.appointment_day;
@@ -69,7 +70,8 @@
   drawCalendar();
   calendar.open=false;
   calendar.querySelector('summary').focus({preventScroll:true});
-  loadRounds(day);
+  if(states.value==='scheduled')loadRounds(day);
+  else roundMessage.textContent='';
  });
 
  function addEvent(label,kind,detail=''){
@@ -109,7 +111,7 @@
    list.replaceChildren();
    const latest=data.history.at(-1);
    const pending=data.state==='pending'&&!latest;
-   currentPanel.textContent=[labels.get(data.state),data.appointment_label,data.next_contact_at&&'ติดตาม '+data.next_contact_at].filter(Boolean).join(' · ');
+   currentPanel.textContent=[labels.get(data.state),data.appointment_label,data.next_contact_label&&'ติดตาม '+data.next_contact_label].filter(Boolean).join(' · ');
    currentPanel.hidden=false;
    historyPanel.hidden=false;
    addEvent('ส่งคำขอแล้ว',pending?'current':'done',data.submitted_at+(pending?' · รอเจ้าหน้าที่รับเรื่อง':''));
@@ -119,7 +121,7 @@
    });
    if(!latest&&!pending)addEvent(labels.get(data.state),'current','สถานะปัจจุบัน · ไม่มีวันเวลาในประวัติเดิม');
    if(data.appointment_label)addEvent('วันนัด','future',data.appointment_label);
-   if(data.next_contact_at)addEvent('กำหนดติดตาม','future',data.next_contact_at);
+   if(data.next_contact_label)addEvent('กำหนดติดตาม','future',data.next_contact_label);
    if(data.state!=='closed'){
     const keys=[...labels.keys()];
     const upcoming=keys.slice(keys.indexOf(data.state)+1).filter(key=>!['closed','retry_contact'].includes(key)&&!data.history.some(event=>event.state===key));
@@ -134,9 +136,6 @@
    }
    states.value='';
    states.required=true;
-   dateInput.value='';
-   dateField.hidden=true;
-   dateInput.required=false;
    form.hidden=!Object.keys(data.actions).length;
    message.textContent='';
    if(saving)dialog.close();
@@ -150,12 +149,11 @@
  document.querySelectorAll('[data-queue-timeline]').forEach(button=>button.addEventListener('click',()=>{
   trigger=button;
   form.hidden=true;
-  dateField.hidden=true;
-  dateInput.required=false;
   ++roundOperation;
   roundField.hidden=true;
   dayInput.value='';
   slotInputs.forEach(input=>{input.checked=false;input.required=false;});
+  timeInputs.forEach(input=>{input.value='';input.required=false;});
   roundMessage.textContent='';
   roundField.querySelector('[data-round-date-label]').textContent='เลือกวันนัด';
   roundField.querySelectorAll('[data-round-count]').forEach(count=>count.textContent='');
@@ -174,16 +172,23 @@
  }));
  states.addEventListener('change',()=>{
   historyPanel.open=false;
-  roundField.hidden=states.value!=='scheduled';
-  slotInputs.forEach(input=>input.required=!roundField.hidden);
-  dateField.hidden=!['retry_contact','follow_up'].includes(states.value);
-  dateInput.required=!dateField.hidden;
+  const appointment=states.value==='scheduled';
+  const timed=['retry_contact','follow_up'].includes(states.value);
+  roundField.hidden=!appointment&&!timed;
+  slotField.hidden=!appointment;
+  contactTime.hidden=!timed;
+  slotInputs.forEach(input=>input.required=appointment);
+  timeInputs.forEach(input=>input.required=timed);
+  ++roundOperation;
+  roundMessage.textContent='';
+  if(!dayInput.value)roundField.querySelector('[data-round-date-label]').textContent=appointment?'เลือกวันนัด':'เลือกวันที่ติดต่อ';
+  if(appointment&&dayInput.value)loadRounds(dayInput.value);
  });
  calendar.addEventListener('toggle',()=>{if(calendar.open)historyPanel.open=false;});
  historyPanel.addEventListener('toggle',()=>{if(historyPanel.open)calendar.open=false;});
  form.addEventListener('submit',event=>{
   event.preventDefault();
-  if(states.value==='scheduled'&&!dayInput.value){roundMessage.textContent='กรุณาเลือกวันนัด';calendar.open=true;calendar.querySelector('summary').focus();return;}
+  if(!roundField.hidden&&!dayInput.value){roundMessage.textContent='กรุณาเลือกวันที่';calendar.open=true;calendar.querySelector('summary').focus();return;}
   if(!submit.disabled)request(trigger,true);
  });
  function onBackdrop(event){

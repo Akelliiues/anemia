@@ -182,9 +182,12 @@ try {
                     }
                     $when = $date->format('Y-m-d H:i:s');
                 } elseif (in_array($state,['retry_contact','follow_up'],true)) {
-                    $raw = $_POST['when'] ?? '';
+                    $day = $_POST['appointment_day'] ?? '';
+                    $hour = $_POST['contact_hour'] ?? '';
+                    $minute = $_POST['contact_minute'] ?? '';
+                    $raw = is_string($day) && is_string($hour) && is_string($minute) ? $day.'T'.$hour.':'.$minute : '';
                     $date = is_string($raw) && preg_match('/^\d{4}-\d\d-\d\dT\d\d:\d\d$/D',$raw) ? DateTimeImmutable::createFromFormat('!Y-m-d\TH:i',$raw) : false;
-                    if (!$date || $date->format('Y-m-d\TH:i') !== $raw) { $db->rollBack(); http_response_code(422); exit('กรุณาระบุวันและเวลา'); }
+                    if (!$date || $date->format('Y-m-d\TH:i') !== $raw || $day<date('Y-m-d')) { $db->rollBack(); http_response_code(422); exit('กรุณาระบุวันและเวลา'); }
                     $when = $date->format('Y-m-d H:i:s');
                 }
                 if (!in_array($request['state'],ANEMIA_REQUEST_ACTIONS[$state][1] ?? [],true)) { $db->rollBack(); http_response_code(409); exit('ดำเนินการขั้นนี้ไม่ได้'); }
@@ -194,6 +197,7 @@ try {
             }
             $request['actions'] = array_filter(ANEMIA_REQUEST_ACTIONS,static fn($action)=>in_array($request['state'],$action[1],true));
             $request['appointment_label'] = $request['appointment_at'] && in_array($request['state'],['scheduled','attended','test_completed','follow_up'],true) ? anemiaAppointmentLabel($request['appointment_at'],$request['appointment_slot']) : null;
+            $request['next_contact_label'] = $request['next_contact_at'] ? anemiaAppointmentLabel($request['next_contact_at'],null) : null;
             $history = $db->prepare('SELECT state,actor,changed_at FROM anemia_request_history WHERE receipt=? ORDER BY id');
             $history->execute([$receipt]);
             $request['history'] = $history->fetchAll(PDO::FETCH_ASSOC);
@@ -423,7 +427,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=compact-timeline-v42">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=thai-contact-time-v43">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -816,19 +820,25 @@ function workspaceInfo(string $page, ?array $release = null): void
      <?php endforeach; ?>
     </select><button type="submit" class="action"><?= workspaceIcon('save') ?>บันทึก</button>
    </form>
-   <label data-workflow-date hidden>วันและเวลา (เวลาไทย)<input form="queue-workflow-form" name="when" type="datetime-local"></label>
    <section data-workflow-round hidden>
     <details class="request-calendar"><summary><?= workspaceIcon('calendar') ?> <span data-round-date-label>เลือกวันนัด</span></summary><div data-round-calendar></div></details>
     <input form="queue-workflow-form" name="appointment_day" type="hidden">
-    <fieldset><legend>เลือกรอบเข้าตรวจ</legend>
+    <fieldset data-round-slots><legend>เลือกรอบเข้าตรวจ</legend>
      <?php foreach (ANEMIA_APPOINTMENT_SLOTS as $slot=>$label): ?>
       <label><input form="queue-workflow-form" type="radio" name="appointment_slot" value="<?= esc($slot) ?>"> <?= esc($label) ?> <small data-round-count="<?= esc($slot) ?>"></small></label>
+     <?php endforeach; ?>
+    </fieldset>
+    <fieldset data-contact-time hidden><legend>เวลาติดต่อ (เวลาไทย)</legend>
+     <?php foreach (['hour'=>['ชั่วโมง',23],'minute'=>['นาที',59]] as $part=>[$label,$maximum]): ?>
+      <label><?= $label ?><select form="queue-workflow-form" name="contact_<?= $part ?>"><option value="">เลือก<?= $label ?></option>
+       <?php for ($number=0;$number<=$maximum;$number++): $value=sprintf('%02d',$number); ?><option value="<?= $value ?>"><?= $value ?></option><?php endfor; ?>
+      </select></label>
      <?php endforeach; ?>
     </fieldset>
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=5"></script>
+  <script defer src="queue-timeline.js?v=6"></script>
   <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>

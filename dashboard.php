@@ -423,7 +423,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=appointment-round-v41">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=compact-timeline-v42">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -797,10 +797,15 @@ function workspaceInfo(string $page, ?array $release = null): void
    <td><button type="button" class="action queue-timeline-trigger" data-queue-timeline="<?= esc($item['receipt']) ?>" aria-haspopup="dialog"><?= workspaceIcon('history') ?><span><?= $item['overdue']?'เลยวันนัด · รอตรวจสอบ':esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span><?= workspaceIcon('next') ?></button></td>
   </tr><?php endforeach; ?></tbody></table></div>
   <dialog class="signal-dialog workspace-dialog queue-timeline-dialog" id="queue-timeline" aria-labelledby="queue-timeline-title">
-   <form method="dialog"><button class="action" aria-label="ปิดไทม์ไลน์"><?= workspaceIcon('close') ?>ปิด</button></form>
-   <h2 id="queue-timeline-title">ไทม์ไลน์คำขอ</h2>
-   <p data-timeline-receipt></p>
-   <ol class="queue-timeline-events"></ol>
+   <header class="workspace-dialog-heading">
+    <div><h2 id="queue-timeline-title">ไทม์ไลน์คำขอ</h2><small data-timeline-receipt></small></div>
+    <form method="dialog"><button class="action" aria-label="ปิดไทม์ไลน์"><?= workspaceIcon('close') ?></button></form>
+   </header>
+   <p class="queue-timeline-current" data-timeline-current hidden></p>
+   <details class="queue-timeline-history" hidden>
+    <summary>ดูประวัติและขั้นถัดไป</summary>
+    <ol class="queue-timeline-events"></ol>
+   </details>
    <p data-timeline-message role="status"></p>
    <form method="post" id="queue-workflow-form" class="contact-queue-state" hidden>
     <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="receipt"><input type="hidden" name="previous">
@@ -823,7 +828,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=3"></script>
+  <script defer src="queue-timeline.js?v=4"></script>
   <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>

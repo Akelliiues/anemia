@@ -1527,8 +1527,14 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .contact-queue-state[hidden] {display:none;}
 .queue-timeline-trigger.action {white-space:nowrap;width:max-content;min-height:34px;padding:.2rem .55rem;color:var(--violet);}
 .queue-timeline-trigger svg {width:.9rem;height:.9rem;flex:none;}
-.queue-timeline-dialog > form[method=dialog] {float:inline-end;}
-.queue-timeline-events {list-style:none;padding:0;margin:1rem 0;clear:both;}
+.queue-timeline-dialog {padding:clamp(.75rem,3vw,1.15rem);}
+.queue-timeline-dialog .workspace-dialog-heading h2 {margin:0;}
+.queue-timeline-dialog .workspace-dialog-heading small {color:var(--muted);}
+.queue-timeline-current {margin:.55rem 0;padding:.45rem .65rem;border-inline-start:3px solid var(--violet);color:var(--ink);}
+.queue-timeline-history {margin:.4rem 0 .6rem;}
+.queue-timeline-history summary {color:var(--violet);cursor:pointer;font-size:.9rem;}
+.queue-timeline-dialog [role=status]:empty {display:none;}
+.queue-timeline-events {list-style:none;padding:0;margin:.5rem 0;}
 .queue-timeline-events li {position:relative;padding:0 0 .7rem 1.3rem;margin-inline-start:.35rem;border-inline-start:1px solid var(--line);}
 .queue-timeline-events li:last-child {border-color:transparent;padding-bottom:0;}
 .queue-timeline-events li::before {content:"";position:absolute;inset-inline-start:-.35rem;top:.35rem;width:.65rem;height:.65rem;border-radius:50%;border:1px solid var(--violet);background:var(--card,#fff);}

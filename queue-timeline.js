@@ -3,6 +3,8 @@
  if(!dialog)return;
  const form=dialog.querySelector('.contact-queue-state');
  const list=dialog.querySelector('ol');
+ const historyPanel=list.closest('details');
+ const currentPanel=dialog.querySelector('[data-timeline-current]');
  const message=dialog.querySelector('[data-timeline-message]');
  const states=form.elements.state;
  const labels=new Map([...states.options].filter(option=>option.value).map(option=>[option.value,option.textContent]));
@@ -107,6 +109,9 @@
    list.replaceChildren();
    const latest=data.history.at(-1);
    const pending=data.state==='pending'&&!latest;
+   currentPanel.textContent=[labels.get(data.state),data.appointment_label,data.next_contact_at&&'ติดตาม '+data.next_contact_at].filter(Boolean).join(' · ');
+   currentPanel.hidden=false;
+   historyPanel.hidden=false;
    addEvent('ส่งคำขอแล้ว',pending?'current':'done',data.submitted_at+(pending?' · รอเจ้าหน้าที่รับเรื่อง':''));
    data.history.forEach((event,index)=>{
     const current=index===data.history.length-1;
@@ -117,8 +122,8 @@
    if(data.next_contact_at)addEvent('กำหนดติดตาม','future',data.next_contact_at);
    if(data.state!=='closed'){
     const keys=[...labels.keys()];
-    keys.slice(keys.indexOf(data.state)+1).filter(key=>!['closed','retry_contact'].includes(key)&&!data.history.some(event=>event.state===key))
-     .forEach(key=>addEvent(labels.get(key),'future','ยังไม่มีบันทึก'));
+    const upcoming=keys.slice(keys.indexOf(data.state)+1).filter(key=>!['closed','retry_contact'].includes(key)&&!data.history.some(event=>event.state===key));
+    if(upcoming.length)addEvent('ขั้นถัดไปที่ยังไม่มีบันทึก','future',upcoming.map(key=>labels.get(key)).join(' · '));
    }
    form.elements.previous.value=data.state;
    for(const option of states.options){
@@ -158,6 +163,9 @@
   calendar.open=false;
   drawCalendar();
   list.replaceChildren();
+  historyPanel.open=false;
+  historyPanel.hidden=true;
+  currentPanel.hidden=true;
   const receipt=button.dataset.queueTimeline;
   form.elements.receipt.value=receipt;
   dialog.querySelector('[data-timeline-receipt]').textContent=receipt;
@@ -165,11 +173,14 @@
   request(button,false);
  }));
  states.addEventListener('change',()=>{
+  historyPanel.open=false;
   roundField.hidden=states.value!=='scheduled';
   slotInputs.forEach(input=>input.required=!roundField.hidden);
   dateField.hidden=!['retry_contact','follow_up'].includes(states.value);
   dateInput.required=!dateField.hidden;
  });
+ calendar.addEventListener('toggle',()=>{if(calendar.open)historyPanel.open=false;});
+ historyPanel.addEventListener('toggle',()=>{if(historyPanel.open)calendar.open=false;});
  form.addEventListener('submit',event=>{
   event.preventDefault();
   if(states.value==='scheduled'&&!dayInput.value){roundMessage.textContent='กรุณาเลือกวันนัด';calendar.open=true;calendar.querySelector('summary').focus();return;}

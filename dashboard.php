@@ -105,10 +105,27 @@ try {
             if (!$isAdmin || !is_string($_POST['csrf'] ?? null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
             $receipt = $_POST['receipt'] ?? null;
             $state = $_POST['state'] ?? null;
-            if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || !is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
-            $save = $db->prepare('UPDATE '.$contactTable.' SET state=? WHERE receipt=?');
-            $save->execute([$state,$receipt]);
-            header('Location: dashboard.php?view=contact-queue'.($demoQueue?'&demo=1':''),true,303);
+            if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || ($state !== null && (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])))) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
+            $db->beginTransaction();
+            $lookup = $db->prepare('SELECT state,submitted_at FROM '.$contactTable.' WHERE receipt=? FOR UPDATE');
+            $lookup->execute([$receipt]);
+            $request = $lookup->fetch(PDO::FETCH_ASSOC);
+            if (!$request) { $db->rollBack(); http_response_code(404); exit('ไม่พบคำขอ'); }
+            if ($state !== null && ($_POST['previous'] ?? '') !== $request['state']) {
+                $db->rollBack(); http_response_code(409); exit('สถานะเปลี่ยนแล้ว กรุณาเปิดไทม์ไลน์อีกครั้ง');
+            }
+            if ($state !== null && $state !== $request['state']) {
+                $db->prepare('UPDATE '.$contactTable.' SET state=? WHERE receipt=?')->execute([$state,$receipt]);
+                $db->prepare('INSERT INTO anemia_request_history (receipt,state,actor,changed_at) VALUES (?,?,?,?)')
+                   ->execute([$receipt,$state,$staff,date('Y-m-d H:i:s')]);
+                $request['state'] = $state;
+            }
+            $history = $db->prepare('SELECT state,actor,changed_at FROM anemia_request_history WHERE receipt=? ORDER BY id');
+            $history->execute([$receipt]);
+            $request['history'] = $history->fetchAll(PDO::FETCH_ASSOC);
+            $db->commit();
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode($request,JSON_THROW_ON_ERROR);
             exit;
         }
         if ($view === 'sample-settings') {
@@ -320,7 +337,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=staff-workspace-v31-header">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=staff-workspace-v32-timeline">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -680,15 +697,25 @@ function workspaceInfo(string $page, ?array $release = null): void
    <th scope="row"><?= esc($item['receipt']) ?><br><small><?= esc($item['submitted_at']) ?></small></th>
    <td><?= esc($item['facility']) ?><br><small><?= $item['request_kind']==='appointment'?'ขอนัดเข้าตรวจ':'ให้ติดต่อกลับ' ?><?= $item['preferred_date']?' · '.esc($item['preferred_date']):'' ?></small></td>
    <td><?= esc($item['contact_name']) ?><br><a href="tel:<?= esc($item['phone']) ?>"><?= esc($item['phone']) ?></a></td>
-   <td><form method="post" class="contact-queue-state">
-    <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="receipt" value="<?= esc($item['receipt']) ?>">
-    <select name="state" aria-label="สถานะ <?= esc($item['receipt']) ?>">
+   <td><button type="button" class="action queue-timeline-trigger" data-queue-timeline="<?= esc($item['receipt']) ?>" aria-haspopup="dialog"><?= workspaceIcon('history') ?><span><?= esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span><?= workspaceIcon('next') ?></button></td>
+  </tr><?php endforeach; ?></tbody></table></div>
+  <dialog class="signal-dialog workspace-dialog queue-timeline-dialog" id="queue-timeline" aria-labelledby="queue-timeline-title">
+   <form method="dialog"><button class="action" aria-label="ปิดไทม์ไลน์"><?= workspaceIcon('close') ?>ปิด</button></form>
+   <h2 id="queue-timeline-title">ไทม์ไลน์คำขอ</h2>
+   <p data-timeline-receipt></p>
+   <ol class="queue-timeline-events"></ol>
+   <p data-timeline-message role="status"></p>
+   <form method="post" class="contact-queue-state" hidden>
+    <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="receipt"><input type="hidden" name="previous">
+    <select name="state" aria-label="เปลี่ยนสถานะคำขอ">
      <?php foreach (ANEMIA_REQUEST_STATES as $key=>$label): ?>
-      <option value="<?= $key ?>" <?= $item['state']===$key?'selected':'' ?>><?= esc($label) ?></option>
+      <option value="<?= $key ?>"><?= esc($label) ?></option>
      <?php endforeach; ?>
     </select><button type="submit" class="action"><?= workspaceIcon('save') ?>บันทึก</button>
-   </form></td>
-  </tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+   </form>
+  </dialog>
+  <script defer src="queue-timeline.js?v=1"></script>
+  <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">

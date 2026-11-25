@@ -28,6 +28,7 @@ function anemiaManageDemoData(PDO $db, string $action, string $actor): void
         $db->exec('DELETE FROM anemia_demo_report');
         if (!$generate) {
             $db->exec('DELETE FROM anemia_contact_demo_queue');
+            $db->exec("DELETE FROM anemia_request_history WHERE receipt LIKE 'DE-%'");
             $db->commit();
             return;
         }

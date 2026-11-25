@@ -1518,6 +1518,18 @@ button.choice > svg {margin-inline-end:.4rem;vertical-align:middle;}
 .contact-queue-state {display:flex;align-items:center;flex-wrap:nowrap;gap:.35rem;white-space:nowrap;}
 .contact-queue-state select {width:auto;min-width:8rem;min-height:38px;margin:0;padding:.3rem .5rem;}
 .contact-queue-state button {min-height:38px;padding:.3rem .55rem;white-space:nowrap;flex:none;}
+.contact-queue-state[hidden] {display:none;}
+.queue-timeline-trigger.action {white-space:nowrap;width:max-content;min-height:34px;padding:.2rem .55rem;color:var(--violet);}
+.queue-timeline-trigger svg {width:.9rem;height:.9rem;flex:none;}
+.queue-timeline-dialog > form[method=dialog] {float:inline-end;}
+.queue-timeline-events {list-style:none;padding:0;margin:1rem 0;clear:both;}
+.queue-timeline-events li {position:relative;padding:0 0 .7rem 1.3rem;margin-inline-start:.35rem;border-inline-start:1px solid var(--line);}
+.queue-timeline-events li:last-child {border-color:transparent;padding-bottom:0;}
+.queue-timeline-events li::before {content:"";position:absolute;inset-inline-start:-.35rem;top:.35rem;width:.65rem;height:.65rem;border-radius:50%;border:1px solid var(--violet);background:var(--card,#fff);}
+.queue-timeline-events li:is([data-kind=done],[data-kind=current])::before {background:var(--violet);}
+.queue-timeline-events li[data-kind=current] strong {color:var(--violet);}
+.queue-timeline-events small {display:block;color:var(--muted);}
+.queue-timeline-dialog .contact-queue-state select {min-width:0;flex:1;}
 
 .request-scanner-layout {display:grid;gap:1rem;}
 .request-scanner-form {display:flex;align-items:flex-end;flex-wrap:wrap;gap:.55rem;margin-top:.85rem;}

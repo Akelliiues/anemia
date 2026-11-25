@@ -481,8 +481,8 @@ body:has(.admin-shell) main { max-width:1380px; }
 .admin-column { display:flex; position:relative; align-items:center; justify-content:end; flex-direction:column; width:clamp(29px,9vw,58px); height:100%; }
 .admin-column strong { white-space:nowrap; font-size:12px; color:var(--ink); }
 .admin-column-bar { width:100%; height:var(--bar-height); border-radius:8px 8px 0 0; transform-origin:bottom; flex:none; }
-.admin-column-bar.screened { background:linear-gradient(0deg,#593caa,#a38af1); }
-.admin-column-bar.high { background:linear-gradient(0deg,#a03267,#d982ac); }
+.admin-column-bar.screened { background:linear-gradient(0deg,#8b6be0,#c1a7fb); }
+.admin-column-bar.high { background:linear-gradient(0deg,#e85d96,#faa4c4); }
 .admin-month small { display:block; margin-top:6px; color:var(--muted); }
 .admin-ring { width:min(100%,160px); aspect-ratio:1; position:relative; display:grid; place-items:center; margin:11px auto 5px; }
 .admin-ring svg { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }

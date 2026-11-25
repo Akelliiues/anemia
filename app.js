@@ -813,9 +813,9 @@ function publicFilter(id,label,key,current){
  return `<label for="${id}"><span class="data-filter-label">${icon(key==='period'?'calendar':'hospital')}${label}</span><select id="${id}"><option value="">ทั้งหมด</option>${values.map(value=>`<option ${value===current?'selected':''}>${value}</option>`).join('')}</select></label>`;
 }
 const publicRiskGroups=[
- {key:'low',label:'เสี่ยงต่ำ',color:'#448b72'},
- {key:'medium',label:'เสี่ยงปานกลาง',color:'#b58033'},
- {key:'high',label:'เสี่ยงสูง',color:'#9c528d'}
+ {key:'low',label:'เสี่ยงต่ำ',color:riskChartColors.low},
+ {key:'medium',label:'เสี่ยงปานกลาง',color:riskChartColors.medium},
+ {key:'high',label:'เสี่ยงสูง',color:riskChartColors.high}
 ];
 function publicCharts(sums,valid){
  let offset=0;

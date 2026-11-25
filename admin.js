@@ -1,3 +1,4 @@
+const riskChartColors = {low:'#29b895',medium:'#f2b544',high:'#e85d96',unknown:'#9d88e4'};
 const regionLabel = region => region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' + region;
 const adminRegions = Array.from({length:13}, (_, index) => index + 1);
 const demoMonthNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
@@ -144,7 +145,7 @@ function donutCallouts(segments,total,attributes,formatCount){
  return `<svg class="donut-leaders" viewBox="0 0 480 230" aria-hidden="true">${lines.join('')}</svg>${labels.join('')}`;
 }
 function riskComposition(rows){
- const groups=[['low','เสี่ยงต่ำ','#5a8e78'],['medium','เสี่ยงปานกลาง','#b6802f'],['high','เสี่ยงสูง','#a43c76'],['unknown','ยังสรุประดับไม่ได้','#7c72a0']];
+ const groups=[['low','เสี่ยงต่ำ',riskChartColors.low],['medium','เสี่ยงปานกลาง',riskChartColors.medium],['high','เสี่ยงสูง',riskChartColors.high],['unknown','ยังสรุประดับไม่ได้',riskChartColors.unknown]];
  const total=metricTotal(rows,'screened');
  let offset=0;
  const segments=groups.map(([key,label,color])=>{

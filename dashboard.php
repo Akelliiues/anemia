@@ -355,11 +355,11 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=staff-workspace-v33-logout">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=risk-palette-v37">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=hosted-sample-v9"></script>
+<script defer src="admin.js?v=risk-palette-v10"></script>
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>

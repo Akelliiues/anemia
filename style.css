@@ -522,12 +522,13 @@ body:has(.admin-shell) main { max-width:1380px; }
 .admin-trend .trend-value { fill:#54358a; font-weight:750; }
 .admin-trend-labels { display:flex; justify-content:space-between; text-align:center; padding:0 5% 0 11%; color:var(--muted); font-size:12px; }
 .admin-trend-labels li:only-child { margin:auto; }
+.admin-trend-labels li[aria-current=date] {color:var(--violet);font-weight:750;}
 .trend-readable { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 @media(max-width:450px) { .admin-risk-layout { grid-template-columns:1fr; } .admin-risk-donut { width:125px; margin:auto; } }
 @media(prefers-reduced-motion:no-preference) {
  .admin-risk-donut svg { animation:donut-fade .6s ease-out both; }
  .admin-trend polygon { animation:enter-screen .6s ease-out both; }
- .admin-trend polyline { stroke-dasharray:100; animation:admin-trend-in .75s ease-out both; }
+ .admin-trend-line { stroke-dasharray:100; animation:admin-trend-in .75s ease-out both; }
 }
 @keyframes admin-trend-in { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
 .admin-map-slot { margin-bottom:15px; }

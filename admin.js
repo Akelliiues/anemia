@@ -51,10 +51,10 @@ function adminScope(){
  return {...role,key:account.role,region:account.region??role.region};
 }
 const canReport=scope=>scope&&['central','regional','provincial'].includes(scope.key);
-function reportRows(scope){
+function reportRows(scope,period=adminPeriod){
  if(!canReport(scope))return [];
  const dataset=scope.key==='provincial'?demoProvinceAggregates:demoAggregates;
- return dataset.filter(row=>(scope.region==null?(!adminRegion||row.region===Number(adminRegion)):row.region===scope.region)&&(!adminPeriod||row.period===adminPeriod));
+ return dataset.filter(row=>(scope.region==null?(!adminRegion||row.region===Number(adminRegion)):row.region===scope.region)&&(!period||row.period===period));
 }
 const countLabel=value=>value.toLocaleString('th-TH');
 const scopeLabel=scope=>scope.key==='provincial'?'จังหวัดอุบลราชธานี':scope.facility??(scope.region?regionLabel(scope.region):'ทั่วประเทศ');
@@ -194,19 +194,28 @@ function monthlyTrend(months){
  const maximum=Math.max(1,...months.map(month=>month.screened));
  const top=Math.ceil(maximum/4/10)*40;
  const points=months.map(({period,screened},index)=>({
-  period,screened,x:months.length===1?238:66+index*352/(months.length-1),y:151-screened/top*116
+  period,screened,selected:index===months.length-1,x:66+index*352/(months.length-1),y:151-screened/top*116
  }));
- const line=points.map(point=>point.x+','+point.y).join(' ');
- const area=points.length>1?`${points[0].x},151 ${line} ${points.at(-1).x},151`:'';
- return `<section class="card admin-chart-card"><div class="admin-chart-title">${box('chart')}<div><h2>แนวโน้มการประเมินรายเดือน</h2><p>จำนวนครั้งตามพื้นที่และเดือนที่เลือก</p></div></div>
+ const line=points.map(({x,y,screened},index)=>screened===null?'':`${index&&points[index-1].screened!==null?'L':'M'}${x} ${y}`).join(' ');
+ const area=points.every(point=>point.screened!==null)?`${points[0].x},151 ${points.map(point=>point.x+','+point.y).join(' ')} ${points.at(-1).x},151`:'';
+ return `<section class="card admin-chart-card"><div class="admin-chart-title">${box('chart')}<div><h2>แนวโน้มการประเมินรายเดือน</h2><p>จำนวนครั้งที่ประเมินเสร็จในเดือนที่เลือกและ 3 เดือนก่อนหน้า</p></div></div>
  <svg class="admin-trend" viewBox="0 0 465 166" aria-hidden="true">
  <defs><linearGradient id="admin-trend-fill" x2="0" y2="100%" gradientUnits="objectBoundingBox"><stop stop-color="#8c6dd0" stop-opacity=".3"/><stop offset="100%" stop-color="#8c6dd0" stop-opacity=".04"/></linearGradient></defs>
  ${[0,1,2,3,4].map(tick=>`<path d="M57 ${151-tick*29}H430" stroke="#ece5f3"/><text x="50" y="${155-tick*29}" text-anchor="end">${countLabel(top*tick/4)}</text>`).join('')}
  ${area?`<polygon points="${area}" fill="url(#admin-trend-fill)"/>`:''}
- ${points.length>1?`<polyline points="${line}" fill="none" stroke="#7148b0" stroke-width="3" pathLength="100"/>`:''}
- ${points.map(({x,y,screened})=>`<circle cx="${x}" cy="${y}" r="5" fill="#ad8639" stroke="#fff" stroke-width="2"/><text class="trend-value" x="${x}" y="${y-11}" text-anchor="middle">${countLabel(screened)}</text>`).join('')}</svg>
- <ul class="admin-trend-labels">${points.map(point=>`<li>${point.period}<span class="trend-readable"> ${countLabel(point.screened)} ครั้ง</span></li>`).join('')}</ul>
- ${points.length===1?'<p class="notice">แสดงเฉพาะเดือนที่เลือก เลือกทุกเดือนเพื่อเปรียบเทียบแนวโน้ม</p>':''}</section>`;
+ <path class="admin-trend-line" d="${line}" fill="none" stroke="#7148b0" stroke-width="3" pathLength="100"/>
+ ${points.filter(point=>point.screened!==null).map(({period,x,y,screened,selected})=>`<circle cx="${x}" cy="${y}" r="${selected?7:5}" fill="${selected?'#7148b0':'#f2b544'}" stroke="#fff" stroke-width="2"><title>${period} · ${countLabel(screened)} ครั้ง</title></circle><text class="trend-value" x="${x}" y="${y-11}" text-anchor="middle">${countLabel(screened)}</text>`).join('')}</svg>
+ <ul class="admin-trend-labels">${points.map(point=>`<li ${point.selected?'aria-current="date"':''}>${point.period}<span class="${point.screened===null?'':'trend-readable'}"> ${point.screened===null?'ยังไม่มีข้อมูล':countLabel(point.screened)+' ครั้ง'}</span></li>`).join('')}</ul>
+ ${adminPeriod?'':'<p class="notice">แสดง 4 เดือนล่าสุดในชุดข้อมูล</p>'}</section>`;
+}
+function adminTrendMonths(scope){
+ const end=adminPeriods.indexOf(adminPeriod||latestAdminPeriod);
+ return [end-3,end-2,end-1,end].map(index=>{
+  const date=new Date(Date.UTC(2023,11+index,1));
+  const period=demoMonthNames[date.getUTCMonth()]+' '+(date.getUTCFullYear()+543);
+  const rows=reportRows(scope,period);
+  return {period,screened:rows.length?metricTotal(rows,'screened'):null};
+ });
 }
 function regionMapPanel(scope){
  const selected=scope.region??(adminRegion?Number(adminRegion):null);
@@ -268,7 +277,7 @@ function adminCharts(rows,scope){
   <div class="admin-ring-caption"><span>ตรวจแล้ว <strong>${countLabel(completed)}</strong></span><span>ขอประสาน <strong>${countLabel(requests)}</strong></span></div>
  </section>
  ${riskComposition(rows)}
- ${monthlyTrend(months)}
+ ${monthlyTrend(adminTrendMonths(scope))}
  ${scope.key==='central'&&areaTotals.length>1?`<section class="card admin-chart-card admin-regions">
   <div class="admin-chart-title">${box('history')}<div><h2>เปรียบเทียบจำนวนครั้งตามเขต</h2><p>เลือกแถบเพื่อดูรายละเอียดของเขตนั้น</p></div></div>
   <div class="admin-region-chart">${areaTotals.map(({region,count},index)=>`<button type="button" class="admin-region-bar" data-chart-region="${region}" style="--region-width:${count/areaMax*100}%;--region-delay:${index*40}ms">

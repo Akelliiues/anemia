@@ -200,9 +200,9 @@ try {
     $sampleSettingSaved = $view === 'sample-settings' && !empty($_SESSION['sample_setting_saved']);
     if ($view === 'sample-settings') unset($_SESSION['sample_setting_saved']);
     session_write_close();
+    require __DIR__ . '/_private/release.php';
+    $localRelease = anemiaRelease((string)@file_get_contents(__DIR__ . '/release.json'));
     if ($view === 'release') {
-        require __DIR__ . '/_private/release.php';
-        $localRelease = anemiaRelease((string)file_get_contents(__DIR__ . '/release.json'));
         $releaseSource = getenv('ANEMIA_RELEASE_MANIFEST') ?: '';
         $releaseChecked = $releaseSource !== '' && ($_GET['check'] ?? '') === '1';
         $centralRelease = $releaseChecked ? anemiaReadCentralRelease($releaseSource) : null;
@@ -281,10 +281,13 @@ function workspaceMonthOptions(string $selected, bool $allowAll): void
 
 require __DIR__ . '/_private/icons.php';
 
-function workspaceInfo(string $page): void
+function workspaceInfo(string $page, ?array $release = null): void
 {
     if ($page === 'about'): ?>
    <h2>Anemia Portal</h2>
+   <?php if ($release): ?>
+   <p class="status"><?= workspaceIcon('history') ?> <strong>เวอร์ชัน <?= esc($release['version']) ?></strong><?php if (isset($release['build'])): ?> · build <?= esc($release['build']) ?><?php endif; ?></p>
+   <?php endif; ?>
    <p>เว็บแอปโครงการประเมินตนเองเกี่ยวกับภาวะโลหิตจางสำหรับหญิงวัยเจริญพันธุ์ มีคลังความรู้และแบบประเมินความพึงพอใจ</p>
    <p>หลังบ้านแสดงทะเบียนพื้นที่ครบ 13 เขตสุขภาพ และสรุปผลประเมินความพึงพอใจตามสิทธิ์ของบัญชี</p>
    <p>แบบประเมินสุขภาพและคำขอติดต่อกลับอยู่ในขั้นต้นแบบ</p>
@@ -595,7 +598,7 @@ function workspaceInfo(string $page): void
    <p>ประชาชนเข้าทำ <a href="feedback.php">แบบประเมินความพึงพอใจ</a> ได้โดยไม่ต้องเข้าสู่ระบบ</p>
   </section>
   <?php elseif ($view === 'about'): ?>
-  <section class="card admin-report"><?php workspaceInfo($view); ?></section>
+  <section class="card admin-report"><?php workspaceInfo($view, $localRelease); ?></section>
   <?php elseif ($view === 'scan-request'): ?>
   <div class="request-scanner-layout">
    <?php if ($scannedRequest):
@@ -701,7 +704,8 @@ function workspaceInfo(string $page): void
   <section class="card admin-report">
    <h2>เวอร์ชันชุดติดตั้ง</h2>
    <p>โฮสต์นี้ใช้รุ่น <?= esc($localRelease['version'] ?? 'อ่านข้อมูลรุ่นไม่ได้') ?>
-    <?php if ($centralRelease): ?> · รุ่นส่วนกลาง <?= esc($centralRelease['version']) ?><?php endif; ?></p>
+    <?php if (isset($localRelease['build'])): ?> · build <?= esc($localRelease['build']) ?><?php endif; ?>
+    <?php if ($centralRelease): ?> · รุ่นส่วนกลาง <?= esc($centralRelease['version']) ?><?php if (isset($centralRelease['build'])): ?> · build <?= esc($centralRelease['build']) ?><?php endif; ?><?php endif; ?></p>
    <?php if (!$releaseSource): ?><p>ยังไม่ได้ตั้งค่าแหล่งตรวจรุ่นส่วนกลาง</p>
    <?php else: ?><a class="action" href="dashboard.php?view=release&amp;check=1"><?= workspaceIcon('history') ?>ตรวจรุ่นส่วนกลาง</a><?php endif; ?>
    <?php if ($releaseChecked && !$centralRelease): ?><p role="status">อ่านข้อมูลรุ่นส่วนกลางไม่ได้ กรุณาลองอีกครั้ง</p><?php endif; ?>
@@ -750,7 +754,7 @@ function workspaceInfo(string $page): void
   <h2 id="workspace-title-<?= esc($infoPage) ?>"><?= esc($tabs[$infoPage]) ?></h2>
   <form method="dialog"><button class="action" autofocus><?= workspaceIcon('close') ?>ปิด</button></form>
  </header>
- <?php workspaceInfo($infoPage); ?>
+ <?php workspaceInfo($infoPage, $localRelease); ?>
 </dialog>
 <?php endforeach; ?>
 <script>

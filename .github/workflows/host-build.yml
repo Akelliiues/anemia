@@ -1,0 +1,32 @@
+name: Build host package
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package tracked application files
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir host-package
+          git archive HEAD -- . ':(exclude).github' ':(exclude).gitignore' | tar -xf - -C host-package
+          python3 .github/stamp-build.py host-package/release.json >> "$GITHUB_OUTPUT"
+          tar -czf anemia-host.tar.gz -C host-package .
+      - name: Upload host package
+        uses: actions/upload-artifact@v4
+        with:
+          name: anemia-${{ steps.package.outputs.version }}-build-${{ steps.package.outputs.build }}
+          path: anemia-host.tar.gz
+          if-no-files-found: error

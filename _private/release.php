@@ -10,6 +10,8 @@ function anemiaRelease(string $json): ?array
     $components = $release['components'] ?? null;
     $isVersion = static fn($value): bool => is_string($value) && preg_match('/^\d{1,6}\.\d{1,6}\.\d{1,6}$/D', $value) === 1;
     if (($release['format'] ?? null) !== 1 || !$isVersion($release['version'] ?? null) || !is_array($components)) return null;
+    if (array_key_exists('build', $release) &&
+        (!is_string($release['build']) || preg_match('/^\d{14}$/D', $release['build']) !== 1)) return null;
     foreach (ANEMIA_RELEASE_COMPONENTS as $key => $label) {
         if (!$isVersion($components[$key] ?? null)) return null;
     }

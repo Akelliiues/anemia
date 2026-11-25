@@ -21,11 +21,14 @@ try {
     initializeAnemia($db,$config);
     $sample=str_starts_with($receipt,'DE-');
     $table=$sample?'anemia_contact_demo_queue':'anemia_contact_queue';
-    $query=$db->prepare('SELECT state FROM '.$table.' WHERE receipt=?');
+    $query=$db->prepare('SELECT state,appointment_at FROM '.$table.' WHERE receipt=?');
     $query->execute([$receipt]);
-    $state=$query->fetchColumn();
+    $request=$query->fetch(PDO::FETCH_ASSOC);
+    $state=$request['state']??null;
     if (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])) { http_response_code(404); exit; }
-    echo json_encode(['state'=>$state,'label'=>ANEMIA_REQUEST_STATES[$state],'sample'=>$sample,'checkedAt'=>gmdate('Y-m-d\TH:i:s\Z')],JSON_THROW_ON_ERROR);
+    echo json_encode(['state'=>$state,'label'=>ANEMIA_REQUEST_STATES[$state],'sample'=>$sample,
+        'appointmentAt'=>$state==='scheduled' && $request['appointment_at'] ? str_replace(' ','T',$request['appointment_at']).'+07:00' : null,
+        'checkedAt'=>gmdate('Y-m-d\TH:i:s\Z')],JSON_THROW_ON_ERROR);
 } catch (Throwable $error) {
     error_log('Anemia receipt status failed ('.get_class($error).')');
     http_response_code(503);

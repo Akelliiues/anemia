@@ -701,6 +701,8 @@ async function loadRequestState(dialog,open=false){
  const statusDetails={
   pending:['history',dialog.dataset.reference.startsWith('DE-')?'ใช้ตรวจสอบขั้นตอนการติดตามในโหมดทดสอบ':'เจ้าหน้าที่จะติดต่อผ่านเบอร์ที่คุณให้ไว้'],
   contacted:['phone','หากมีวันนัด ให้ยึดรายละเอียดที่เจ้าหน้าที่แจ้ง'],
+  accepted:['history','เจ้าหน้าที่รับเรื่องแล้ว กรุณารอการติดต่อ'],
+  retry_contact:['phone','เจ้าหน้าที่จะลองติดต่ออีกครั้งตามเบอร์ที่ให้ไว้'],
   scheduled:['calendar','ดูวัน เวลา และสถานที่ตามที่เจ้าหน้าที่แจ้ง'],
   attended:['hospital','สอบถามขั้นตอนถัดไปกับหน่วยบริการที่คุณเข้ารับบริการ'],
   test_completed:['check','สอบถามผลตรวจและคำแนะนำจากหน่วยบริการ'],
@@ -727,8 +729,12 @@ async function loadRequestState(dialog,open=false){
   const response=await fetch('request-status.php',{method:'POST',cache:'no-store',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({receipt:dialog.dataset.reference})});
   if(response.status===404){display('ไม่พบเลขคำขอนี้ กรุณาตรวจสอบอีกครั้ง','error');return;}
   if(!response.ok)throw Error();
-  const {state,label,checkedAt}=await response.json();
+  const {state,label,checkedAt,appointmentAt}=await response.json();
   display(typeof label==='string'?label:Object.hasOwn(receiptStates,state)?receiptStates[state]:'ยังไม่ทราบสถานะ',state);
+  if(appointmentAt&&!Number.isNaN(Date.parse(appointmentAt))){
+   guidance.textContent='วันนัด '+new Intl.DateTimeFormat('th-TH',{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date(appointmentAt))+' น.';
+   guidance.hidden=false;
+  }
   if(checkedAt&&!Number.isNaN(Date.parse(checkedAt))){
    checked.textContent='ตรวจเมื่อ '+new Intl.DateTimeFormat('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date(checkedAt));
    checked.hidden=false;

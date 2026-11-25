@@ -5,7 +5,9 @@
  const list=dialog.querySelector('ol');
  const message=dialog.querySelector('[data-timeline-message]');
  const states=form.elements.state;
- const labels=new Map([...states.options].map(option=>[option.value,option.textContent]));
+ const labels=new Map([...states.options].filter(option=>option.value).map(option=>[option.value,option.textContent]));
+ const dateField=dialog.querySelector('[data-workflow-date]');
+ const dateInput=dateField.querySelector('input');
  const submit=form.querySelector('button');
  let trigger;
  let operation=0;
@@ -37,7 +39,7 @@
   try{
    const response=await fetch(location.href,{method:'POST',body,cache:'no-store'});
    if(!response.ok){
-    const errors={403:'กรุณาเข้าสู่ระบบใหม่',404:'ไม่พบคำขอนี้',409:'สถานะเปลี่ยนแล้ว กรุณาปิดและเปิดไทม์ไลน์อีกครั้ง'};
+    const errors={403:'กรุณาเข้าสู่ระบบใหม่',404:'ไม่พบคำขอนี้',409:'สถานะเปลี่ยนหรือใช้ขั้นตอนนี้ไม่ได้ กรุณาเปิดไทม์ไลน์อีกครั้ง',422:'กรุณาระบุวันและเวลาให้ครบ'};
     throw new Error(errors[response.status]??'ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง');
    }
    if(response.redirected)throw new Error('กรุณาเข้าสู่ระบบใหม่');
@@ -53,14 +55,26 @@
     addEvent(labels.get(event.state),current?'current':'done',event.changed_at+' · '+event.actor+(current?' · สถานะปัจจุบัน':''));
    });
    if(!latest&&!pending)addEvent(labels.get(data.state),'current','สถานะปัจจุบัน · ไม่มีวันเวลาในประวัติเดิม');
+   if(data.state==='scheduled'&&data.appointment_at)addEvent('วันเวลานัด','future',data.appointment_at);
+   if(data.next_contact_at)addEvent('กำหนดติดตาม','future',data.next_contact_at);
    if(data.state!=='closed'){
     const keys=[...labels.keys()];
-    keys.slice(keys.indexOf(data.state)+1).filter(key=>key!=='closed'&&!data.history.some(event=>event.state===key))
+    keys.slice(keys.indexOf(data.state)+1).filter(key=>!['closed','retry_contact'].includes(key)&&!data.history.some(event=>event.state===key))
      .forEach(key=>addEvent(labels.get(key),'future','ยังไม่มีบันทึก'));
    }
    form.elements.previous.value=data.state;
-   states.value=data.state;
-   form.hidden=false;
+   for(const option of states.options){
+    if(!option.value)continue;
+    const action=data.actions[option.value];
+    option.disabled=option.hidden=!action;
+    if(action)option.textContent=action[0];
+   }
+   states.value='';
+   states.required=true;
+   dateInput.value='';
+   dateField.hidden=true;
+   dateInput.required=false;
+   form.hidden=!Object.keys(data.actions).length;
    message.textContent='';
    if(saving)dialog.close();
   }catch(error){
@@ -73,6 +87,8 @@
  document.querySelectorAll('[data-queue-timeline]').forEach(button=>button.addEventListener('click',()=>{
   trigger=button;
   form.hidden=true;
+  dateField.hidden=true;
+  dateInput.required=false;
   list.replaceChildren();
   const receipt=button.dataset.queueTimeline;
   form.elements.receipt.value=receipt;
@@ -80,6 +96,10 @@
   dialog.showModal();
   request(button,false);
  }));
+ states.addEventListener('change',()=>{
+  dateField.hidden=!['scheduled','retry_contact','follow_up'].includes(states.value);
+  dateInput.required=!dateField.hidden;
+ });
  form.addEventListener('submit',event=>{
   event.preventDefault();
   if(!submit.disabled)request(trigger,true);

@@ -145,7 +145,7 @@ try {
             $state = $_POST['state'] ?? null;
             if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || ($state !== null && (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])))) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
             $db->beginTransaction();
-            $lookup = $db->prepare('SELECT state,facility,submitted_at,appointment_at,appointment_slot,next_contact_at FROM '.$contactTable.' WHERE receipt=? FOR UPDATE');
+            $lookup = $db->prepare('SELECT state,facility,submitted_at,preferred_date,appointment_at,appointment_slot,next_contact_at FROM '.$contactTable.' WHERE receipt=? FOR UPDATE');
             $lookup->execute([$receipt]);
             $request = $lookup->fetch(PDO::FETCH_ASSOC);
             if (!$request) { $db->rollBack(); http_response_code(404); exit('ไม่พบคำขอ'); }
@@ -825,7 +825,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <input form="queue-workflow-form" name="appointment_day" type="hidden">
     <fieldset data-round-slots><legend>เลือกรอบเข้าตรวจ</legend>
      <?php foreach (ANEMIA_APPOINTMENT_SLOTS as $slot=>$label): ?>
-      <label><input form="queue-workflow-form" type="radio" name="appointment_slot" value="<?= esc($slot) ?>"> <?= esc($label) ?> <small data-round-count="<?= esc($slot) ?>"></small></label>
+      <label><input form="queue-workflow-form" type="radio" name="appointment_slot" value="<?= esc($slot) ?>"> <?= esc($label) ?> <small data-round-count="<?= esc($slot) ?>">จำนวน – คน</small></label>
      <?php endforeach; ?>
     </fieldset>
     <fieldset data-contact-time hidden><legend>เวลาติดต่อ (เวลาไทย)</legend>
@@ -838,7 +838,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=6"></script>
+  <script defer src="queue-timeline.js?v=7"></script>
   <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>

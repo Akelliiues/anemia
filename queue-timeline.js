@@ -22,6 +22,9 @@
  const today=new Intl.DateTimeFormat('sv-SE',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Bangkok'}).format(new Date());
  let monthOffset=0;
  let roundOperation=0;
+ let defaultAppointmentDay=today;
+ const roundCounts=[...roundField.querySelectorAll('[data-round-count]')];
+ const emptyCount='จำนวน – คน';
  const submit=form.querySelector('button');
  let trigger;
  let operation=0;
@@ -39,8 +42,7 @@
  }
  async function loadRounds(day){
   const id=++roundOperation;
-  const counts=[...roundField.querySelectorAll('[data-round-count]')];
-  counts.forEach(count=>count.textContent='');
+  roundCounts.forEach(count=>count.textContent=emptyCount);
   roundMessage.textContent='กำลังโหลดยอดของแต่ละรอบ';
   try{
    const body=new FormData();
@@ -50,14 +52,22 @@
    if(!response.ok||response.redirected)throw new Error();
    const rounds=await response.json();
    if(id!==roundOperation)return;
-   counts.forEach(count=>{
+   roundCounts.forEach(count=>{
     const {booked,checkedIn}=rounds[count.dataset.roundCount];
-    count.textContent=`นัดแล้ว ${booked} คน · เช็กอินแล้ว ${checkedIn} คน`;
+    count.textContent=`จำนวน ${booked} คน · เช็กอินแล้ว ${checkedIn} คน`;
    });
    roundMessage.textContent='';
   }catch{
    if(id===roundOperation)roundMessage.textContent='โหลดยอดไม่ได้ ลองเลือกวันอีกครั้ง';
   }
+ }
+ function showCalendarDay(day){
+  dayInput.value=day;
+  const [year,month]=day.split('-').map(Number);
+  const [currentYear,currentMonth]=today.split('-').map(Number);
+  monthOffset=(year-currentYear)*12+month-currentMonth;
+  roundField.querySelector('[data-round-date-label]').textContent=thaiDate.format(new Date(day+'T00:00:00+07:00'));
+  drawCalendar();
  }
  calendarBody.addEventListener('click',event=>{
   const button=event.target.closest('button');
@@ -65,9 +75,7 @@
   if(button.dataset.monthShift){monthOffset+=Number(button.dataset.monthShift);drawCalendar();return;}
   const day=button.dataset.roundDay;
   if(!day)return;
-  dayInput.value=day;
-  roundField.querySelector('[data-round-date-label]').textContent=thaiDate.format(new Date(day+'T00:00:00+07:00'));
-  drawCalendar();
+  showCalendarDay(day);
   calendar.open=false;
   calendar.querySelector('summary').focus({preventScroll:true});
   if(states.value==='scheduled')loadRounds(day);
@@ -108,6 +116,7 @@
    const data=await response.json();
    if(saving)button.querySelector('span').textContent=labels.get(data.state);
    if(id!==operation||!dialog.open)return;
+   defaultAppointmentDay=[data.appointment_at?.slice(0,10),data.preferred_date,today].find(day=>day&&day>=today);
    list.replaceChildren();
    const latest=data.history.at(-1);
    const pending=data.state==='pending'&&!latest;
@@ -156,7 +165,7 @@
   timeInputs.forEach(input=>{input.value='';input.required=false;});
   roundMessage.textContent='';
   roundField.querySelector('[data-round-date-label]').textContent='เลือกวันนัด';
-  roundField.querySelectorAll('[data-round-count]').forEach(count=>count.textContent='');
+  roundCounts.forEach(count=>count.textContent=emptyCount);
   monthOffset=0;
   calendar.open=false;
   drawCalendar();
@@ -182,7 +191,10 @@
   ++roundOperation;
   roundMessage.textContent='';
   if(!dayInput.value)roundField.querySelector('[data-round-date-label]').textContent=appointment?'เลือกวันนัด':'เลือกวันที่ติดต่อ';
-  if(appointment&&dayInput.value)loadRounds(dayInput.value);
+  if(appointment){
+   if(!dayInput.value)showCalendarDay(defaultAppointmentDay);
+   loadRounds(dayInput.value);
+  }
  });
  calendar.addEventListener('toggle',()=>{if(calendar.open)historyPanel.open=false;});
  historyPanel.addEventListener('toggle',()=>{if(historyPanel.open)calendar.open=false;});

@@ -49,6 +49,10 @@ try {
     if (in_array($view, ['access','assessment','audit','sample','release','sample-settings','contact-queue','scan-request'], true) && !$isAdmin) { http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้'); }
     $sampleSetting = $db->query("SELECT enabled,changed_by,changed_at FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetch(PDO::FETCH_ASSOC);
     $sampleEnabled = (int)($sampleSetting['enabled'] ?? 0) === 1;
+    if ($view === 'sample-settings') {
+        $demoReportCount = (int)$db->query('SELECT COUNT(*) FROM anemia_demo_report')->fetchColumn();
+        $demoQueueCount = (int)$db->query('SELECT COUNT(*) FROM anemia_contact_demo_queue')->fetchColumn();
+    }
     $sampleAllRegions = (int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample_all_regions'")->fetchColumn() === 1;
     if ($view === 'sample') {
         header('Location: dashboard.php?view=overview'.($sampleEnabled?'&preview=sample':''),true,303);
@@ -111,6 +115,16 @@ try {
             $enabled = $_POST['sample_enabled'] ?? null;
             $allRegions = isset($_POST['sample_all_regions']) ? '1' : '0';
             if (!$isAdmin || !is_string($_POST['csrf'] ?? null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ กรุณาเปิดหน้าใหม่'); }
+            $demoAction = $_POST['demo_action'] ?? '';
+            if ($demoAction === 'generate' || $demoAction === 'clear') {
+                if ($demoAction === 'clear' && ($_POST['confirm_clear'] ?? '') !== '1') { http_response_code(400); exit('กรุณายืนยันการล้างข้อมูลจำลอง'); }
+                require_once __DIR__.'/_private/demo-data.php';
+                anemiaManageDemoData($db,$demoAction,$staff);
+                unset($_SESSION['preview_sample']);
+                $_SESSION['sample_setting_saved'] = $demoAction;
+                header('Location: dashboard.php?view=sample-settings',true,303);
+                exit;
+            }
             if (!in_array($enabled,['0','1'],true)) { http_response_code(400); exit('กรุณาเลือกสถานะข้อมูลจำลอง'); }
             $save = $db->prepare("INSERT INTO anemia_host_setting (setting_key,enabled,changed_by,changed_at)
                 VALUES ('staff_sample',?,?,?),('staff_sample_all_regions',?,?,?)
@@ -144,6 +158,7 @@ try {
     $query = $db->prepare('SELECT code,name,region,enabled FROM anemia_province' . $filter . ' ORDER BY region,code');
     $query->execute($params);
     $provinces = $query->fetchAll(PDO::FETCH_ASSOC);
+    $demoScope = $identity['role'] === 'provincial_report' ? 'p:'.$identity['province_code'] : ($region ? 'r:'.$region : 'all');
     if ($sampleMode) {
         $provinces = anemiaSampleProvinces($provinces,$sampleAllRegions);
         $stats['province_enabled'] = array_sum(array_column($provinces,'enabled'));
@@ -180,25 +195,27 @@ try {
         }
     }
     if (in_array($view, ['overview','evaluation'], true)) {
-        require __DIR__ . '/_private/evaluation.php';
+        require_once __DIR__ . '/_private/evaluation.php';
         if (!isset(EVALUATION_AUDIENCES[$evaluationAudience])) $evaluationAudience='';
         $selectedVersion = ($_GET['version'] ?? '') === EVALUATION_LEGACY_VERSION && $view === 'evaluation' ? EVALUATION_LEGACY_VERSION : EVALUATION_VERSION;
         $selectedMonth = $view === 'overview' ? date('Y-m') : $evaluationMonth;
         $selectedAudience = $view === 'overview' ? '' : $evaluationAudience;
         if ($sampleMode && $selectedMonth === '') $evaluationMonth = $selectedMonth = date('Y-m');
+        if ($sampleMode) require_once __DIR__ . '/_private/demo-data.php';
         $evaluation = $sampleMode
-            ? anemiaSampleEvaluation($provinces,$selectedMonth,$selectedAudience)
+            ? (anemiaDemoReport($db,$demoScope,$selectedMonth)['evaluation'][$selectedAudience] ?? anemiaSampleEvaluation([],$selectedMonth,$selectedAudience))
             : evaluationReport($db,$identity,$region,$selectedAudience,$selectedMonth,$view === 'evaluation' && ($_GET['download'] ?? '') !== 'csv',$selectedVersion);
     }
     if (in_array($view, ['overview','activity'], true)) {
-        require __DIR__ . '/_private/activity.php';
+        require_once __DIR__ . '/_private/activity.php';
         $activityMonth = $view === 'activity' && $evaluationMonth !== '' ? $evaluationMonth : date('Y-m');
         [$activityWhere,$activityParams] = anemiaProvinceScope($identity,$region);
-        $activity = $sampleMode ? anemiaSampleActivity($provinces,$activityMonth) : anemiaActivitySummary($db,$activityMonth,$activityWhere,$activityParams);
+        if ($sampleMode) require_once __DIR__ . '/_private/demo-data.php';
+        $activity = $sampleMode ? (anemiaDemoReport($db,$demoScope,$activityMonth)['activity'] ?? anemiaSampleActivity([],$activityMonth)) : anemiaActivitySummary($db,$activityMonth,$activityWhere,$activityParams);
     }
     $accessNotice = $sampleMode ? null : ($_SESSION['access_notice'] ?? null);
     if ($view === 'access' && !$sampleMode) unset($_SESSION['access_notice']);
-    $sampleSettingSaved = $view === 'sample-settings' && !empty($_SESSION['sample_setting_saved']);
+    $sampleSettingSaved = $view === 'sample-settings' ? ($_SESSION['sample_setting_saved'] ?? false) : false;
     if ($view === 'sample-settings') unset($_SESSION['sample_setting_saved']);
     session_write_close();
     require __DIR__ . '/_private/release.php';
@@ -242,7 +259,7 @@ try {
     exit('ไม่สามารถโหลดข้อมูลหลังบ้านได้ กรุณาลองใหม่อีกครั้ง');
 }
 $tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจังหวัด','evaluation'=>'ประเมินโครงการ','activity'=>'สถิติการทดลองแบบประเมิน','team'=>'ทีมวิจัยและพัฒนา','guide'=>'คู่มือการใช้งาน','about'=>'เกี่ยวกับระบบ'];
-if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูลจำลอง','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
+if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
 $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','contact-queue'=>'phone','scan-request'=>'scan'];
 $scopeName = $identity['role'] === 'provincial_report' ? ($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? zoneLabel($region) : 'ทุกเขตสุขภาพ');
@@ -678,7 +695,22 @@ function workspaceInfo(string $page, ?array $release = null): void
      <div><h2>ข้อมูลจำลองบนโฮสต์นี้</h2><p>ควบคุมการแสดงข้อมูลจำลองทั้งในหลังบ้านและ Open Data</p></div>
      <span class="sample-state<?= $sampleEnabled ? ' is-enabled' : '' ?>"><?= workspaceIcon($sampleEnabled ? 'ready' : 'power') ?><?= $sampleEnabled ? 'เปิดใช้งาน' : 'ปิดใช้งาน' ?></span>
     </div>
-    <?php if ($sampleSettingSaved): ?><p class="sample-saved" role="status"><?= workspaceIcon('ready') ?>บันทึกการตั้งค่าแล้ว</p><?php endif; ?>
+    <?php if ($sampleSettingSaved): ?><p class="sample-saved" role="status"><?= workspaceIcon('ready') ?><?= match ($sampleSettingSaved) {'generate'=>'สร้างข้อมูลและเปิดโหมดจำลองแล้ว','clear'=>'ล้างข้อมูลจำลองและปิดโหมดจำลองแล้ว',default=>'บันทึกการตั้งค่าแล้ว'} ?></p><?php endif; ?>
+    <p>รายงานจำลอง <strong><?= number_format($demoReportCount) ?></strong> ชุด · คำขอในคิวทดสอบ <strong><?= number_format($demoQueueCount) ?></strong> รายการ</p>
+    <div class="demo-data-actions">
+    <form method="post">
+     <input type="hidden" name="csrf" value="<?= esc($token) ?>">
+     <button class="action primary" name="demo_action" value="generate" type="submit"><?= workspaceIcon('chart') ?>สร้างข้อมูลจำลอง</button>
+    </form>
+    <details>
+     <summary class="action"><?= workspaceIcon('history') ?>เคลียร์ข้อมูลจำลอง</summary>
+     <form method="post" class="demo-clear-form">
+      <input type="hidden" name="csrf" value="<?= esc($token) ?>">
+      <label><input type="checkbox" name="confirm_clear" value="1" required> ยืนยันล้างรายงานและคิวทดสอบทั้งหมด ใบรับคำขอทดสอบเดิมจะใช้ตรวจสถานะไม่ได้</label>
+      <button class="action" name="demo_action" value="clear" type="submit"><?= workspaceIcon('close') ?>ยืนยันเคลียร์ข้อมูลจำลอง</button>
+     </form>
+    </details>
+    </div>
     <form method="post" class="sample-setting-form">
      <input type="hidden" name="csrf" value="<?= esc($token) ?>">
      <label>สถานะข้อมูลจำลอง<select name="sample_enabled"><option value="1" <?= $sampleEnabled?'selected':'' ?>>เปิดให้ดูข้อมูลจำลอง</option><option value="0" <?= !$sampleEnabled?'selected':'' ?>>ปิดข้อมูลจำลอง</option></select></label>
@@ -694,6 +726,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <div class="sample-section-heading"><span class="iconbox"><?= workspaceIcon('chart') ?></span><div><h2>เปิดดูข้อมูลตัวอย่าง</h2><p>เลือกหน้าที่ต้องการดูในโหมดข้อมูลจำลอง</p></div></div>
     <?php if ($sampleAllRegions): ?><p class="status"><?= workspaceIcon('map') ?>ข้อมูลจำลองเปิดครบ 13 เขตสุขภาพ · 77 จังหวัด</p><?php endif; ?>
     <div class="sample-shortcuts">
+     <a href="dashboard.php?view=contact-queue&amp;demo=1"><span class="iconbox"><?= workspaceIcon('phone') ?></span><strong>คิวทดสอบ</strong><span class="sample-shortcut-arrow"><?= workspaceIcon('next') ?></span></a>
      <?php foreach ($sampleViews as $key): ?>
       <a href="dashboard.php?view=<?= esc($key) ?>&amp;preview=sample"><span class="iconbox"><?= workspaceIcon($tabIcons[$key]) ?></span><strong><?= esc($tabs[$key]) ?></strong><span class="sample-shortcut-arrow"><?= workspaceIcon('next') ?></span></a>
      <?php endforeach; ?>

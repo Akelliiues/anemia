@@ -35,10 +35,9 @@ try {
     require __DIR__.'/_private/access.php';
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
-    if ($publicDemo) {
-        $sampleEnabled=(int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetchColumn()===1;
-        if (!$sampleEnabled) demoContactReply(503,['error'=>'ยังไม่เปิดบริการ SMS และปิดโหมดทดสอบบนโฮสต์นี้']);
-    } else {
+    $sampleEnabled=(int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetchColumn()===1;
+    if (!$sampleEnabled) demoContactReply(503,['error'=>'โฮสต์นี้ปิดโหมดทดสอบแล้ว']);
+    if (!$publicDemo) {
         $identity=anemiaStaffIdentity($db,(string)$_SESSION['username']);
         if (($identity['role']??null)!=='account_admin') demoContactReply(403,['error'=>'บัญชีนี้ไม่มีสิทธิ์ทดสอบ OTP']);
     }
@@ -88,13 +87,20 @@ try {
     }
     if (($data['code']??'')!=='482731') demoContactReply(422,['error'=>'รหัสตัวอย่างไม่ตรง']);
     if (isset($pending['receipt'])) demoContactReply(200,['receipt'=>$pending['receipt']]);
+    $db->beginTransaction();
+    if ((int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample' FOR UPDATE")->fetchColumn()!==1) {
+        $db->rollBack();
+        demoContactReply(503,['error'=>'โฮสต์นี้ปิดโหมดทดสอบแล้ว']);
+    }
     $receipt='DE-'.strtoupper(substr($token,0,16));
     $save=$db->prepare("INSERT INTO anemia_contact_demo_queue (receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at)
         VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE receipt=receipt");
     $save->execute([$receipt,$pending['facility'],$pending['kind'],$pending['contact'],$pending['phone'],$pending['date'],date('Y-m-d H:i:s')]);
+    $db->commit();
     $_SESSION['demo_otp']=['token'=>$token,'receipt'=>$receipt,'until'=>time()+600];
     demoContactReply(200,['receipt'=>$receipt]);
 } catch (Throwable $error) {
+    if (isset($db) && $db->inTransaction()) $db->rollBack();
     error_log('Anemia demo contact request failed ('.get_class($error).')');
     demoContactReply(503,['error'=>'ยังบันทึกข้อมูลทดสอบไม่ได้ กรุณาลองอีกครั้ง']);
 }

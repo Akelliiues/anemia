@@ -1,0 +1,9 @@
+{
+  "format": 1,
+  "version": "0.1.0",
+  "components": {
+    "public": "0.1.0",
+    "staff": "0.1.0",
+    "research": "0.1.0"
+  }
+}

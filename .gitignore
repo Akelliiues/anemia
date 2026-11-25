@@ -1,0 +1,6 @@
+/_private/config.php
+/_private/regional-accounts.php
+.env
+.env.*
+*.sql
+*.log

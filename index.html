@@ -1,0 +1,35 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anemia Portal | ประเมินและดูแลภาวะโลหิตจาง</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=public-nav-v25-theme4"><script defer src="knowledge.js"></script><script defer src="health-region-map.js"></script><script defer src="national-registry.js"></script><script defer src="admin.js?v=hosted-sample-v8"></script><script defer src="facility-directory.js"></script><script defer src="assessment-questions.js"></script><script defer src="qrcode.js?v=2.0.4"></script><script defer src="request-receipt.js?v=2"></script><script defer src="request-scanner.js?v=3"></script><script defer src="app.js?v=activity-v34"></script></head><body class="public-site">
+<header class="public-header"><div class="bar"><button class="brand" data-go="home"><span class="mark" data-icon="drop"></span><span>Anemia Portal<small>ประเมินและดูแลภาวะโลหิตจาง</small></span></button><button class="public-menu-toggle" type="button" aria-controls="public-navigation" aria-expanded="false" hidden><span data-icon="menu"></span>เมนู</button><nav id="public-navigation" aria-label="เมนูหลัก"><button data-go="learn"><span data-icon="book"></span>ความรู้</button><button data-go="open-data"><span data-icon="chart"></span>Open Data</button><button data-go="facility-directory"><span data-icon="hospital"></span>ค้นหาโรงพยาบาล</button><button data-go="project"><span data-icon="history"></span>เกี่ยวกับโครงการ</button><a class="feedback-nav-link" href="feedback.php"><span data-icon="check"></span>ประเมินการใช้งาน</a><button data-go="staff-entry"><span data-icon="hospital"></span>เข้าสู่ระบบ</button></nav></div></header>
+<main id="main" tabindex="-1">
+ <section class="panel portal-startup" id="portal-startup">
+  <h1 class="title">Anemia Portal</h1>
+  <p id="portal-startup-message" role="status">กำลังเปิดหน้าบ้าน</p>
+  <div class="actions">
+   <a class="action primary" href="index.html">โหลดหน้าใหม่</a>
+   <a class="action" href="login.php">เข้าสู่ระบบ</a>
+  </div>
+  <noscript><p>เปิด JavaScript ในเบราว์เซอร์เพื่อใช้แบบประเมิน คลังความรู้ และค้นหาสถานบริการ</p></noscript>
+ </section>
+</main>
+<script>
+window.addEventListener('load', () => {
+ const message = document.getElementById('portal-startup-message');
+ if (message) message.textContent = 'ยังเปิดหน้าบ้านไม่ได้ ลองโหลดหน้าใหม่อีกครั้ง';
+},{once:true});
+</script><footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-identity">
+      <span class="mark" data-icon="hospital"></span>
+      <div><strong>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</strong>
+        <p>กรมอนามัย กระทรวงสาธารณสุข</p></div>
+    </div>
+    <address>
+      <p>45 หมู่ 4 ถนนสถลมาร์ค ตำบลธาตุ อำเภอวารินชำราบ จังหวัดอุบลราชธานี 34190</p>
+      <div class="footer-links">
+        <a href="tel:+6645288586"><span data-icon="phone"></span>045-288-586 ถึง 588</a>
+        <a href="https://hpc10.anamai.moph.go.th/"><span data-icon="next"></span>เว็บไซต์ศูนย์อนามัยที่ ๑๐</a>
+      </div>
+    </address>
+  </div>
+</footer>
+</body></html>

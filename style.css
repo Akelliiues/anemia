@@ -484,6 +484,8 @@ body:has(.admin-shell) main { max-width:1380px; }
 .admin-column-bar.screened { background:linear-gradient(0deg,#8b6be0,#c1a7fb); }
 .admin-column-bar.high { background:linear-gradient(0deg,#e85d96,#faa4c4); }
 .admin-month small { display:block; margin-top:6px; color:var(--muted); }
+.admin-month[aria-current=date] small {color:var(--violet);font-weight:750;}
+.admin-month-empty {align-self:end;padding-bottom:.45rem;font-size:.75rem;color:var(--muted);}
 .admin-ring { width:min(100%,160px); aspect-ratio:1; position:relative; display:grid; place-items:center; margin:11px auto 5px; }
 .admin-ring svg { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
 .admin-ring circle { fill:none; stroke:#eee8f8; stroke-width:9; }

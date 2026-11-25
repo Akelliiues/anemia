@@ -208,13 +208,13 @@ function monthlyTrend(months){
  <ul class="admin-trend-labels">${points.map(point=>`<li ${point.selected?'aria-current="date"':''}>${point.period}<span class="${point.screened===null?'':'trend-readable'}"> ${point.screened===null?'ยังไม่มีข้อมูล':countLabel(point.screened)+' ครั้ง'}</span></li>`).join('')}</ul>
  ${adminPeriod?'':'<p class="notice">แสดง 4 เดือนล่าสุดในชุดข้อมูล</p>'}</section>`;
 }
-function adminTrendMonths(scope){
+function adminChartMonths(scope){
  const end=adminPeriods.indexOf(adminPeriod||latestAdminPeriod);
  return [end-3,end-2,end-1,end].map(index=>{
   const date=new Date(Date.UTC(2023,11+index,1));
   const period=demoMonthNames[date.getUTCMonth()]+' '+(date.getUTCFullYear()+543);
   const rows=reportRows(scope,period);
-  return {period,screened:rows.length?metricTotal(rows,'screened'):null};
+  return {period,screened:rows.length?metricTotal(rows,'screened'):null,high:rows.length?metricTotal(rows,'high'):null};
  });
 }
 function regionMapPanel(scope){
@@ -243,11 +243,7 @@ document.addEventListener('keydown',event=>{
  selectChartRegion(Number(shape.dataset.chartRegion));
 });
 function adminCharts(rows,scope){
- const periods=adminPeriods.filter(period=>rows.some(row=>row.period===period));
- const months=periods.slice(-12).map(period=>{
-  const monthRows=rows.filter(row=>row.period===period);
-  return {period,screened:metricTotal(monthRows,'screened'),high:metricTotal(monthRows,'high')};
- });
+ const months=adminChartMonths(scope);
  const maximum=Math.max(1,...months.map(month=>month.screened));
  const requests=metricTotal(rows,'referred'), completed=metricTotal(rows,'tested');
  const completion=requests?completed/requests*100:0;
@@ -258,13 +254,14 @@ function adminCharts(rows,scope){
  const areaMax=Math.max(1,...areaTotals.map(area=>area.count));
  return `<div class="admin-visuals">
  <section class="card admin-chart-card">
-  <div class="admin-chart-title">${box('chart')}<div><h2>ผลประเมินรายเดือน</h2><p>จำนวนครั้งที่ประเมินและจำนวนครั้งที่ได้ผลเสี่ยงสูง${periods.length>12?' · แสดง 12 เดือนล่าสุด':''}</p></div></div>
+  <div class="admin-chart-title">${box('chart')}<div><h2>ผลประเมินรายเดือน</h2><p>ยอดประเมินทั้งหมดและผลเสี่ยงสูง ${adminPeriod?'ในเดือนที่เลือกและ 3 เดือนก่อนหน้า':'ใน 4 เดือนล่าสุดของชุดข้อมูล'}</p></div></div>
   <div class="admin-legend"><span class="legend-screened">ประเมินทั้งหมด</span><span class="legend-high">ผลเสี่ยงสูง</span></div>
   <div class="admin-month-chart" style="--months:${months.length||1};--chart-min-width:${months.length*74}px">
-   ${months.map(({period,screened,high},index)=>`<div class="admin-month" style="--month-delay:${index*110}ms">
+   ${months.map(({period,screened,high},index)=>`<div class="admin-month" ${index===months.length-1?'aria-current="date"':''} style="--month-delay:${index*110}ms">
     <div class="admin-column-group">
+     ${screened===null?'<span class="admin-month-empty">ยังไม่มีข้อมูล</span>':`
      <div class="admin-column"><strong>${countLabel(screened)}</strong><span class="admin-column-bar screened" style="--bar-height:${screened/maximum*100}%"></span></div>
-     <div class="admin-column"><strong>${countLabel(high)}</strong><span class="admin-column-bar high" style="--bar-height:${high/maximum*100}%"></span></div>
+     <div class="admin-column"><strong>${countLabel(high)}</strong><span class="admin-column-bar high" style="--bar-height:${high/maximum*100}%"></span></div>`}
     </div><small>${period}</small></div>`).join('')}
   </div>
  </section>
@@ -277,7 +274,7 @@ function adminCharts(rows,scope){
   <div class="admin-ring-caption"><span>ตรวจแล้ว <strong>${countLabel(completed)}</strong></span><span>ขอประสาน <strong>${countLabel(requests)}</strong></span></div>
  </section>
  ${riskComposition(rows)}
- ${monthlyTrend(adminTrendMonths(scope))}
+ ${monthlyTrend(months)}
  ${scope.key==='central'&&areaTotals.length>1?`<section class="card admin-chart-card admin-regions">
   <div class="admin-chart-title">${box('history')}<div><h2>เปรียบเทียบจำนวนครั้งตามเขต</h2><p>เลือกแถบเพื่อดูรายละเอียดของเขตนั้น</p></div></div>
   <div class="admin-region-chart">${areaTotals.map(({region,count},index)=>`<button type="button" class="admin-region-bar" data-chart-region="${region}" style="--region-width:${count/areaMax*100}%;--region-delay:${index*40}ms">

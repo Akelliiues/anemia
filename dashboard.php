@@ -320,7 +320,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=staff-workspace-v30-theme4">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=staff-workspace-v31-header">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -333,11 +333,14 @@ function workspaceInfo(string $page, ?array $release = null): void
 <?php workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>
 <section class="panel wide" style="padding:0;overflow:hidden">
 <div class="admin-shell hosted-workspace">
- <div class="admin-top no-print">
-  <div class="workspace-header-art" aria-hidden="true"><i></i><i></i></div>
+ <header class="admin-top no-print">
+  <div class="workspace-header-art" aria-hidden="true"></div>
   <div class="admin-top-main">
-   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>ศูนย์จัดการ Anemia Portal</strong><div class="admin-top-meta"><span><?= esc($roleLabel) ?></span><span><?= esc($staff) ?></span></div></div></div>
-   <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></form>
+   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
+   <div class="workspace-account">
+    <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><div><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></div></div>
+    <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?><span>ออกจากระบบ</span></button></form>
+   </div>
   </div>
   <nav class="admin-top-tabs" aria-label="เมนูหลังบ้าน">
    <?php
@@ -374,7 +377,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     </details>
    <?php endif; endforeach; ?>
   </nav>
- </div>
+ </header>
  <div class="admin-content">
   <div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
    <p><?= esc($scopeName) ?></p></div>

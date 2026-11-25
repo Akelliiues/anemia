@@ -1039,17 +1039,42 @@ button.choice > svg {margin-inline-end:.4rem;vertical-align:middle;}
  .donut-callout-stage .donut-callout {position:static;transform:none;width:auto;text-align:left;border-inline-start:3px solid var(--callout-tone);}
 }
 
-.hosted-workspace > .admin-top {position:relative;isolation:isolate;background:radial-gradient(ellipse at 72% 0%,#65458b 0%,transparent 54%),linear-gradient(115deg,#2d2049,#483275 85%);}
-.hosted-workspace .admin-top-main,.hosted-workspace .admin-top-tabs {position:relative;}
-.workspace-header-art {position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background-image:radial-gradient(#e5d2ff36 1px,transparent 1px);background-size:13px 13px;mask-image:linear-gradient(90deg,transparent 40%,#000 76%,transparent 100%);}
-.workspace-header-art i {position:absolute;width:285px;height:285px;left:68%;top:-98px;border:1px solid #e3caff42;border-radius:50%;box-shadow:0 0 0 23px #ddbcff17,0 0 0 46px #ddbcff12;}
-.workspace-header-art i:first-child::before {content:"";position:absolute;top:50%;left:0;width:7px;height:7px;border-radius:50%;background:#e5c7ff;box-shadow:0 0 14px #e7b9ff;}
-.workspace-header-art i+ i {width:207px;height:207px;top:-59px;left:calc(68% + 39px);box-shadow:none;border-color:#ecd9ff38;}
-.workspace-brand-icon {flex:none;display:grid;place-items:center;width:2.8rem;height:2.8rem;border:1px solid #e9d5ff4d;border-radius:.9rem;background:#c9a1ff23;color:#f1d5fe;}
+.hosted-workspace > .admin-top {
+ position:relative;isolation:isolate;padding:clamp(.7rem,2.4vw,1.5rem);
+ background:radial-gradient(ellipse at 79% 0%,#654581 0%,transparent 64%),linear-gradient(115deg,#241a3d,#392656);
+}
+.workspace-header-art {position:absolute;inset:0;z-index:-1;pointer-events:none;background:repeating-radial-gradient(ellipse at 76% -50%,transparent 0 21px,#e8cdff24 22px,transparent 23px 40px);mask-image:linear-gradient(100deg,transparent 30%,#000 62%,transparent 98%);}
+.hosted-workspace .admin-top-main {display:flex;position:relative;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin:0 0 .9rem;}
+.hosted-workspace .admin-brand {align-items:center;gap:.75rem;min-width:0;}
+.hosted-workspace .admin-brand strong {font-size:clamp(1.15rem,3vw,1.65rem);line-height:1.18;}
+.workspace-brand-caption {display:block;margin-top:.2rem;color:#e2d4f1;font-size:.8rem;}
+.workspace-brand-icon,.workspace-account-icon {flex:none;display:grid;place-items:center;border:1px solid #e9d5ff45;background:#e0b8ff21;color:#f2ddff;}
+.workspace-brand-icon {width:2.8rem;height:2.8rem;border-radius:.9rem;box-shadow:inset 0 1px #ffffff24;}
 .workspace-brand-icon svg {width:1.35rem;height:1.35rem;}
-.hosted-workspace .admin-brand {display:flex;align-items:center;gap:.75rem;}
-@media(prefers-reduced-motion:no-preference){.workspace-header-art i:first-child {animation:workspace-orbit 22s linear infinite;}}
-@keyframes workspace-orbit {to {transform:rotate(360deg);}}
+.workspace-account {display:flex;align-items:center;gap:.65rem;min-width:0;}
+.workspace-identity {display:flex;align-items:center;gap:.55rem;min-width:0;}
+.workspace-identity strong,.workspace-identity small {display:block;overflow-wrap:anywhere;line-height:1.3;}
+.workspace-identity strong {font-size:.9rem;color:#fff;}
+.workspace-identity small {color:#e2d4f1;font-size:.74rem;}
+.workspace-account-icon {width:2.1rem;height:2.1rem;border-radius:.68rem;}
+.workspace-account-icon svg {width:1rem;height:1rem;}
+.workspace-account .hosted-logout {margin:0;}
+.workspace-account .hosted-logout-button {min-height:44px;white-space:nowrap;}
+.hosted-workspace .admin-top-tabs {position:relative;padding:.27rem;gap:.25rem;border:1px solid #ead8ff30;border-radius:.8rem;background:#1c122c59;}
+.hosted-workspace .admin-top-tabs .admin-tab {border:1px solid transparent;border-radius:.55rem;justify-content:center;transition:background-color .18s,color .18s;}
+.hosted-workspace .admin-top-tabs :is(.admin-tab[aria-current=page],[data-current] > summary) {border-color:#edddff;background:#f1e6ff;color:#39265b;}
+.hosted-workspace .admin-top-tabs .admin-tab:focus-visible {outline:2px solid #f2d5ff;outline-offset:2px;}
+.hosted-workspace .hosted-menu-group[open] .hosted-menu-caret {transform:translateY(1px) rotate(225deg);}
+@media(max-width:640px){
+ .hosted-workspace .admin-top-tabs {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+ .hosted-workspace .admin-top-tabs .admin-tab {width:100%;min-height:44px;padding-inline:.2rem;font-size:.8rem;}
+ .hosted-workspace .admin-top-tabs .admin-tab svg {display:block;width:.82rem;height:.82rem;}
+ .hosted-workspace .hosted-menu-group:nth-child(3n) .hosted-menu-links {left:auto;right:0;}
+ .hosted-workspace .hosted-menu-group:nth-child(3n + 1) .hosted-menu-links {left:0;right:auto;}
+ .workspace-account .hosted-logout-button {padding-inline:.65rem;}
+ .workspace-account .hosted-logout-button span,.workspace-account-icon {display:none;}
+}
+@media(prefers-reduced-motion:reduce){.hosted-workspace .admin-top-tabs .admin-tab {transition:none;}}
 
 @keyframes donut-fade {from {opacity:0;} to {opacity:1;}}
 

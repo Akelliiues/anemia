@@ -186,5 +186,19 @@
   if(states.value==='scheduled'&&!dayInput.value){roundMessage.textContent='กรุณาเลือกวันนัด';calendar.open=true;calendar.querySelector('summary').focus();return;}
   if(!submit.disabled)request(trigger,true);
  });
- dialog.addEventListener('close',()=>trigger?.focus({preventScroll:true}));
+ function onBackdrop(event){
+  if(event.target!==dialog)return false;
+  const {left,right,top,bottom}=dialog.getBoundingClientRect();
+  return event.clientX<left||event.clientX>right||event.clientY<top||event.clientY>bottom;
+ }
+ let startedOnBackdrop=false;
+ dialog.addEventListener('pointerdown',event=>{startedOnBackdrop=onBackdrop(event);});
+ dialog.addEventListener('click',event=>{
+  if(startedOnBackdrop&&onBackdrop(event))dialog.close();
+  startedOnBackdrop=false;
+ });
+ dialog.addEventListener('close',()=>{
+  startedOnBackdrop=false;
+  trigger?.focus({preventScroll:true});
+ });
 })();

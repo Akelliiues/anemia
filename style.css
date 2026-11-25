@@ -1059,7 +1059,7 @@ button.choice > svg {margin-inline-end:.4rem;vertical-align:middle;}
 .workspace-account-icon {width:2.1rem;height:2.1rem;border-radius:.68rem;}
 .workspace-account-icon svg {width:1rem;height:1rem;}
 .workspace-account .hosted-logout {margin:0;}
-.workspace-account .hosted-logout-button {min-height:44px;white-space:nowrap;}
+.workspace-account .hosted-logout-button {display:grid;place-items:center;width:44px;min-height:44px;padding:0;}
 .hosted-workspace .admin-top-tabs {position:relative;padding:.27rem;gap:.25rem;border:1px solid #ead8ff30;border-radius:.8rem;background:#1c122c59;}
 .hosted-workspace .admin-top-tabs .admin-tab {border:1px solid transparent;border-radius:.55rem;justify-content:center;transition:background-color .18s,color .18s;}
 .hosted-workspace .admin-top-tabs :is(.admin-tab[aria-current=page],[data-current] > summary) {border-color:#edddff;background:#f1e6ff;color:#39265b;}
@@ -1071,8 +1071,7 @@ button.choice > svg {margin-inline-end:.4rem;vertical-align:middle;}
  .hosted-workspace .admin-top-tabs .admin-tab svg {display:block;width:.82rem;height:.82rem;}
  .hosted-workspace .hosted-menu-group:nth-child(3n) .hosted-menu-links {left:auto;right:0;}
  .hosted-workspace .hosted-menu-group:nth-child(3n + 1) .hosted-menu-links {left:0;right:auto;}
- .workspace-account .hosted-logout-button {padding-inline:.65rem;}
- .workspace-account .hosted-logout-button span,.workspace-account-icon {display:none;}
+ .workspace-account-icon {display:none;}
 }
 @media(prefers-reduced-motion:reduce){.hosted-workspace .admin-top-tabs .admin-tab {transition:none;}}
 

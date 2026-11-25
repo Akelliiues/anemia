@@ -13,6 +13,7 @@ $receipt=$body['receipt']??null;
 if (!is_string($receipt) || !preg_match('/^(?:AN|DE)-[0-9A-F]{16}$/D',$receipt)) { http_response_code(400); exit; }
 
 define('ANEMIA_STAFF_BOOT',true);
+require __DIR__.'/_private/request-states.php';
 try {
     $config=require __DIR__.'/_private/config.php';
     require __DIR__.'/_private/database.php';
@@ -23,8 +24,8 @@ try {
     $query=$db->prepare('SELECT state FROM '.$table.' WHERE receipt=?');
     $query->execute([$receipt]);
     $state=$query->fetchColumn();
-    if (!in_array($state,['pending','contacted','closed'],true)) { http_response_code(404); exit; }
-    echo json_encode(['state'=>$state,'sample'=>$sample,'checkedAt'=>gmdate('Y-m-d\TH:i:s\Z')],JSON_THROW_ON_ERROR);
+    if (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])) { http_response_code(404); exit; }
+    echo json_encode(['state'=>$state,'label'=>ANEMIA_REQUEST_STATES[$state],'sample'=>$sample,'checkedAt'=>gmdate('Y-m-d\TH:i:s\Z')],JSON_THROW_ON_ERROR);
 } catch (Throwable $error) {
     error_log('Anemia receipt status failed ('.get_class($error).')');
     http_response_code(503);

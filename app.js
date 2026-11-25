@@ -29,7 +29,7 @@ const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const button=(label,go,symbol,primary=false)=>`<button class="action ${primary?'primary':''}" data-go="${go}">${icon(symbol)}${label}</button>`;
 const box=name=>`<span class="iconbox">${icon(name)}</span>`;
 const main=document.querySelector('#main');
-const levels={unknown:['คุณดูคำแนะนำต่อได้เลย','บางเรื่องยังไม่แน่ใจ จึงยังสรุประดับความเสี่ยงไม่ได้ หากนึกออก ค่อยเติมเฉพาะส่วนนั้นได้','book'],low:['ไม่พบสัญญาณจากคำตอบตัวอย่าง','อ่านความรู้สำหรับการดูแลตัวเอง และปรึกษาหน่วยบริการได้หากกังวล','check'],medium:['แนะนำให้เรียนรู้และติดตาม','เปิดบทเรียนเพื่อทำความเข้าใจผล หรือดูช่องทางปรึกษาหน่วยบริการ','book'],high:['แนะนำให้ตรวจเพิ่มเติม','คุณดูสถานที่ตรวจหรือขอให้เจ้าหน้าที่ช่วยประสานได้ค่ะ','alert']};
+const levels={unknown:['คุณดูคำแนะนำต่อได้เลย','บางเรื่องยังไม่แน่ใจ จึงยังสรุประดับความเสี่ยงไม่ได้ หากนึกออก ค่อยเติมเฉพาะส่วนนั้นได้','book'],low:['ผลคัดกรองอยู่ในระดับความเสี่ยงต่ำ','คุณอ่านคำแนะนำเพื่อดูแลตัวเองได้ หากมีอาการหรือยังเป็นกังวล คุณปรึกษาหน่วยบริการได้','check'],medium:['ผลคัดกรองอยู่ในระดับความเสี่ยงปานกลาง','ลองอ่านหรือฟังคำแนะนำเพื่อดูแลตัวเอง คุณยังเลือกปรึกษาหน่วยบริการได้','book'],high:['แนะนำให้ตรวจเพิ่มเติม','คุณดูสถานที่ตรวจหรือขอให้เจ้าหน้าที่ช่วยประสานได้ค่ะ','alert']};
 let answers=[],originalAnswers=[],bodyMeasurements=null,reviewingMissing=false,multipleSymptoms=false,step=0,level='low',request=null,requestKind=null,requestReceipt=null,stage=0,lessonProgress=0;
 let reviewed=false, reviewIndex=null;
 let activityRound=null, activityQueue=Promise.resolve();
@@ -46,7 +46,7 @@ function startActivity(){
  logActivity('start');
 }
 const stageNames=['รอรับเรื่อง','รับเรื่องแล้ว','ยืนยันการตรวจแล้ว'];
-const note='แบบประเมินฉบับร่าง · ผลตัวอย่างสำหรับทดสอบหน้าจอ';
+const note='ผลนี้สรุปความเสี่ยงจากคำตอบของคุณ การยืนยันภาวะโลหิตจางต้องอาศัยการตรวจจากหน่วยบริการ';
 const back=()=>`<button class="back" data-go="back" aria-label="ย้อนกลับ" title="ย้อนกลับ">${icon('arrow')}</button>`;
 const backRow=()=>back().replace('class="back"','class="back floating-back"');
 function pageHeading(symbol,title,summary='',category=''){
@@ -119,7 +119,7 @@ function goBack(){
 const voiceText={
  unknown:'ขอบคุณที่ตอบเท่าที่จำได้ค่ะ แบบประเมินนี้ยังสรุประดับความเสี่ยงไม่ได้ คุณอ่านคำแนะนำต่อได้เลย หากนึกข้อมูลออก ค่อยกลับมาเติม หรือเลือกดูช่องทางปรึกษาหน่วยบริการได้ค่ะ',
  low:'จากคำตอบตัวอย่างครั้งนี้ คุณอ่านความรู้สำหรับดูแลตัวเองได้จากหน้านี้ค่ะ',
- medium:'คุณเปิดบทเรียนเพื่อทำความเข้าใจผล หรือดูช่องทางปรึกษาหน่วยบริการได้ค่ะ',
+ medium:'คุณลองอ่านหรือฟังคำแนะนำเพื่อดูแลตัวเอง คุณยังเลือกปรึกษาหน่วยบริการได้ได้ค่ะ',
  high:'จากคำตอบตัวอย่าง แนะนำให้ปรึกษาหน่วยบริการเรื่องตรวจเลือดค่ะ คุณกดดูสถานที่ตรวจ หรือขอให้เจ้าหน้าที่ช่วยประสานได้เลย',
  learn:'ผลจากแบบประเมินมาจากคำตอบที่คุณให้ หากหน้าจอแนะนำให้ตรวจเพิ่มเติม กดดูสถานที่ตรวจ หรือเลือกขอให้เจ้าหน้าที่ติดต่อกลับได้ค่ะ'
 };
@@ -205,22 +205,22 @@ function result(showWarning=false){
  const flagged=['medium','high'].includes(level);
  const needsReview=flagged&&!reviewed;
  const [title,message,symbol]=levels[level];
- const next=needsReview?{title:'ลองนึกอีกครั้ง',description:'ทบทวนเรื่องที่มีผลต่อระดับความเสี่ยง',route:'review-risk',symbol:'refresh'}:flagged?nextSteps.high:nextSteps[level];
+ const next=nextSteps[level];
  const hasMissing=missingAnswerIndex()!==-1;
  const reviewAction=hasMissing?button('เติมเฉพาะเรื่องที่ไม่แน่ใจ','review-missing','refresh'):button('ทบทวนคำตอบเรื่องรอบเดือน','review','refresh');
  set(panel(`<div class="result-view">${backRow()}
- <section class="result-summary status ${level}"><div class="result-copy"><span class="small">${level==='unknown'?'ขอบคุณที่ตอบเท่าที่จำได้':'ผลจากคำตอบครั้งนี้ · ตัวอย่าง'}</span><h1 class="title">${title}</h1><p>${message}</p></div><div class="result-art" aria-hidden="true"><span class="result-orbit orbit-wide"></span><span class="result-orbit orbit-inner"></span><span class="result-emblem">${illustration(level==='high'?'history':level==='low'?'pulse':'calendar')}</span><span class="result-satellite">${icon(symbol)}</span><span class="result-glint">✦</span></div></section>
+ <section class="result-summary status ${level}"><div class="result-copy"><span class="small">${level==='unknown'?'ขอบคุณที่ตอบเท่าที่จำได้':'ผลคัดกรองเบื้องต้น · ฉบับทดลอง'}</span><h1 class="title">${title}</h1><p>${message}</p></div><div class="result-art" aria-hidden="true"><span class="result-orbit orbit-wide"></span><span class="result-orbit orbit-inner"></span><span class="result-emblem">${illustration(level==='high'?'history':level==='low'?'pulse':'calendar')}</span><span class="result-satellite">${icon(symbol)}</span><span class="result-glint">✦</span></div></section>
  <section class="card result-next"><h2>ทำอะไรต่อได้บ้าง?</h2>
  <button class="primary next-card" data-go="${next.route}">${box(next.symbol)}<span><strong>${next.title}</strong><small>${next.description}</small></span>${icon('next')}</button>
- <div class="result-links">${needsReview?'':(flagged?'':button('ดูสถานที่ตรวจ','facilities','hospital'))+button('ขอให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone')}</div></section>
+ <div class="result-links">${level==='high'?'':button('ดูสถานที่ตรวจ','facilities','hospital')}${button('ขอให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone')}</div></section>
  ${audioUI(level)}
  <section class="card result-review"><div class="result-section-title">${box('refresh')}<h2>ทบทวนหรือเริ่มใหม่</h2></div><p>แก้เฉพาะเรื่องที่จำได้ หรือเริ่มตอบตั้งแต่เรื่องแรก</p>
- <div class="actions">${reviewAction}${button('ประเมินใหม่ทั้งชุด','restart','refresh')}</div></section>
+ <div class="actions">${needsReview?button('ลองตอบอีกมุม','review-risk','refresh'):reviewAction}${button('ประเมินใหม่ทั้งชุด','restart','refresh')}</div></section>
  <p class="notice">${note}</p>
  ${showWarning&&flagged?`<dialog class="signal-dialog" id="risk-warning" aria-labelledby="risk-warning-title">
-  ${box('alert')}<h2 id="risk-warning-title">${needsReview?'มีบางเรื่องที่อยากชวนทบทวน':'แนะนำให้ตรวจเพิ่มเติม'}</h2>
-  <p>${needsReview?'ลองตอบอีกมุมเพื่อทบทวนผล ก่อนเลือกว่าจะไปต่ออย่างไร':'จากผลตัวอย่าง คุณเลือกสถานบริการหรือทดลองให้เจ้าหน้าที่ติดต่อกลับได้'}</p>
-  <div class="actions">${needsReview?button('ทบทวนคำตอบ','review-risk','refresh',true):button('ค้นหาที่ตรวจ','facilities','hospital',true)+button('ให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone')}
+  ${box('alert')}<h2 id="risk-warning-title">${level==='high'?'แนะนำให้ตรวจเพิ่มเติม':'มีคำแนะนำสำหรับคุณ'}</h2>
+  <p>${level==='high'?'คุณเลือกที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้เลย หากยังไม่แน่ใจในคำตอบ สามารถทบทวนก่อนก็ได้':'เริ่มอ่านคำแนะนำได้เลย หรือทบทวนคำตอบหากมีเรื่องที่ยังไม่แน่ใจ'}</p>
+  <div class="actions">${button(next.title,next.route,next.symbol,true)}${level==='high'?button('ให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone'):''}${needsReview?button('ทบทวนคำตอบ','review-risk','refresh'):''}
   <form method="dialog"><button class="action">${icon('close')}ปิด</button></form></div>
  </dialog>`:''}</div>`));
  if(showWarning&&flagged)document.querySelector('#risk-warning').showModal();
@@ -701,6 +701,10 @@ async function loadRequestState(dialog,open=false){
  const statusDetails={
   pending:['history',dialog.dataset.reference.startsWith('DE-')?'ใช้ตรวจสอบขั้นตอนการติดตามในโหมดทดสอบ':'เจ้าหน้าที่จะติดต่อผ่านเบอร์ที่คุณให้ไว้'],
   contacted:['phone','หากมีวันนัด ให้ยึดรายละเอียดที่เจ้าหน้าที่แจ้ง'],
+  scheduled:['calendar','ดูวัน เวลา และสถานที่ตามที่เจ้าหน้าที่แจ้ง'],
+  attended:['hospital','สอบถามขั้นตอนถัดไปกับหน่วยบริการที่คุณเข้ารับบริการ'],
+  test_completed:['check','สอบถามผลตรวจและคำแนะนำจากหน่วยบริการ'],
+  follow_up:['phone','ติดตามตามช่องทางที่หน่วยบริการแจ้ง'],
   closed:['check','เก็บเลขคำขอไว้หากต้องสอบถามเพิ่มเติม'],
   error:['alert',''],
   loading:['history','']
@@ -723,8 +727,8 @@ async function loadRequestState(dialog,open=false){
   const response=await fetch('request-status.php',{method:'POST',cache:'no-store',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({receipt:dialog.dataset.reference})});
   if(response.status===404){display('ไม่พบเลขคำขอนี้ กรุณาตรวจสอบอีกครั้ง','error');return;}
   if(!response.ok)throw Error();
-  const {state,checkedAt}=await response.json();
-  display(Object.hasOwn(receiptStates,state)?receiptStates[state]:'ยังไม่ทราบสถานะ',state);
+  const {state,label,checkedAt}=await response.json();
+  display(typeof label==='string'?label:Object.hasOwn(receiptStates,state)?receiptStates[state]:'ยังไม่ทราบสถานะ',state);
   if(checkedAt&&!Number.isNaN(Date.parse(checkedAt))){
    checked.textContent='ตรวจเมื่อ '+new Intl.DateTimeFormat('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date(checkedAt));
    checked.hidden=false;

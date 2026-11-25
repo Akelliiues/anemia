@@ -20,6 +20,7 @@ if (!isset($_SESSION['username'], $_SESSION['until']) || (int)$_SESSION['until']
     loginRequired();
 }
 define('ANEMIA_STAFF_BOOT', true);
+require __DIR__ . '/_private/request-states.php';
 function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function zoneLabel(int $region): string
 {
@@ -100,7 +101,7 @@ try {
             if (!$isAdmin || !is_string($_POST['csrf'] ?? null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
             $receipt = $_POST['receipt'] ?? null;
             $state = $_POST['state'] ?? null;
-            if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || !in_array($state,['pending','contacted','closed'],true)) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
+            if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || !is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
             $save = $db->prepare('UPDATE '.$contactTable.' SET state=? WHERE receipt=?');
             $save->execute([$state,$receipt]);
             header('Location: dashboard.php?view=contact-queue'.($demoQueue?'&demo=1':''),true,303);
@@ -603,7 +604,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="request-scanner-layout">
    <?php if ($scannedRequest):
      $demoScan=str_starts_with($scannedRequest['receipt'],'DE-');
-     $states=['pending'=>'รอประสาน','contacted'=>'ติดต่อแล้ว','closed'=>'ปิดคำขอ'];
+     $states=ANEMIA_REQUEST_STATES;
    ?>
    <section class="card admin-report request-scan-result" aria-labelledby="scan-result-heading">
     <div class="sample-section-heading"><span class="iconbox"><?= workspaceIcon('ready') ?></span><div><h2 id="scan-result-heading">พบคำขอ</h2><p><?= $demoScan?'คิวทดสอบ':'คิวจริง' ?> · <?= esc($scannedRequest['receipt']) ?></p></div></div>
@@ -662,7 +663,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <td><form method="post" class="contact-queue-state">
     <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="receipt" value="<?= esc($item['receipt']) ?>">
     <select name="state" aria-label="สถานะ <?= esc($item['receipt']) ?>">
-     <?php foreach (['pending'=>'รอประสาน','contacted'=>'ติดต่อแล้ว','closed'=>'ปิดคำขอ'] as $key=>$label): ?>
+     <?php foreach (ANEMIA_REQUEST_STATES as $key=>$label): ?>
       <option value="<?= $key ?>" <?= $item['state']===$key?'selected':'' ?>><?= esc($label) ?></option>
      <?php endforeach; ?>
     </select><button type="submit" class="action"><?= workspaceIcon('save') ?>บันทึก</button>

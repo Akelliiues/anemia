@@ -145,27 +145,55 @@ try {
             $state = $_POST['state'] ?? null;
             if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || ($state !== null && (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])))) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
             $db->beginTransaction();
-            $lookup = $db->prepare('SELECT state,submitted_at,appointment_at,next_contact_at FROM '.$contactTable.' WHERE receipt=? FOR UPDATE');
+            $lookup = $db->prepare('SELECT state,facility,submitted_at,appointment_at,appointment_slot,next_contact_at FROM '.$contactTable.' WHERE receipt=? FOR UPDATE');
             $lookup->execute([$receipt]);
             $request = $lookup->fetch(PDO::FETCH_ASSOC);
             if (!$request) { $db->rollBack(); http_response_code(404); exit('ไม่พบคำขอ'); }
+            if ($state === null && isset($_POST['round_day'])) {
+                $day = $_POST['round_day'];
+                if (!is_string($day) || !preg_match('/^\d{4}-\d\d-\d\d$/D',$day) || !checkdate((int)substr($day,5,2),(int)substr($day,8,2),(int)substr($day,0,4))) {
+                    $db->rollBack(); http_response_code(422); exit;
+                }
+                $counts = $db->prepare("SELECT COALESCE(q.appointment_slot,IF(HOUR(q.appointment_at)<12,'morning','afternoon')) AS slot,
+                    SUM(q.state IN ('scheduled','attended','test_completed','follow_up') OR h.receipt IS NOT NULL) AS booked,
+                    SUM(h.receipt IS NOT NULL) AS checked_in
+                    FROM $contactTable q LEFT JOIN (SELECT DISTINCT receipt FROM anemia_request_history WHERE state='attended') h ON h.receipt=q.receipt
+                    WHERE q.facility=? AND q.appointment_at>=? AND q.appointment_at<DATE_ADD(?,INTERVAL 1 DAY) GROUP BY slot");
+                $counts->execute([$request['facility'],$day,$day]);
+                $rounds = array_fill_keys(array_keys(ANEMIA_APPOINTMENT_SLOTS),['booked'=>0,'checkedIn'=>0]);
+                foreach ($counts as $count) $rounds[$count['slot']] = ['booked'=>(int)$count['booked'],'checkedIn'=>(int)$count['checked_in']];
+                $db->commit();
+                header('Content-Type: application/json; charset=UTF-8');
+                echo json_encode($rounds,JSON_THROW_ON_ERROR);
+                exit;
+            }
             if ($state !== null && ($_POST['previous'] ?? '') !== $request['state']) {
                 $db->rollBack(); http_response_code(409); exit('สถานะเปลี่ยนแล้ว กรุณาเปิดไทม์ไลน์อีกครั้ง');
             }
             if ($state !== null) {
                 $when = null;
-                if (in_array($state,['scheduled','retry_contact','follow_up'],true)) {
+                $slot = null;
+                if ($state==='scheduled') {
+                    $raw = $_POST['appointment_day'] ?? '';
+                    $slot = $_POST['appointment_slot'] ?? '';
+                    $date = is_string($raw) && preg_match('/^\d{4}-\d\d-\d\d$/D',$raw) ? DateTimeImmutable::createFromFormat('!Y-m-d',$raw) : false;
+                    if (!$date || $date->format('Y-m-d')!==$raw || $raw<date('Y-m-d') || !is_string($slot) || !isset(ANEMIA_APPOINTMENT_SLOTS[$slot])) {
+                        $db->rollBack(); http_response_code(422); exit('กรุณาเลือกวันและรอบนัด');
+                    }
+                    $when = $date->format('Y-m-d H:i:s');
+                } elseif (in_array($state,['retry_contact','follow_up'],true)) {
                     $raw = $_POST['when'] ?? '';
                     $date = is_string($raw) && preg_match('/^\d{4}-\d\d-\d\dT\d\d:\d\d$/D',$raw) ? DateTimeImmutable::createFromFormat('!Y-m-d\TH:i',$raw) : false;
                     if (!$date || $date->format('Y-m-d\TH:i') !== $raw) { $db->rollBack(); http_response_code(422); exit('กรุณาระบุวันและเวลา'); }
                     $when = $date->format('Y-m-d H:i:s');
                 }
                 if (!in_array($request['state'],ANEMIA_REQUEST_ACTIONS[$state][1] ?? [],true)) { $db->rollBack(); http_response_code(409); exit('ดำเนินการขั้นนี้ไม่ได้'); }
-                anemiaApplyRequestAction($db,$contactTable,$receipt,$state,$staff,$when);
+                anemiaApplyRequestAction($db,$contactTable,$receipt,$state,$staff,$when,$slot);
                 $lookup->execute([$receipt]);
                 $request = $lookup->fetch(PDO::FETCH_ASSOC);
             }
             $request['actions'] = array_filter(ANEMIA_REQUEST_ACTIONS,static fn($action)=>in_array($request['state'],$action[1],true));
+            $request['appointment_label'] = $request['appointment_at'] && in_array($request['state'],['scheduled','attended','test_completed','follow_up'],true) ? anemiaAppointmentLabel($request['appointment_at'],$request['appointment_slot']) : null;
             $history = $db->prepare('SELECT state,actor,changed_at FROM anemia_request_history WHERE receipt=? ORDER BY id');
             $history->execute([$receipt]);
             $request['history'] = $history->fetchAll(PDO::FETCH_ASSOC);
@@ -228,7 +256,7 @@ try {
     }
     $attentionOnly = ($_GET['attention'] ?? '') === '1';
     $queueNow = $db->quote(date('Y-m-d H:i:s'));
-    $overdue = "(state='scheduled' AND appointment_at<$queueNow)";
+    $overdue = "(state='scheduled' AND CASE WHEN appointment_slot IS NULL THEN appointment_at<$queueNow ELSE DATE(appointment_at)<DATE($queueNow) END)";
     $attention = "($overdue OR state IN ('pending','accepted') OR (state IN ('retry_contact','follow_up') AND next_contact_at<=$queueNow))";
     $contactQueue = $view === 'contact-queue' ? $db->query('SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,'.$overdue.' AS overdue FROM '.$contactTable.($attentionOnly?' WHERE '.$attention:'').' ORDER BY submitted_at DESC,receipt DESC LIMIT 100')->fetchAll(PDO::FETCH_ASSOC) : [];
     $forms = $view === 'assessment' ? $db->query('SELECT version_key,state FROM anemia_form_version ORDER BY version_key')->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -387,7 +415,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=account-password-v40">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=appointment-round-v41">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -703,7 +731,7 @@ function workspaceInfo(string $page, ?array $release = null): void
      <div><dt>เบอร์โทร</dt><dd><a href="tel:<?= esc($scannedRequest['phone']) ?>"><?= esc($scannedRequest['phone']) ?></a></dd></div>
      <div><dt>วันที่สะดวก</dt><dd><?= esc($scannedRequest['preferred_date'] ?? 'ไม่ระบุ') ?></dd></div>
      <div><dt>เวลาที่ส่งคำขอ</dt><dd><?= esc($scannedRequest['submitted_at']) ?></dd></div>
-     <?php if ($scannedRequest['appointment_at']): ?><div><dt>วันเวลานัด</dt><dd><?= esc($scannedRequest['appointment_at']) ?></dd></div><?php endif; ?>
+     <?php if ($scannedRequest['appointment_at']): ?><div><dt>วันนัด</dt><dd><?= esc(anemiaAppointmentLabel($scannedRequest['appointment_at'],$scannedRequest['appointment_slot'])) ?></dd></div><?php endif; ?>
      <?php if ($scannedRequest['checked_in_at']): ?><div><dt>เวลาเช็กอิน</dt><dd><?= esc($scannedRequest['checked_in_at']) ?></dd></div><?php endif; ?>
     </dl>
     <div class="actions">
@@ -776,8 +804,18 @@ function workspaceInfo(string $page, ?array $release = null): void
     </select><button type="submit" class="action"><?= workspaceIcon('save') ?>บันทึก</button>
    </form>
    <label data-workflow-date hidden>วันและเวลา (เวลาไทย)<input form="queue-workflow-form" name="when" type="datetime-local"></label>
+   <section data-workflow-round hidden>
+    <details class="request-calendar"><summary><?= workspaceIcon('calendar') ?> <span data-round-date-label>เลือกวันนัด</span></summary><div data-round-calendar></div></details>
+    <input form="queue-workflow-form" name="appointment_day" type="hidden">
+    <fieldset><legend>เลือกรอบเข้าตรวจ</legend>
+     <?php foreach (ANEMIA_APPOINTMENT_SLOTS as $slot=>$label): ?>
+      <label><input form="queue-workflow-form" type="radio" name="appointment_slot" value="<?= esc($slot) ?>"> <?= esc($label) ?> <small data-round-count="<?= esc($slot) ?>"></small></label>
+     <?php endforeach; ?>
+    </fieldset>
+    <p role="status" data-round-message></p>
+   </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=2"></script>
+  <script defer src="queue-timeline.js?v=3"></script>
   <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>

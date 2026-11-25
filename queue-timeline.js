@@ -8,9 +8,67 @@
  const labels=new Map([...states.options].filter(option=>option.value).map(option=>[option.value,option.textContent]));
  const dateField=dialog.querySelector('[data-workflow-date]');
  const dateInput=dateField.querySelector('input');
+ const roundField=dialog.querySelector('[data-workflow-round]');
+ const calendar=roundField.querySelector('details');
+ const calendarBody=calendar.querySelector('[data-round-calendar]');
+ const dayInput=form.elements.appointment_day;
+ const slotInputs=[...roundField.querySelectorAll('input[type=radio]')];
+ const roundMessage=roundField.querySelector('[data-round-message]');
+ const thaiDate=new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{dateStyle:'long',timeZone:'Asia/Bangkok'});
+ const thaiMonth=new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{month:'long',year:'numeric',timeZone:'Asia/Bangkok'});
+ const today=new Intl.DateTimeFormat('sv-SE',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Bangkok'}).format(new Date());
+ let monthOffset=0;
+ let roundOperation=0;
  const submit=form.querySelector('button');
  let trigger;
  let operation=0;
+
+ function drawCalendar(){
+  const [year,month]=today.split('-').map(Number);
+  const first=new Date(Date.UTC(year,month-1+monthOffset,1));
+  const days=new Date(Date.UTC(year,month+monthOffset,0)).getUTCDate();
+  calendarBody.innerHTML=`<div class="request-calendar-nav"><button type="button" data-month-shift="-1" aria-label="เดือนก่อนหน้า" ${monthOffset===0?'disabled':''}>‹</button><strong>${thaiMonth.format(first)}</strong><button type="button" data-month-shift="1" aria-label="เดือนถัดไป">›</button></div>
+   <div class="request-calendar-grid">${['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'].map(day=>`<span>${day}</span>`).join('')}${'<span></span>'.repeat(first.getUTCDay())}${Array.from({length:days},(_,index)=>{
+    const date=new Date(Date.UTC(year,month-1+monthOffset,index+1));
+    const day=date.toISOString().slice(0,10);
+    return `<button type="button" data-round-day="${day}" aria-label="${thaiDate.format(date)}" aria-pressed="${day===dayInput.value}" ${day<today?'disabled':''}>${index+1}</button>`;
+   }).join('')}</div>`;
+ }
+ async function loadRounds(day){
+  const id=++roundOperation;
+  const counts=[...roundField.querySelectorAll('[data-round-count]')];
+  counts.forEach(count=>count.textContent='');
+  roundMessage.textContent='กำลังโหลดยอดของแต่ละรอบ';
+  try{
+   const body=new FormData();
+   for(const name of ['csrf','receipt'])body.set(name,form.elements[name].value);
+   body.set('round_day',day);
+   const response=await fetch(location.href,{method:'POST',body,cache:'no-store'});
+   if(!response.ok||response.redirected)throw new Error();
+   const rounds=await response.json();
+   if(id!==roundOperation)return;
+   counts.forEach(count=>{
+    const {booked,checkedIn}=rounds[count.dataset.roundCount];
+    count.textContent=`นัดแล้ว ${booked} คน · เช็กอินแล้ว ${checkedIn} คน`;
+   });
+   roundMessage.textContent='';
+  }catch{
+   if(id===roundOperation)roundMessage.textContent='โหลดยอดไม่ได้ ลองเลือกวันอีกครั้ง';
+  }
+ }
+ calendarBody.addEventListener('click',event=>{
+  const button=event.target.closest('button');
+  if(!button)return;
+  if(button.dataset.monthShift){monthOffset+=Number(button.dataset.monthShift);drawCalendar();return;}
+  const day=button.dataset.roundDay;
+  if(!day)return;
+  dayInput.value=day;
+  roundField.querySelector('[data-round-date-label]').textContent=thaiDate.format(new Date(day+'T00:00:00+07:00'));
+  drawCalendar();
+  calendar.open=false;
+  calendar.querySelector('summary').focus({preventScroll:true});
+  loadRounds(day);
+ });
 
  function addEvent(label,kind,detail=''){
   const item=document.createElement('li');
@@ -55,7 +113,7 @@
     addEvent(labels.get(event.state),current?'current':'done',event.changed_at+' · '+event.actor+(current?' · สถานะปัจจุบัน':''));
    });
    if(!latest&&!pending)addEvent(labels.get(data.state),'current','สถานะปัจจุบัน · ไม่มีวันเวลาในประวัติเดิม');
-   if(data.state==='scheduled'&&data.appointment_at)addEvent('วันเวลานัด','future',data.appointment_at);
+   if(data.appointment_label)addEvent('วันนัด','future',data.appointment_label);
    if(data.next_contact_at)addEvent('กำหนดติดตาม','future',data.next_contact_at);
    if(data.state!=='closed'){
     const keys=[...labels.keys()];
@@ -89,6 +147,16 @@
   form.hidden=true;
   dateField.hidden=true;
   dateInput.required=false;
+  ++roundOperation;
+  roundField.hidden=true;
+  dayInput.value='';
+  slotInputs.forEach(input=>{input.checked=false;input.required=false;});
+  roundMessage.textContent='';
+  roundField.querySelector('[data-round-date-label]').textContent='เลือกวันนัด';
+  roundField.querySelectorAll('[data-round-count]').forEach(count=>count.textContent='');
+  monthOffset=0;
+  calendar.open=false;
+  drawCalendar();
   list.replaceChildren();
   const receipt=button.dataset.queueTimeline;
   form.elements.receipt.value=receipt;
@@ -97,11 +165,14 @@
   request(button,false);
  }));
  states.addEventListener('change',()=>{
-  dateField.hidden=!['scheduled','retry_contact','follow_up'].includes(states.value);
+  roundField.hidden=states.value!=='scheduled';
+  slotInputs.forEach(input=>input.required=!roundField.hidden);
+  dateField.hidden=!['retry_contact','follow_up'].includes(states.value);
   dateInput.required=!dateField.hidden;
  });
  form.addEventListener('submit',event=>{
   event.preventDefault();
+  if(states.value==='scheduled'&&!dayInput.value){roundMessage.textContent='กรุณาเลือกวันนัด';calendar.open=true;calendar.querySelector('summary').focus();return;}
   if(!submit.disabled)request(trigger,true);
  });
  dialog.addEventListener('close',()=>trigger?.focus({preventScroll:true}));

@@ -25,17 +25,27 @@ const ANEMIA_REQUEST_ACTIONS = [
     'closed'=>['ปิดคำขอ',['pending','accepted','contacted','retry_contact','scheduled','attended','test_completed','follow_up']],
 ];
 
-function anemiaApplyRequestAction(PDO $db,string $table,string $receipt,string $action,string $actor,?string $when): bool
+const ANEMIA_APPOINTMENT_SLOTS = ['morning'=>'รอบเช้า','afternoon'=>'รอบบ่าย'];
+
+function anemiaAppointmentLabel(string $appointment,?string $slot): string
 {
-    $query=$db->prepare('SELECT state,appointment_at,next_contact_at FROM '.$table.' WHERE receipt=? FOR UPDATE');
+    $months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    $date=new DateTimeImmutable($appointment);
+    return $date->format('j').' '.$months[(int)$date->format('n')-1].' '.((int)$date->format('Y')+543).' · '.(ANEMIA_APPOINTMENT_SLOTS[$slot] ?? $date->format('H:i').' น.');
+}
+
+function anemiaApplyRequestAction(PDO $db,string $table,string $receipt,string $action,string $actor,?string $when,?string $slot=null): bool
+{
+    $query=$db->prepare('SELECT state,appointment_at,appointment_slot,next_contact_at FROM '.$table.' WHERE receipt=? FOR UPDATE');
     $query->execute([$receipt]);
     $row=$query->fetch(PDO::FETCH_ASSOC);
     if (!$row || !in_array($row['state'],ANEMIA_REQUEST_ACTIONS[$action][1] ?? [],true)) return false;
     $appointment=$action==='scheduled'?$when:$row['appointment_at'];
+    $appointmentSlot=$action==='scheduled'?$slot:$row['appointment_slot'];
     $next=in_array($action,['retry_contact','follow_up'],true)?$when:null;
-    if ($row['state']===$action && $appointment===$row['appointment_at'] && $next===$row['next_contact_at']) return false;
-    $db->prepare('UPDATE '.$table.' SET state=?,appointment_at=?,next_contact_at=? WHERE receipt=?')
-       ->execute([$action,$appointment,$next,$receipt]);
+    if ($row['state']===$action && $appointment===$row['appointment_at'] && $appointmentSlot===$row['appointment_slot'] && $next===$row['next_contact_at']) return false;
+    $db->prepare('UPDATE '.$table.' SET state=?,appointment_at=?,appointment_slot=?,next_contact_at=? WHERE receipt=?')
+       ->execute([$action,$appointment,$appointmentSlot,$next,$receipt]);
     $db->prepare('INSERT INTO anemia_request_history (receipt,state,actor,changed_at) VALUES (?,?,?,?)')
        ->execute([$receipt,$action,$actor,date('Y-m-d H:i:s')]);
     return true;

@@ -729,9 +729,12 @@ async function loadRequestState(dialog,open=false){
   const response=await fetch('request-status.php',{method:'POST',cache:'no-store',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({receipt:dialog.dataset.reference})});
   if(response.status===404){display('ไม่พบเลขคำขอนี้ กรุณาตรวจสอบอีกครั้ง','error');return;}
   if(!response.ok)throw Error();
-  const {state,label,checkedAt,appointmentAt}=await response.json();
+  const {state,label,checkedAt,appointmentAt,appointmentLabel}=await response.json();
   display(typeof label==='string'?label:Object.hasOwn(receiptStates,state)?receiptStates[state]:'ยังไม่ทราบสถานะ',state);
-  if(appointmentAt&&!Number.isNaN(Date.parse(appointmentAt))){
+  if(appointmentLabel){
+   guidance.textContent='วันนัด '+appointmentLabel;
+   guidance.hidden=false;
+  }else if(appointmentAt&&!Number.isNaN(Date.parse(appointmentAt))){
    guidance.textContent='วันนัด '+new Intl.DateTimeFormat('th-TH',{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date(appointmentAt))+' น.';
    guidance.hidden=false;
   }

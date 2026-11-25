@@ -14,11 +14,11 @@ function anemiaDatabase(array $settings): PDO
 function initializeAnemia(PDO $db, array $settings): void
 {
     $db->exec("CREATE TABLE IF NOT EXISTS anemia_schema (version INTEGER PRIMARY KEY) ENGINE=InnoDB");
-    if ($db->query('SELECT version FROM anemia_schema WHERE version=12')->fetchColumn()) return;
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=13')->fetchColumn()) return;
     $lock = $db->query("SELECT GET_LOCK(CONCAT(DATABASE(), ':anemia-schema'), 10)")->fetchColumn();
     if ((int)$lock !== 1) throw new RuntimeException('migration lock unavailable');
     try {
-        if ($db->query('SELECT version FROM anemia_schema WHERE version=12')->fetchColumn()) return;
+        if ($db->query('SELECT version FROM anemia_schema WHERE version=13')->fetchColumn()) return;
         if (!$db->query('SELECT version FROM anemia_schema WHERE version=1')->fetchColumn()) {
         $db->exec("CREATE TABLE IF NOT EXISTS anemia_province (
             code CHAR(2) PRIMARY KEY, name VARCHAR(100) NOT NULL, region TINYINT UNSIGNED NOT NULL,
@@ -158,13 +158,14 @@ function initializeAnemia(PDO $db, array $settings): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (11)');
         foreach (['anemia_contact_queue','anemia_contact_demo_queue'] as $queue) {
-            foreach (['appointment_at','next_contact_at'] as $column) {
+            foreach (['appointment_at'=>'DATETIME','next_contact_at'=>'DATETIME','appointment_slot'=>'VARCHAR(8)'] as $column=>$type) {
                 if (!$db->query("SHOW COLUMNS FROM $queue LIKE '$column'")->fetchColumn()) {
-                    $db->exec("ALTER TABLE $queue ADD COLUMN $column DATETIME NULL");
+                    $db->exec("ALTER TABLE $queue ADD COLUMN $column $type NULL");
                 }
             }
         }
-        $db->exec('INSERT INTO anemia_schema (version) VALUES (12)');
+        $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (12)');
+        $db->exec('INSERT INTO anemia_schema (version) VALUES (13)');
     } catch (Throwable $error) {
         if ($db->inTransaction()) $db->rollBack();
         throw $error;

@@ -12,6 +12,9 @@
  const slotField=roundField.querySelector('[data-round-slots]');
  const contactTime=roundField.querySelector('[data-contact-time]');
  const timeInputs=[...contactTime.querySelectorAll('select')];
+ const callbackField=roundField.querySelector('[data-callback-times]');
+ const callbackInputs=[...callbackField.querySelectorAll('input')];
+ const closedDays=new Set(callbackField.dataset.closedDays.split(','));
  const calendar=roundField.querySelector('details');
  const calendarBody=calendar.querySelector('[data-round-calendar]');
  const dayInput=form.elements.appointment_day;
@@ -20,6 +23,7 @@
  const thaiDate=new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{dateStyle:'long',timeZone:'Asia/Bangkok'});
  const thaiMonth=new Intl.DateTimeFormat('th-TH-u-ca-buddhist',{month:'long',year:'numeric',timeZone:'Asia/Bangkok'});
  const today=new Intl.DateTimeFormat('sv-SE',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Bangkok'}).format(new Date());
+ const thaiClock=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:'Asia/Bangkok'});
  let monthOffset=0;
  let roundOperation=0;
  let defaultAppointmentDay=today;
@@ -29,6 +33,19 @@
  let trigger;
  let operation=0;
 
+ function isCallbackDay(day){
+  const weekday=new Date(day+'T00:00:00Z').getUTCDay();
+  return day>=today&&weekday>0&&weekday<6&&!closedDays.has(day);
+ }
+ function callbackTimeAvailable(day,time){
+  return isCallbackDay(day)&&(day!==today||time>thaiClock.format(new Date()));
+ }
+ function refreshCallbackTimes(){
+  for(const input of callbackInputs){
+   input.disabled=!callbackTimeAvailable(dayInput.value,input.value);
+   if(input.disabled)input.checked=false;
+  }
+ }
  function drawCalendar(){
   const [year,month]=today.split('-').map(Number);
   const first=new Date(Date.UTC(year,month-1+monthOffset,1));
@@ -37,7 +54,8 @@
    <div class="request-calendar-grid">${['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'].map(day=>`<span>${day}</span>`).join('')}${'<span></span>'.repeat(first.getUTCDay())}${Array.from({length:days},(_,index)=>{
     const date=new Date(Date.UTC(year,month-1+monthOffset,index+1));
     const day=date.toISOString().slice(0,10);
-    return `<button type="button" data-round-day="${day}" aria-label="${thaiDate.format(date)}" aria-pressed="${day===dayInput.value}" ${day<today?'disabled':''}>${index+1}</button>`;
+    const disabled=day<today||(states.value==='retry_contact'&&!callbackInputs.some(input=>callbackTimeAvailable(day,input.value)));
+    return `<button type="button" data-round-day="${day}" aria-label="${thaiDate.format(date)}" aria-pressed="${day===dayInput.value}" ${disabled?'disabled':''}>${index+1}</button>`;
    }).join('')}</div>`;
  }
  async function loadRounds(day){
@@ -79,7 +97,10 @@
   calendar.open=false;
   calendar.querySelector('summary').focus({preventScroll:true});
   if(states.value==='scheduled')loadRounds(day);
-  else roundMessage.textContent='';
+  else {
+   roundMessage.textContent='';
+   if(states.value==='retry_contact')refreshCallbackTimes();
+  }
  });
 
  function addEvent(label,kind,detail=''){
@@ -109,7 +130,7 @@
   try{
    const response=await fetch(location.href,{method:'POST',body,cache:'no-store'});
    if(!response.ok){
-    const errors={403:'กรุณาเข้าสู่ระบบใหม่',404:'ไม่พบคำขอนี้',409:'สถานะเปลี่ยนหรือใช้ขั้นตอนนี้ไม่ได้ กรุณาเปิดไทม์ไลน์อีกครั้ง',422:'กรุณาระบุวันและเวลาให้ครบ'};
+    const errors={403:'กรุณาเข้าสู่ระบบใหม่',404:'ไม่พบคำขอนี้',409:'สถานะเปลี่ยนหรือใช้ขั้นตอนนี้ไม่ได้ กรุณาเปิดไทม์ไลน์อีกครั้ง',422:'กรุณาตรวจวันและเวลาที่เลือกอีกครั้ง'};
     throw new Error(errors[response.status]??'ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง');
    }
    if(response.redirected)throw new Error('กรุณาเข้าสู่ระบบใหม่');
@@ -163,6 +184,7 @@
   dayInput.value='';
   slotInputs.forEach(input=>{input.checked=false;input.required=false;});
   timeInputs.forEach(input=>{input.value='';input.required=false;});
+  callbackInputs.forEach(input=>{input.checked=false;input.required=false;input.disabled=true;});
   roundMessage.textContent='';
   roundField.querySelector('[data-round-date-label]').textContent='เลือกวันนัด';
   roundCounts.forEach(count=>count.textContent=emptyCount);
@@ -182,12 +204,15 @@
  states.addEventListener('change',()=>{
   historyPanel.open=false;
   const appointment=states.value==='scheduled';
-  const timed=['retry_contact','follow_up'].includes(states.value);
-  roundField.hidden=!appointment&&!timed;
+  const callback=states.value==='retry_contact';
+  const followUp=states.value==='follow_up';
+  roundField.hidden=!appointment&&!callback&&!followUp;
   slotField.hidden=!appointment;
-  contactTime.hidden=!timed;
+  contactTime.hidden=!followUp;
+  callbackField.hidden=!callback;
   slotInputs.forEach(input=>input.required=appointment);
-  timeInputs.forEach(input=>input.required=timed);
+  timeInputs.forEach(input=>input.required=followUp);
+  callbackInputs.forEach(input=>{input.required=callback;input.disabled=!callback;});
   ++roundOperation;
   roundMessage.textContent='';
   if(!dayInput.value)roundField.querySelector('[data-round-date-label]').textContent=appointment?'เลือกวันนัด':'เลือกวันที่ติดต่อ';
@@ -195,6 +220,16 @@
    if(!dayInput.value)showCalendarDay(defaultAppointmentDay);
    loadRounds(dayInput.value);
   }
+  if(callback){
+   const date=new Date((dayInput.value&&dayInput.value>=today?dayInput.value:today)+'T00:00:00Z');
+   let day=date.toISOString().slice(0,10);
+   while(!callbackInputs.some(input=>callbackTimeAvailable(day,input.value))){
+    date.setUTCDate(date.getUTCDate()+1);
+    day=date.toISOString().slice(0,10);
+   }
+   showCalendarDay(day);
+   refreshCallbackTimes();
+  }else drawCalendar();
  });
  calendar.addEventListener('toggle',()=>{if(calendar.open)historyPanel.open=false;});
  historyPanel.addEventListener('toggle',()=>{if(historyPanel.open)calendar.open=false;});

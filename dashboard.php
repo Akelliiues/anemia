@@ -29,6 +29,8 @@ function zoneLabel(int $region): string
 $view = $_GET['view'] ?? 'overview';
 if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request'], true)) $view = 'overview';
 date_default_timezone_set('Asia/Bangkok');
+$callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
+$callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
 $evaluationAudience = $_GET['audience'] ?? '';
 $evaluationMonth = $_GET['month'] ?? date('Y-m');
 if (!is_string($evaluationAudience)) $evaluationAudience='';
@@ -183,11 +185,18 @@ try {
                     $when = $date->format('Y-m-d H:i:s');
                 } elseif (in_array($state,['retry_contact','follow_up'],true)) {
                     $day = $_POST['appointment_day'] ?? '';
-                    $hour = $_POST['contact_hour'] ?? '';
-                    $minute = $_POST['contact_minute'] ?? '';
-                    $raw = is_string($day) && is_string($hour) && is_string($minute) ? $day.'T'.$hour.':'.$minute : '';
+                    $time = $_POST['callback_time'] ?? '';
+                    if ($state==='follow_up') {
+                        $hour = $_POST['contact_hour'] ?? '';
+                        $minute = $_POST['contact_minute'] ?? '';
+                        $time = is_string($hour) && is_string($minute) ? $hour.':'.$minute : '';
+                    }
+                    $raw = is_string($day) && is_string($time) ? $day.'T'.$time : '';
                     $date = is_string($raw) && preg_match('/^\d{4}-\d\d-\d\dT\d\d:\d\d$/D',$raw) ? DateTimeImmutable::createFromFormat('!Y-m-d\TH:i',$raw) : false;
                     if (!$date || $date->format('Y-m-d\TH:i') !== $raw || $day<date('Y-m-d')) { $db->rollBack(); http_response_code(422); exit('กรุณาระบุวันและเวลา'); }
+                    if ($state==='retry_contact' && (!in_array($time,$callbackTimes,true) || (int)$date->format('N')>5 || in_array($day,$callbackClosedDays,true) || $raw<=date('Y-m-d\TH:i'))) {
+                        $db->rollBack(); http_response_code(422); exit('กรุณาเลือกวันทำการและเวลาติดต่อที่ยังไม่ผ่าน');
+                    }
                     $when = $date->format('Y-m-d H:i:s');
                 }
                 if (!in_array($request['state'],ANEMIA_REQUEST_ACTIONS[$state][1] ?? [],true)) { $db->rollBack(); http_response_code(409); exit('ดำเนินการขั้นนี้ไม่ได้'); }
@@ -427,7 +436,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=thai-contact-time-v43">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=callback-slots-v44">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -828,7 +837,12 @@ function workspaceInfo(string $page, ?array $release = null): void
       <label><input form="queue-workflow-form" type="radio" name="appointment_slot" value="<?= esc($slot) ?>"> <?= esc($label) ?> <small data-round-count="<?= esc($slot) ?>">จำนวน – คน</small></label>
      <?php endforeach; ?>
     </fieldset>
-    <fieldset data-contact-time hidden><legend>เวลาติดต่อ (เวลาไทย)</legend>
+    <fieldset data-callback-times hidden data-closed-days="<?= esc(implode(',',$callbackClosedDays)) ?>"><legend>เวลาโทรกลับ</legend>
+     <?php foreach ($callbackTimes as $time): ?>
+      <label><input form="queue-workflow-form" name="callback_time" type="radio" value="<?= esc($time) ?>"> <?= esc($time) ?> น.</label>
+     <?php endforeach; ?>
+    </fieldset>
+    <fieldset data-contact-time hidden><legend>เวลาติดตาม (เวลาไทย)</legend>
      <?php foreach (['hour'=>['ชั่วโมง',23],'minute'=>['นาที',59]] as $part=>[$label,$maximum]): ?>
       <label><?= $label ?><select form="queue-workflow-form" name="contact_<?= $part ?>"><option value="">เลือก<?= $label ?></option>
        <?php for ($number=0;$number<=$maximum;$number++): $value=sprintf('%02d',$number); ?><option value="<?= $value ?>"><?= $value ?></option><?php endfor; ?>
@@ -838,7 +852,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=8"></script>
+  <script defer src="queue-timeline.js?v=9"></script>
   <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>

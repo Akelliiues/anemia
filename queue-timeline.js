@@ -53,8 +53,8 @@
    const rounds=await response.json();
    if(id!==roundOperation)return;
    roundCounts.forEach(count=>{
-    const {booked,checkedIn}=rounds[count.dataset.roundCount];
-    count.textContent=`จำนวน ${booked} คน · เช็กอินแล้ว ${checkedIn} คน`;
+    const {booked}=rounds[count.dataset.roundCount];
+    count.textContent=`จำนวน ${booked} คน · ลงนัดแล้ว`;
    });
    roundMessage.textContent='';
   }catch{

@@ -838,7 +838,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=7"></script>
+  <script defer src="queue-timeline.js?v=8"></script>
   <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>

@@ -70,6 +70,38 @@ try {
     if (!$canChooseRegion) $region = (int)($identity['province_region'] ?? $identity['region']);
     $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     $token = $_SESSION['csrf'];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['account_action'] ?? '') === 'change_password') {
+        header('Content-Type: application/json; charset=UTF-8');
+        $reply = static function (int $status,string $message): never {
+            http_response_code($status);
+            echo json_encode(['message'=>$message],JSON_THROW_ON_ERROR);
+            exit;
+        };
+        if (!is_string($_POST['csrf'] ?? null) || !hash_equals($token,$_POST['csrf'])) $reply(403,'กรุณาเปิดหน้าใหม่แล้วลองอีกครั้ง');
+        $current = $_POST['current_password'] ?? '';
+        $new = $_POST['new_password'] ?? '';
+        $confirm = $_POST['confirm_password'] ?? '';
+        if (!is_string($current) || $current === '' || strlen($current)>128 ||
+            !is_string($new) || strlen($new)>128 || preg_match('/^.{12,}$/usD',$new)!==1) {
+            $reply(422,'กรอกรหัสผ่านปัจจุบัน และตั้งรหัสใหม่อย่างน้อย 12 ตัวอักษร โดยยาวไม่เกิน 128 ไบต์');
+        }
+        if ($new !== $confirm) $reply(422,'รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน');
+        if ($new === $current) $reply(422,'กรุณาตั้งรหัสผ่านใหม่ที่ต่างจากรหัสปัจจุบัน');
+        if (!consumeAnemiaAttempt($db,'change-password:'.$staff)) $reply(429,'ลองหลายครั้งเกินไป กรุณารอสักครู่');
+        $lookup = $db->prepare('SELECT salt,password_hash FROM anemia_staff WHERE username=? AND enabled=1');
+        $lookup->execute([$staff]);
+        $account = $lookup->fetch(PDO::FETCH_ASSOC);
+        if (!$account || !hash_equals($account['password_hash'],hash_pbkdf2('sha256',$current,$account['salt'],600000,64))) {
+            $reply(422,'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+        }
+        $salt = bin2hex(random_bytes(24));
+        $hash = hash_pbkdf2('sha256',$new,$salt,600000,64);
+        $save = $db->prepare('UPDATE anemia_staff SET salt=?,password_hash=? WHERE username=? AND enabled=1 AND password_hash=?');
+        $save->execute([$salt,$hash,$staff,$account['password_hash']]);
+        if ($save->rowCount()!==1) $reply(409,'ข้อมูลบัญชีเปลี่ยนแล้ว กรุณาลองอีกครั้ง');
+        session_regenerate_id(true);
+        $reply(200,'เปลี่ยนรหัสผ่านแล้ว ครั้งถัดไปให้เข้าสู่ระบบด้วยรหัสใหม่');
+    }
     $demoQueue = $view === 'contact-queue' && ($_GET['demo'] ?? '') === '1';
     $contactTable = $demoQueue ? 'anemia_contact_demo_queue' : 'anemia_contact_queue';
     $pendingContactCounts = ['appointment'=>0,'callback'=>0];
@@ -355,7 +387,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=monthly-bars-v39">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=account-password-v40">
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -373,7 +405,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="admin-top-main">
    <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
    <div class="workspace-account">
-    <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><div><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></div></div>
+    <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="เปลี่ยนรหัสผ่าน"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
     <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
    </div>
   </div>
@@ -843,6 +875,23 @@ function workspaceInfo(string $page, ?array $release = null): void
     </address>
   </div>
 </footer>
+<dialog id="workspace-account" class="workspace-dialog no-print" aria-labelledby="workspace-account-title">
+ <header class="workspace-dialog-heading">
+  <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> เปลี่ยนรหัสผ่าน</h2>
+  <form method="dialog"><button class="action"><?= workspaceIcon('close') ?>ปิด</button></form>
+ </header>
+ <p>บัญชี <?= esc($staff) ?> · <?= esc($roleLabel) ?></p>
+ <form id="account-password-form" method="post">
+  <input type="hidden" name="csrf" value="<?= esc($token) ?>">
+  <input type="hidden" name="account_action" value="change_password">
+  <input type="text" name="username" value="<?= esc($staff) ?>" autocomplete="username" hidden readonly>
+  <label>รหัสผ่านปัจจุบัน<input type="password" name="current_password" autocomplete="current-password" maxlength="128" required></label>
+  <label>รหัสผ่านใหม่ <small>อย่างน้อย 12 ตัวอักษร</small><input type="password" name="new_password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+  <label>ยืนยันรหัสผ่านใหม่<input type="password" name="confirm_password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+  <p role="status" data-password-message></p>
+  <button type="submit" class="action primary"><?= workspaceIcon('save') ?>บันทึกรหัสผ่าน</button>
+ </form>
+</dialog>
 <?php foreach (['about','team'] as $infoPage): ?>
 <dialog id="workspace-<?= esc($infoPage) ?>" class="workspace-dialog no-print" aria-labelledby="workspace-title-<?= esc($infoPage) ?>">
  <header class="workspace-dialog-heading">
@@ -863,6 +912,34 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
  });
  dialog.addEventListener('close', () => link.focus());
 });
+</script>
+<script>
+(() => {
+ const form=document.querySelector('#account-password-form');
+ const message=form.querySelector('[data-password-message]');
+ const submit=form.querySelector('button[type=submit]');
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(submit.disabled)return;
+  submit.disabled=true;
+  message.textContent='กำลังบันทึก';
+  try{
+   const response=await fetch('dashboard.php',{method:'POST',body:new FormData(form),cache:'no-store'});
+   if(response.redirected)throw new Error('กรุณาเข้าสู่ระบบใหม่');
+   const result=await response.json();
+   message.textContent=result.message;
+   if(response.ok)form.reset();
+  }catch(error){
+   message.textContent=error instanceof SyntaxError?'บันทึกไม่ได้ กรุณาลองอีกครั้ง':error.message;
+  }finally{
+   submit.disabled=false;
+  }
+ });
+ form.closest('dialog').addEventListener('close',()=>{
+  form.reset();
+  message.textContent='';
+ });
+})();
 </script>
 <div id="report-loading" class="report-loading-overlay no-print" hidden>
  <div class="report-loading-card" role="status"><span class="report-spinner" aria-hidden="true"></span>กำลังโหลดรายงาน</div>

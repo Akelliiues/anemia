@@ -88,18 +88,34 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
 <script defer src="installed-update.js"></script>
-<link rel="stylesheet" href="participant-programme.css?v=4">
+<link rel="stylesheet" href="participant-programme.css?v=5">
 <script defer src="participant-programme.js?v=2"></script>
 </head>
 <body class="participant-profile-page programme-page">
+<div class="programme-neural programme-neural-page" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<header class="public-header programme-site-header">
+ <div class="bar">
+  <a class="brand" href="index.html"><span class="mark"><?= workspaceIcon('drop') ?></span><span>Anemia Portal<small>ประเมินและดูแลภาวะโลหิตจาง</small></span></a>
+  <nav aria-label="เมนูหลัก">
+   <a class="public-assessment-link" href="index.html?view=start"><?= workspaceIcon('ready') ?>ประเมินสุขภาพ</a>
+   <details class="public-nav-group" name="programme-navigation"><summary><?= workspaceIcon('book') ?>เรียนรู้<span class="public-nav-chevron" aria-hidden="true"></span></summary><div class="public-nav-links">
+    <a href="index.html?view=learn">คลังความรู้</a><a href="participant-programme.php" aria-current="page">กิจกรรม 12 สัปดาห์</a>
+   </div></details>
+   <details class="public-nav-group" name="programme-navigation"><summary><?= workspaceIcon('hospital') ?>ตรวจและติดตาม<span class="public-nav-chevron" aria-hidden="true"></span></summary><div class="public-nav-links">
+    <a href="index.html?view=facility-directory">ค้นหาโรงพยาบาลและ รพ.สต.</a><a href="index.html?view=track">ติดตามคำขอ</a>
+   </div></details>
+   <details class="public-nav-group" name="programme-navigation"><summary><?= workspaceIcon('info') ?>เกี่ยวกับโครงการ<span class="public-nav-chevron" aria-hidden="true"></span></summary><div class="public-nav-links">
+    <a href="index.html?view=project">ข้อมูลโครงการ</a><a href="index.html?view=open-data">สถิติรายพื้นที่ (Open Data)</a><a href="feedback.php">ประเมินการใช้งาน</a>
+   </div></details>
+   <a class="public-account-link" href="participant-account.php?return=programme"><?= workspaceIcon('person') ?><?= $account!==null?'บัญชีของฉัน':'เข้าสู่ระบบ' ?></a>
+  </nav>
+ </div>
+</header>
 <main class="participant-account-main">
 <article class="panel participant-account participant-programme">
-  <nav class="programme-nav" aria-label="เมนู Anemia Portal">
-    <a href="index.html"><?= workspaceIcon('back') ?> กลับหน้าหลัก</a>
-    <?php if ($account!==null): ?><a href="participant-account.php?return=programme"><?= workspaceIcon('person') ?> บัญชีของฉัน</a><?php endif; ?>
-  </nav>
   <header class="programme-heading">
     <div class="programme-orbits" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="programme-neural programme-neural-heading" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <h1 class="title">กิจกรรมเรียนรู้ 12 สัปดาห์</h1>
     <p>ทำแบบประเมินก่อนเริ่ม บันทึกกิจกรรมตามลำดับ และตอบแบบประเมินหลังทำครบ คุณเลือกเวลาทำกิจกรรมแต่ละสัปดาห์ได้เอง</p>
     <p class="programme-draft"><strong>ฉบับทดลอง</strong> กิจกรรมและแบบประเมินนี้จัดทำเพื่อทดลองระบบ อยู่ระหว่างรอเครื่องมือที่โครงการอนุมัติ คะแนนใช้ทบทวนความรู้และไม่ใช้วินิจฉัยภาวะโลหิตจาง</p>

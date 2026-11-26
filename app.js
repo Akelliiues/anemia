@@ -1408,7 +1408,15 @@ document.addEventListener('click',event=>{
 home();
 if(testAppointmentOtp)facilities(false);
 else if(teamInvite||new URLSearchParams(location.search).has('team'))showTeamChallenge();
-else if(new URLSearchParams(location.search).get('view')==='learn')learn();
-else if(new URLSearchParams(location.search).get('view')==='facility-directory')facilities(false);
-else openRequestFromHash();
+else {
+ switch(new URLSearchParams(location.search).get('view')){
+  case 'start':chooseAssessmentGroup();break;
+  case 'learn':learn();break;
+  case 'facility-directory':facilities(false);break;
+  case 'track':track();break;
+  case 'project':project();break;
+  case 'open-data':openData();break;
+  default:openRequestFromHash();
+ }
+}
 window.addEventListener('hashchange',openRequestFromHash);

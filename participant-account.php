@@ -194,7 +194,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
+<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=login-fit-v86">
 <body class="<?= $account?'participant-profile-page':'staff-access participant-login-page' ?>">
 <main class="<?= $account?'participant-account-main':'staff-access-main' ?>">
 <?php if (!$account): ?>
@@ -318,8 +318,9 @@ if ($account) {
 </section>
 <?php endif; ?>
 <?php if ($account): ?><details class="participant-settings" id="participant-settings"><summary><span><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</span><?= workspaceIcon('next') ?></summary><?php endif; ?>
+<?php if (!$account): ?><details class="participant-login-providers"><summary>เข้าสู่ระบบสมาชิกด้วยบัญชีอื่น</summary><?php endif; ?>
 <form method="post" action="participant-account.php" class="participant-provider-form">
- <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบสมาชิกด้วยบัญชีอื่น' ?></h2>
+ <?php if ($account): ?><h2 class="title">ช่องทางที่เชื่อมกับบัญชี</h2><?php endif; ?>
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="<?= participantEscape($returnContext) ?>"><?php endif; ?>
@@ -339,7 +340,7 @@ if ($account) {
  <?php endif; ?>
  <?php if ($account): ?><div class="actions"><a class="action" href="login.php?entry=portal"><?= workspaceIcon('lock') ?> เข้าสู่ระบบเจ้าหน้าที่</a><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></div><?php endif; ?>
 </form>
-<?php if ($account): ?></details><?php endif; ?>
+</details>
 <?php if (!$returnToPortal && !$account): ?>
  <a class="action participant-team-return" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><?= workspaceIcon('back') ?>กลับไปที่ทีมและแต้ม</a>
 <?php endif; ?>

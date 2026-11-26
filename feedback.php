@@ -90,7 +90,7 @@ function feedbackOld(string $key): string {
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ประเมินการใช้งาน · Anemia Portal</title>
 
-<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=evaluation-v15-theme4"></head>
+<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-neumorphism-v69"></head>
 <body class="feedback-page"><main><section class="panel">
 <?php workspaceBack('index.html', false); ?>
 <header class="knowledge-hero feedback-hero">

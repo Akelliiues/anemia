@@ -1846,5 +1846,79 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .team-tip-content {visibility:hidden;opacity:0;position:absolute;z-index:3;inset-inline:.65rem;max-width:23rem;transform:translateY(.25rem);display:block;padding:.55rem .65rem;border-radius:.6rem;background:#35254b;color:#fff;font-size:.8rem;font-weight:400;line-height:1.5;box-shadow:0 7px 18px #291b4230;pointer-events:none;}
 .team-tip button:is(:focus-visible,[aria-expanded=true]) + .team-tip-content {visibility:visible;opacity:1;}
 @media(hover:hover){.team-tip button:hover + .team-tip-content {visibility:visible;opacity:1;}}
-.frames team-relay-glow {50% {box-shadow:0 0 8px var(--network-line);background:var(--network-line);}}
+
+/* Shared soft surfaces for the portal and staff workspace. */
+@media screen {
+ :root {
+  --soft-canvas:#eeebf5;
+  --soft-surface:#f4f1f9;
+  --soft-edge:#dcd4e9;
+  --soft-light:#ffffffd9;
+  --soft-shade:#b2a2c34d;
+  --soft-active:#e9def8;
+  --soft-accent:#55359f;
+  --soft-raised:5px 6px 14px var(--soft-shade),-4px -4px 11px var(--soft-light);
+  --soft-inset:inset 3px 3px 7px var(--soft-shade),inset -3px -3px 7px var(--soft-light);
+ }
+ :root[data-anemia-theme=dark] {
+  --soft-canvas:#1d1728;
+  --soft-surface:#2a2236;
+  --soft-edge:#564665;
+  --soft-light:#ffffff0d;
+  --soft-shade:#0d081680;
+  --soft-active:#413056;
+  --soft-accent:#6746ae;
+ }
+ body:is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page) {
+  background:radial-gradient(ellipse at 12% 0%,color-mix(in srgb,var(--soft-active) 65%,transparent),transparent 42rem),var(--soft-canvas);
+ }
+ :is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page)
+ :is(.panel,.card,.admin-content,.admin-report-toolbar,.participant-activity-card,.participant-profile-tile,.participant-settings,.programme-card,.programme-question,.public-map-controls,.feedback-province,.staff-access-shell,.workspace-dialog,.public-nav-links,.hosted-menu-links) {
+  background-color:var(--soft-surface);
+  border-color:var(--soft-edge);
+  box-shadow:var(--soft-raised);
+ }
+ :is(.public-site,.staff-dashboard-page,.participant-profile-page,.feedback-page) :is(.hero,.feedback-hero,.data-hero,.question-scene,.participant-profile-hero) {
+  box-shadow:var(--soft-raised);
+ }
+ .public-site :is(.knowledge-card,.facility-card,.question-options .option-card,.public-live-metrics > div),
+ .feedback-page :is(.feedback-group,.feedback-overall,.feedback-tile > input:not(:disabled,:checked) + span),
+ .staff-dashboard-page .sample-shortcuts a {
+  border-color:var(--soft-edge);
+  box-shadow:var(--soft-raised);
+ }
+ .public-site .question-options .option-card[aria-pressed=true] {box-shadow:var(--soft-inset);}
+ :is(.public-site,.staff-dashboard-page) :is(.site-footer,.public-header) {
+  background-color:var(--soft-surface);
+  border-color:var(--soft-edge);
+ }
+ .staff-dashboard-page .admin-top {
+  box-shadow:inset 0 1px 0 #ffffff30,0 6px 18px var(--soft-shade);
+ }
+ .staff-dashboard-page .admin-top-tabs :is([aria-current=page],[data-current]>summary) {
+  box-shadow:inset 2px 2px 6px #30204738;
+ }
+ .staff-dashboard-page .admin-table thead {background-color:var(--soft-active);}
+ .staff-dashboard-page .admin-table :is(th,td) {border-color:var(--soft-edge);}
+ :is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page)
+ :is(input:not([type]),input:is([type=text],[type=search],[type=password],[type=email],[type=tel],[type=number],[type=date],[type=time]),select,textarea,.staff-access-field) {
+  background-color:var(--soft-surface);
+  color:var(--ink);
+  border-color:var(--soft-edge);
+  box-shadow:var(--soft-inset);
+ }
+ .staff-access .staff-access-field input {background:transparent;box-shadow:none;}
+ :is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page)
+ :is(.action,.choice,.staff-access-submit):not(:disabled) {box-shadow:var(--soft-raised);}
+ :is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page)
+ :is(.action,.choice):not(.primary,:disabled,[aria-pressed=true],[aria-selected=true]) {
+  background-color:var(--soft-surface);
+  border-color:var(--soft-edge);
+ }
+ :is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page)
+ :is(.action.primary,.staff-access-submit,.public-assessment-link):not(:disabled) {background-color:var(--soft-accent);color:#fff;}
+ :is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page)
+ :is(.action,.choice,.staff-access-submit):not(:disabled):active {box-shadow:var(--soft-inset);}
+ :is(.public-site,.staff-dashboard-page,.feedback-page,.participant-profile-page,.staff-access,.portal-install-page)
+ :is(.action,.choice,summary,input,select,textarea):focus-visible {outline:2px solid var(--violet);outline-offset:2px;}
 }

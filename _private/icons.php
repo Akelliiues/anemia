@@ -44,6 +44,7 @@ function workspaceIcon(string $name): string
         'login' => '<path d="M14 4h5v16h-5M4 12h10m-4-4 4 4-4 4"/>',
         'history' => '<path d="M3 10a9 9 0 1 1 2 8m-2-8V5m0 5h5m4-3v5l3 2"/>',
         'bell' => '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/>',
+        'play' => '<path d="m9 5 11 7-11 7z"/>',
         'logout' => '<path d="M11 4H5v16h6m3-12 4 4-4 4m-5-4h9"/>',
         'map' => '<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"/>',
         'province' => '<path d="M4 21V5h16v16M2 21h20M8 9h2m4 0h2m-8 4h2m4 0h2m-6 8v-4h4v4"/>',

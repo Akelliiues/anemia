@@ -95,3 +95,24 @@
 .programme-answer {margin:.35rem 0 .5rem;padding:.4rem .6rem;border-inline-start:3px solid #aa6c19;}
 .programme-answer[data-correct=true] {border-inline-start-color:#41927a;}
 .programme-lesson button:disabled {opacity:.55;cursor:not-allowed;}
+.programme-lesson [hidden] {display:none;}
+.programme-media {position:relative;overflow:hidden;border-radius:.9rem;background:#281c3b;}
+.programme-play:not([hidden]) {position:absolute;inset:0;width:100%;display:grid;place-content:center;justify-items:center;gap:.4rem;overflow:hidden;isolation:isolate;color:#fff;background:radial-gradient(ellipse at 78% 22%,#9a416c,transparent 56%),linear-gradient(135deg,#2c1d4e,#583586);border-radius:inherit;}
+.programme-play-icon {display:grid;place-items:center;width:3rem;height:3rem;border-radius:50%;background:#fff;color:#583586;box-shadow:0 3px 12px #251b56;}
+.programme-play small {color:#f4e8ff;}
+.programme-cells {position:absolute;inset:0;z-index:-1;pointer-events:none;}
+.programme-cells i {position:absolute;width:clamp(3rem,14vw,7.5rem);aspect-ratio:1.65;border-radius:50%;background:radial-gradient(ellipse,#8f2f58 15%,#d75e88 60%,#f68ca9 86%);box-shadow:inset 0 -5px 8px #511a4d55;transform:rotate(-24deg);}
+.programme-cells i:nth-child(1){top:10%;right:8%;}
+.programme-cells i:nth-child(2){bottom:14%;left:5%;transform:rotate(29deg) scale(.8);}
+.programme-cells i:nth-child(3){bottom:3%;right:18%;transform:rotate(36deg) scale(.52);opacity:.65;}
+.programme-watch:not([hidden]) {display:block;height:.45rem;margin-top:.55rem;}
+.programme-lesson h3 small {margin-inline-start:.4rem;color:var(--muted);font-weight:500;}
+.programme-lesson [data-lesson-question] label {margin:.35rem 0;padding:.5rem .7rem;border:1px solid var(--line);border-radius:.65rem;cursor:pointer;}
+.programme-lesson [data-lesson-question] label:has(input:checked) {border-color:var(--violet);background:var(--soft-active);}
+.programme-roadmap {padding:.65rem .8rem;border:1px solid var(--line);border-radius:.75rem;}
+.programme-roadmap>summary {font-weight:700;cursor:pointer;color:var(--violet);}
+@media(prefers-reduced-motion:no-preference){
+ .programme-cells {animation:programme-cell-in .9s ease-out both;}
+ .programme-lesson [data-lesson-question]:not([hidden]),.programme-answer:not([hidden]) {animation:programme-cell-in .25s ease-out both;}
+}
+@keyframes programme-cell-in {from {opacity:0;translate:0 .65rem;} to {opacity:1;translate:0 0;}}

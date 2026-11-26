@@ -88,8 +88,8 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
 <script defer src="installed-update.js"></script>
-<link rel="stylesheet" href="participant-programme.css?v=2">
-<script defer src="participant-programme.js?v=1"></script>
+<link rel="stylesheet" href="participant-programme.css?v=3">
+<script defer src="participant-programme.js?v=2"></script>
 </head>
 <body class="participant-profile-page">
 <main class="participant-account-main">
@@ -143,7 +143,14 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
         <h2 id="programme-next"><?= $next===1?'':'สัปดาห์ที่ '.$next.' · ' ?><?= programmeEscape($weeks[$next][0]) ?></h2>
         <p><?= programmeEscape($weeks[$next][1]) ?></p>
         <?php if ($next===1): ?>
-         <video class="programme-video" controls playsinline preload="none" src="12weeks/week_01.mp4" aria-label="คลิปรู้จักโลหิตจาง"></video>
+         <div class="programme-media">
+          <video class="programme-video" controls playsinline preload="none" src="12weeks/week_01.mp4" aria-label="คลิปรู้จักโลหิตจาง"></video>
+          <button type="button" class="programme-play" data-lesson-play hidden>
+           <span class="programme-cells" aria-hidden="true"><i></i><i></i><i></i></span>
+           <span class="programme-play-icon"><?= workspaceIcon('play') ?></span><strong>ดูคลิปบทเรียน</strong><small>3 นาที 53 วินาที</small>
+          </button>
+         </div>
+         <progress class="programme-watch" data-lesson-watch max="100" value="0" aria-label="สัดส่วนวิดีโอที่ดูแล้ว" hidden></progress>
          <p data-lesson-progress role="status" class="programme-video-status">กดเล่นเพื่อเริ่มดูคลิป หรืออ่านสรุปด้านล่าง</p>
          <details class="programme-reading" data-lesson-reading><summary>อ่านสรุปบทเรียน</summary>
           <p>ฮีโมโกลบินอยู่ในเม็ดเลือดแดงและช่วยพาออกซิเจนไปทั่วร่างกาย อาการเหนื่อยง่ายหรือเวียนหัวเกิดได้จากหลายสาเหตุ การตรวจเลือดช่วยประเมินภาวะโลหิตจางได้ หากแบบประเมินออนไลน์แนะนำให้ตรวจเพิ่ม คุณติดต่อหน่วยบริการเพื่อปรึกษาเรื่องการตรวจได้เลย</p>
@@ -155,7 +162,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
           <?php programmeFormFields($csrf,'week'); ?>
           <input type="hidden" name="week" value="<?= $next ?>">
           <?php if ($next===1): ?>
-           <h3>ทบทวนหลังเรียน</h3>
+           <h3>ทบทวนหลังเรียน <small data-lesson-count></small></h3>
            <?php foreach (anemiaWeekOneQuestions() as $id=>[$question,$choices,$correct,$feedback]): ?>
             <fieldset class="programme-question" data-lesson-question data-correct="<?= programmeEscape($correct) ?>">
              <legend><?= programmeEscape($question) ?></legend>
@@ -165,6 +172,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
              <p class="programme-answer" data-lesson-answer role="status" hidden><?= programmeEscape($feedback) ?></p>
             </fieldset>
            <?php endforeach; ?>
+           <button class="action programme-next-question" type="button" data-lesson-next hidden>ข้อถัดไป</button>
           <?php endif; ?>
           <button class="action primary" type="submit"><?= $next===1?'บันทึกและไปสัปดาห์ถัดไป':'บันทึกว่าทำกิจกรรมแล้ว' ?></button>
         </form>
@@ -182,7 +190,8 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
     <?php endif; ?>
   <?php endif; ?>
   <section aria-labelledby="programme-plan">
-    <h2 id="programme-plan">กิจกรรมรายสัปดาห์</h2>
+   <details class="programme-roadmap">
+    <summary id="programme-plan">ดูแผนกิจกรรมทั้ง 12 สัปดาห์</summary>
     <ol class="programme-weeks">
       <?php foreach ($weeks as $week=>[$title,$activity,$link]): ?>
         <li <?= $ready && isset($assessments['before']) && $week===$next?'aria-current="step"':'' ?>>
@@ -196,6 +205,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
         </li>
       <?php endforeach; ?>
     </ol>
+   </details>
   </section>
 </article>
 </main>

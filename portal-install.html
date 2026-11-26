@@ -8,22 +8,22 @@
  <link rel="manifest" href="portal.webmanifest">
  <link rel="apple-touch-icon" href="portal-icon-192.png">
  <script src="theme.js?v=1"></script><script defer src="installed-update.js"></script>
- <link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
- <script defer src="staff-install.js?v=2"></script>
+ <link rel="stylesheet" href="style.css?v=public-pwa-v88">
+ <script defer src="staff-install.js?v=7"></script>
 </head>
 <body class="portal-install-page">
  <main class="staff-install-page">
-  <section class="panel" aria-labelledby="install-title">
+  <section class="panel portal-install-card" aria-labelledby="install-title">
    <img src="portal-icon-192.png" width="64" height="64" alt="">
    <h1 class="title" id="install-title">ติดตั้ง Anemia Portal</h1>
    <p>เปิดแบบประเมิน บทเรียน และทีมของฉันได้จากหน้าจอหลักของมือถือ</p>
    <div class="actions">
-    <button class="action primary" type="button" data-public-install hidden>ติดตั้งแอป</button>
+    <a class="action primary" href="#portal-install-help" data-public-install>ติดตั้ง Anemia Portal</a>
     <a class="action" href="participant-account.php?return=portal">เชื่อมบัญชี / เข้าสู่ระบบ</a>
-    <a class="action" href="index.html">เปิดหน้าบ้าน</a>
+    <a class="action" href="index.html">กลับหน้าหลัก</a>
    </div>
    <p data-install-result data-app-name="Anemia Portal" role="status" hidden></p>
-   <div data-install-help>
+   <div id="portal-install-help" data-install-help>
     <h2 class="title">เพิ่มไว้ที่หน้าจอหลัก</h2>
     <p><strong>iPhone และ iPad</strong> เปิดใน Safari กดแชร์ แล้วเลือก “เพิ่มไปยังหน้าจอโฮม”</p>
     <p><strong>Android</strong> เปิดใน Chrome แล้วเลือก “ติดตั้งแอป” หรือ “เพิ่มลงในหน้าจอหลัก” จากเมนู ⋮</p>

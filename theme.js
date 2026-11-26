@@ -36,36 +36,46 @@
    const {canvas,context,width,height,dark}=scene;
    if(!width||!height)return;
    context.clearRect(0,0,canvas.width,canvas.height);
-   context.save();
-   context.scale(canvas.width/1000,canvas.height/400);
-   context.lineWidth=1.25;
-   context.strokeStyle=dark?'#91c8ff75':'#7353ad59';
-   for(const samples of traces){
-    context.beginPath();
-    samples.forEach(([x,y],i)=>i?context.lineTo(x,y):context.moveTo(x,y));
-    context.stroke();
-   }
-   function dot([x,y],radius){context.beginPath();context.arc(x,y,radius,0,2*Math.PI);context.fill();}
-   context.fillStyle=dark?'#b7ddf8a0':'#8650b988';
-   nodes.forEach(node=>dot(node,3));
-   if(!reducedMotion.matches){
-    for(const [i,samples] of traces.entries()){
-     const position=((time/(3700+i*520)+i*.17)%1)*(samples.length+8);
-     context.fillStyle=i%3===0?(dark?'#ffb7f4':'#ad459c'):(dark?'#c6f3ff':'#4c64bd');
-     context.shadowColor=context.fillStyle;
-     context.shadowBlur=9;
-     for(let tail=0;tail<5;tail++){
-      const offset=position-tail;
-      const point=samples[Math.floor(offset)];
-      if(!point)continue;
-      const next=samples[Math.ceil(offset)]||point;
-      const fraction=offset-Math.floor(offset);
-      context.globalAlpha=1-tail*.17;
-      dot([point[0]+(next[0]-point[0])*fraction,point[1]+(next[1]-point[1])*fraction],tail===0?4.2:2.25);
+   const columns=Math.ceil(width/460), rows=Math.ceil(height/290);
+   const tileWidth=canvas.width/columns, tileHeight=canvas.height/rows;
+   for(let row=0;row<rows;row++){
+    for(let column=0;column<columns;column++){
+     context.save();
+     context.translate(column*tileWidth,row*tileHeight);
+     context.scale(tileWidth/1000,tileHeight/400);
+     if((row+column)%2){context.translate(1000,0);context.scale(-1,1);}
+     if(row%2){context.translate(0,400);context.scale(1,-1);}
+     context.lineWidth=1.4;
+     context.strokeStyle=dark?'#91c8ff75':'#7353ad59';
+     for(const samples of traces){
+      context.beginPath();
+      samples.forEach(([x,y],i)=>i?context.lineTo(x,y):context.moveTo(x,y));
+      context.stroke();
      }
+     function dot([x,y],radius){context.beginPath();context.arc(x,y,radius,0,2*Math.PI);context.fill();}
+     context.fillStyle=dark?'#b7ddf8a0':'#8650b988';
+     nodes.forEach(node=>dot(node,3));
+     if(!reducedMotion.matches){
+      for(const [i,samples] of traces.entries()){
+       if((i+row+column)%3!==0)continue;
+       const position=((time/(3700+i*520)+i*.17+row*.23+column*.31)%1)*(samples.length+8);
+       context.fillStyle=i%3===0?(dark?'#ffb7f4':'#ad459c'):(dark?'#c6f3ff':'#4c64bd');
+       context.shadowColor=context.fillStyle;
+       context.shadowBlur=3;
+       for(let tail=0;tail<5;tail++){
+        const offset=position-tail;
+        const point=samples[Math.floor(offset)];
+        if(!point)continue;
+        const next=samples[Math.ceil(offset)]||point;
+        const fraction=offset-Math.floor(offset);
+        context.globalAlpha=1-tail*.17;
+        dot([point[0]+(next[0]-point[0])*fraction,point[1]+(next[1]-point[1])*fraction],tail===0?3.3:1.7);
+       }
+      }
+     }
+     context.restore();
     }
    }
-   context.restore();
   }
   const canvas=document.createElement('canvas');
   const context=canvas.getContext('2d');

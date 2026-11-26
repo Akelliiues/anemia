@@ -2063,6 +2063,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-app-work-dock .staff-dock-scan {color:var(--violet);}
 .staff-dock-scan-icon {display:grid;place-items:center;width:2.75rem;height:2.75rem;margin-top:-.65rem;border-radius:50%;color:#fff;background:var(--soft-accent);box-shadow:0 3px 9px var(--soft-shade);}
 .staff-dock-scan-icon svg {width:1.4rem;height:1.4rem;}
+.staff-dock-scan[aria-current=page] .staff-dock-scan-icon {outline:2px solid var(--violet);outline-offset:2px;}
 .staff-app-page:has(.staff-app-work-dock) .theme-float {bottom:calc(var(--staff-dock-height) + .7rem);}
 .staff-app-account-actions {margin-bottom:.8rem;}
 .staff-dashboard-page .workspace-dialog a[data-scanner-install-link][hidden] {display:none;}

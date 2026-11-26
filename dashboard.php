@@ -37,6 +37,7 @@ $unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
 $scannerApp = $unitScanner || $view==='scanner-install';
 $mobileQueue = $view==='contact-queue' && ($_GET['app']??'')==='staff';
 $staffAppView = $scannerApp || $mobileQueue || $view==='mobile';
+$staffWorkDock = $mobileQueue || $unitScanner;
 date_default_timezone_set('Asia/Bangkok');
 $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
@@ -604,7 +605,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-work-v83">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-work-v84">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -625,10 +626,8 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div><strong><?= $scannerApp?'สแกน QR ประจำหน่วย':'Anemia Staff' ?></strong><small><?= esc($canQueue?$scanUnit:$scopeName) ?></small></div>
   <?php if ($mobileQueue): $newCount=array_sum($pendingContactCounts); ?>
    <a class="staff-app-bell" href="dashboard.php?view=contact-queue&amp;app=staff&amp;tab=pending" aria-label="คำขอใหม่ <?= $newCount ?> รายการ" data-staff-bell><?= workspaceIcon('bell') ?><span class="contact-pending-badge" data-pending-count="live.total" <?= $newCount===0?'hidden':'' ?>><?= $newCount>99?'99+':$newCount ?></span></a>
-  <?php else: ?>
-  <?php if ($unitScanner): ?><a class="staff-app-bell" href="dashboard.php?view=mobile" aria-label="กลับไปที่งานของฉัน"><?= workspaceIcon('back') ?></a><?php else: ?>
+  <?php elseif (!$unitScanner): ?>
   <form method="post" action="<?= $scannerApp?'login?next=unit-scan':'login?next=mobile' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button type="submit" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
-  <?php endif; ?>
   <?php endif; ?>
  </header>
  <?php else: ?>
@@ -1204,11 +1203,11 @@ function workspaceInfo(string $page, ?array $release = null): void
 </div>
 </section>
 </main>
-  <?php if ($mobileQueue): ?>
+  <?php if ($staffWorkDock): ?>
   <nav class="staff-app-dock staff-app-work-dock" aria-label="เมนูแอปเจ้าหน้าที่">
-   <a href="dashboard.php?view=contact-queue&amp;app=staff" <?= $queueTab!=='history'?'aria-current="page"':'' ?>><?= workspaceIcon('ready') ?>งานของฉัน</a>
-   <a class="staff-dock-scan" href="dashboard.php?view=scan-request&amp;app=unit"><span class="staff-dock-scan-icon"><?= workspaceIcon('scan') ?></span><span>สแกน QR</span></a>
-   <a href="dashboard.php?view=contact-queue&amp;app=staff&amp;tab=history" <?= $queueTab==='history'?'aria-current="page"':'' ?>><?= workspaceIcon('history') ?>ประวัติ</a>
+   <a href="dashboard.php?view=contact-queue&amp;app=staff" <?= $mobileQueue&&$queueTab!=='history'?'aria-current="page"':'' ?>><?= workspaceIcon('ready') ?>งานของฉัน</a>
+   <a class="staff-dock-scan" href="dashboard.php?view=scan-request&amp;app=unit" <?= $unitScanner?'aria-current="page"':'' ?>><span class="staff-dock-scan-icon"><?= workspaceIcon('scan') ?></span><span>สแกน QR</span></a>
+   <a href="dashboard.php?view=contact-queue&amp;app=staff&amp;tab=history" <?= $mobileQueue&&$queueTab==='history'?'aria-current="page"':'' ?>><?= workspaceIcon('history') ?>ประวัติ</a>
    <button type="button" data-workspace-dialog="account" aria-haspopup="dialog"><?= workspaceIcon('users') ?>บัญชี</button>
   </nav>
   <?php endif; ?>
@@ -1230,15 +1229,15 @@ function workspaceInfo(string $page, ?array $release = null): void
 </footer><?php endif; ?>
 <dialog id="workspace-account" class="workspace-dialog no-print" aria-labelledby="workspace-account-title">
  <header class="workspace-dialog-heading">
-  <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> <?= $mobileQueue?'บัญชีเจ้าหน้าที่':'เปลี่ยนรหัสผ่าน' ?></h2>
+  <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> <?= $staffWorkDock?'บัญชีเจ้าหน้าที่':'เปลี่ยนรหัสผ่าน' ?></h2>
   <form method="dialog"><button class="action"><?= workspaceIcon('close') ?>ปิด</button></form>
  </header>
  <p>บัญชี <?= esc($staff) ?> · <?= esc($roleLabel) ?></p>
- <?php if ($mobileQueue): ?>
+ <?php if ($staffWorkDock): ?>
  <div class="actions staff-app-account-actions">
   <a class="action" data-scanner-install-link href="dashboard.php?view=scanner-install"><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR</a>
   <a class="action" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?>เปิดแดชบอร์ด</a>
-  <form method="post" action="login?next=mobile"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action" name="action" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></form>
+  <form method="post" action="<?= $unitScanner?'login?next=unit-scan':'login?next=mobile' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action" name="action" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></form>
  </div>
  <?php endif; ?>
  <form id="account-password-form" method="post">

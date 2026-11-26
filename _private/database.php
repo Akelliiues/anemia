@@ -14,11 +14,11 @@ function anemiaDatabase(array $settings): PDO
 function initializeAnemia(PDO $db, array $settings): void
 {
     $db->exec("CREATE TABLE IF NOT EXISTS anemia_schema (version INTEGER PRIMARY KEY) ENGINE=InnoDB");
-    if ($db->query('SELECT version FROM anemia_schema WHERE version=15')->fetchColumn()) return;
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=16')->fetchColumn()) return;
     $lock = $db->query("SELECT GET_LOCK(CONCAT(DATABASE(), ':anemia-schema'), 10)")->fetchColumn();
     if ((int)$lock !== 1) throw new RuntimeException('migration lock unavailable');
     try {
-        if ($db->query('SELECT version FROM anemia_schema WHERE version=15')->fetchColumn()) return;
+        if ($db->query('SELECT version FROM anemia_schema WHERE version=16')->fetchColumn()) return;
         if (!$db->query('SELECT version FROM anemia_schema WHERE version=1')->fetchColumn()) {
         $db->exec("CREATE TABLE IF NOT EXISTS anemia_province (
             code CHAR(2) PRIMARY KEY, name VARCHAR(100) NOT NULL, region TINYINT UNSIGNED NOT NULL,
@@ -194,7 +194,20 @@ function initializeAnemia(PDO $db, array $settings): void
             learner CHAR(32) CHARACTER SET ascii PRIMARY KEY, inviter CHAR(32) CHARACTER SET ascii NOT NULL,
             INDEX(inviter)
         ) ENGINE=InnoDB");
-        $db->exec('INSERT INTO anemia_schema (version) VALUES (15)');
+        $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (15)');
+        $db->exec("CREATE TABLE IF NOT EXISTS anemia_participant_account (
+            id CHAR(32) CHARACTER SET ascii PRIMARY KEY,
+            team_member_id CHAR(32) CHARACTER SET ascii NULL UNIQUE,
+            connected_at DATETIME NOT NULL
+        ) ENGINE=InnoDB");
+        $db->exec("CREATE TABLE IF NOT EXISTS anemia_participant_identity (
+            provider VARCHAR(12) CHARACTER SET ascii NOT NULL,
+            subject_hash CHAR(64) CHARACTER SET ascii NOT NULL,
+            account_id CHAR(32) CHARACTER SET ascii NOT NULL,
+            connected_at DATETIME NOT NULL,
+            PRIMARY KEY(provider,subject_hash), UNIQUE KEY(account_id,provider)
+        ) ENGINE=InnoDB");
+        $db->exec('INSERT INTO anemia_schema (version) VALUES (16)');
     } catch (Throwable $error) {
         if ($db->inTransaction()) $db->rollBack();
         throw $error;

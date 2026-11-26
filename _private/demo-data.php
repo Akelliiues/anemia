@@ -30,6 +30,7 @@ function anemiaManageDemoData(PDO $db, string $action, string $actor): void
             $db->exec('DELETE FROM anemia_contact_demo_queue');
             $db->exec("DELETE FROM anemia_request_history WHERE receipt LIKE 'DE-%'");
             $db->exec('DELETE FROM anemia_demo_team_bonus');
+            $db->exec('UPDATE anemia_participant_account SET team_member_id=NULL WHERE team_member_id IS NOT NULL');
             $db->exec('DELETE FROM anemia_demo_team_member');
             $db->commit();
             return;

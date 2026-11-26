@@ -215,6 +215,7 @@ function result(showWarning=false){
  <button class="primary next-card" data-go="${next.route}">${box(next.symbol)}<span><strong>${next.title}</strong><small>${next.description}</small></span>${icon('next')}</button>
  <div class="result-links">${level==='high'?'':button('ดูสถานที่ตรวจ','facilities','hospital')}${button('ขอให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone')}</div></section>
  ${audioUI(level)}
+ <div class="actions"><a class="action" href="participant-account.php">${icon('person')}เก็บแต้มและความคืบหน้าในบัญชี</a></div>
  <section class="card result-review"><div class="result-section-title">${box('refresh')}<h2>ทบทวนหรือเริ่มใหม่</h2></div><p>แก้เฉพาะเรื่องที่จำได้ หรือเริ่มตอบตั้งแต่เรื่องแรก</p>
  <div class="actions">${needsReview?button('ลองตอบอีกมุม','review-risk','refresh'):reviewAction}${button('ประเมินใหม่ทั้งชุด','restart','refresh')}</div></section>
  <p class="notice">${note}</p>
@@ -346,6 +347,11 @@ document.addEventListener('input',event=>{
 });
 function lesson(){set(panel(`${backRow()}<div class="eyebrow">บทแรก · ลองใช้ข้อมูล</div><h1 class="title">ถ้าเห็นผลว่าแนะนำให้ตรวจเพิ่มเติม จะหาหน่วยบริการจากปุ่มไหน?</h1><p>ในหน้าผลประเมิน คุณเปิดรายชื่อหน่วยบริการเพื่อดูสถานที่และเลือกว่าจะไปตรวจอย่างไรได้</p><button class="choice" data-go="correct">${icon('hospital')}ดูสถานที่ตรวจ</button><button class="choice" data-go="tryagain">${icon('refresh')}ทบทวนคำตอบ</button><p id="feedback" role="status"></p>${button('ดูทีมและแต้มของฉัน','team-challenge','share')}`));}
 const teamInvite=new URLSearchParams(location.search).get('invite')??'';
+function teamAccountLink(connected){
+ const url=new URL('participant-account.php',location.href);
+ if(/^[a-f0-9]{32}$/.test(teamInvite))url.searchParams.set('invite',teamInvite);
+ return `<a class="action" href="${escapeDirectoryText(url.href)}">${icon('person')}${connected?'บัญชีของฉัน':'เชื่อมบัญชี · รับ 5 แต้มครั้งแรก'}</a>`;
+}
 async function teamChallengeApi(input){
  const response=await fetch('team-challenge.php',input?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input),cache:'no-store'}:{cache:'no-store'});
  const data=await response.json();
@@ -358,16 +364,16 @@ async function showTeamChallenge(join=false){
  try{
   const team=await teamChallengeApi(join?{action:'join',invite:teamInvite}:undefined);
   if(!content.isConnected)return;
-  if(!team.enabled){content.textContent='กิจกรรมชวนเพื่อนยังไม่เปิด';return;}
+  if(!team.enabled){content.innerHTML=`<p>กิจกรรมชวนเพื่อนยังไม่เปิด</p>${teamAccountLink(team.connected)}`;return;}
   if(!team.joined){
-   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><p>กิจกรรมทดลองนี้เก็บความคืบหน้าบนเบราว์เซอร์ที่คุณใช้อยู่</p>${button('เข้าร่วมกิจกรรม','team-join','check',true)}`;
+   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><p>${team.connected?'เชื่อมบัญชีแล้ว · ได้รับ 5 แต้ม':'เชื่อมบัญชีเพื่อเก็บแต้มข้ามเครื่อง หรือเข้าร่วมบนเบราว์เซอร์นี้ได้เลย'}</p><div class="actions">${button('เข้าร่วมกิจกรรม','team-join','check',true)}${teamAccountLink(team.connected)}</div>`;
    return;
   }
   const goal=team.completed<5?5:10;
   content.innerHTML=`<div class="grid team-challenge-stats"><div class="card"><strong>${team.points} แต้ม</strong><p>โบนัสจากชวนเพื่อน ${team.bonus} แต้ม</p></div><div class="card"><strong>เรียนจบแล้ว ${team.completed} คน</strong><progress value="${Math.min(team.completed,goal)}" max="${goal}" aria-label="ความคืบหน้าทีม"></progress><p>เป้าหมาย ${goal} คน</p></div></div>
    <p>${team.completed>=10?'🏅 เหรียญส่งต่อความรู้ · ทีมเรียนครบเป้าหมาย 10 คนแล้ว':team.completed>=5?'🏅 ปลดล็อกเหรียญส่งต่อความรู้แล้ว':'ครบ 5 คนรับเหรียญส่งต่อความรู้'}</p>
    <label>ลิงก์ชวนเพื่อน<input id="team-share-link" type="url" readonly></label>
-   <div class="actions">${button('ส่งต่อให้เพื่อน','team-share','share',true)}${button(team.finished?'ทบทวนบทแรก':'เริ่มบทแรก','lesson','book')}</div><p id="team-share-status" role="status"></p>`;
+   <div class="actions">${button('ส่งต่อให้เพื่อน','team-share','share',true)}${button(team.finished?'ทบทวนบทแรก':'เริ่มบทแรก','lesson','book')}${teamAccountLink(team.connected)}</div><p id="team-share-status" role="status"></p>`;
   const url=new URL('index.html',location.href);
   url.searchParams.set('invite',team.invite);
   content.querySelector('#team-share-link').value=url.href;
@@ -1232,6 +1238,6 @@ document.addEventListener('click',event=>{
 });
 home();
 if(testAppointmentOtp)facilities(false);
-else if(teamInvite)showTeamChallenge();
+else if(teamInvite||new URLSearchParams(location.search).has('team'))showTeamChallenge();
 else openRequestFromHash();
 window.addEventListener('hashchange',openRequestFromHash);

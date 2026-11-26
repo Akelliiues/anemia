@@ -70,7 +70,25 @@ try {
         if ($key==='profile-save') {
             $profileEditing=true;
             if ($account===null) throw new DomainException('กรุณาเข้าสู่ระบบก่อนแก้โปรไฟล์');
-            anemiaSaveParticipantProfile(participantDb(),$account,(int)($_SESSION['epoch']??0),$_POST);
+            $photo=anemiaProfilePhoto($_FILES['profile_photo']??[]);
+            $db=participantDb();
+            $db->beginTransaction();
+            try {
+                $epoch=(int)($_SESSION['epoch']??0);
+                $check=$db->prepare('SELECT id FROM anemia_participant_account WHERE id=? AND suspended_at IS NULL AND session_epoch=? FOR UPDATE');
+                $check->execute([$account,$epoch]);
+                if (!$check->fetchColumn()) throw new DomainException('เซสชันสิ้นสุดแล้ว กรุณาเข้าสู่ระบบใหม่');
+                anemiaSaveParticipantProfile($db,$account,$epoch,$_POST);
+                if ($photo!==null) {
+                    $db->prepare('INSERT INTO anemia_participant_photo VALUES (?,?) ON DUPLICATE KEY UPDATE photo=VALUES(photo)')->execute([$account,$photo]);
+                } elseif (($_POST['remove_photo']??'')==='1') {
+                    $db->prepare('DELETE FROM anemia_participant_photo WHERE account_id=?')->execute([$account]);
+                }
+                $db->commit();
+            } catch (Throwable $error) {
+                $db->rollBack();
+                throw $error;
+            }
             $_SESSION['profile_saved']=true;
             header('Location: participant-account.php'.($returnToPortal?'?return=portal':''),true,303); exit;
         }
@@ -144,6 +162,7 @@ $username=null;
 $profile=['avatar'=>'drop','display_name'=>'','profile_status'=>''];
 $teamPoints=0;
 $teamJoined=false;
+$hasPhoto=false;
 if ($account) {
     try {
         $db=participantDb();
@@ -156,6 +175,9 @@ if ($account) {
         $query=$db->prepare('SELECT avatar,display_name,profile_status FROM anemia_participant_profile WHERE account_id=?');
         $query->execute([$account]);
         $profile=$query->fetch(PDO::FETCH_ASSOC)?:$profile;
+        $query=$db->prepare('SELECT 1 FROM anemia_participant_photo WHERE account_id=?');
+        $query->execute([$account]);
+        $hasPhoto=(bool)$query->fetchColumn();
         $query=$db->prepare('SELECT m.completed_at,(SELECT COUNT(*) FROM anemia_team_bonus b WHERE b.inviter=m.id) AS invites FROM anemia_team_member m WHERE m.account_id=?');
         $query->execute([$account]);
         $team=$query->fetch(PDO::FETCH_ASSOC);
@@ -166,14 +188,15 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-profile-v55">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-photo-v56">
+<body<?= $account?' class="participant-profile-page"':'' ?>>
 <main class="participant-account-main"><section class="panel participant-account">
 <nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
  <a href="index.html"><?= workspaceIcon('back') ?>กลับหน้าหลัก</a>
 </nav>
 <?php if ($account): ?>
 <header class="participant-profile-hero">
- <span class="participant-avatar" data-avatar="<?= participantEscape($profile['avatar']) ?>"><?= workspaceIcon($profile['avatar']) ?></span>
+ <span class="participant-avatar" data-avatar="<?= participantEscape($profile['avatar']) ?>"><?php if ($hasPhoto): ?><img src="participant-photo.php" width="72" height="72" alt="รูปโปรไฟล์"><?php else: ?><?= workspaceIcon($profile['avatar']) ?><?php endif; ?></span>
  <div><p>บัญชีของฉัน</p><h1 class="title"><?= participantEscape($profile['display_name']?:($username??'สมาชิก Anemia Portal')) ?></h1>
  <?php if ($profile['profile_status']!==''): ?><span class="participant-profile-status"><?= workspaceIcon(['learning'=>'book','mission'=>'star','invite'=>'spark'][$profile['profile_status']]??'ready') ?> <?= participantEscape(ANEMIA_PROFILE_STATUSES[$profile['profile_status']]??'') ?></span><?php endif; ?></div>
  <button class="action" type="button" data-open-profile><?= workspaceIcon('edit') ?>แก้ไขโปรไฟล์</button>
@@ -259,15 +282,18 @@ if ($account) {
 <?php if ($account): ?>
 <dialog class="workspace-dialog participant-profile-dialog" id="participant-profile-editor" aria-labelledby="participant-profile-title" data-reopen="<?= $profileEditing?'1':'0' ?>">
  <header class="workspace-dialog-heading"><h2 id="participant-profile-title"><?= workspaceIcon('edit') ?> แก้ไขโปรไฟล์</h2><form method="dialog"><button class="action" aria-label="ปิด"><?= workspaceIcon('close') ?></button></form></header>
- <form method="post" action="participant-account.php" class="participant-signup">
+ <form method="post" action="participant-account.php" class="participant-signup" enctype="multipart/form-data">
   <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
   <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
   <?php if ($profileEditing&&$notice!==''): ?><p role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
   <div class="participant-avatar-preview" aria-label="ตัวอย่างไอคอน">
    <?php foreach (ANEMIA_PROFILE_AVATARS as $key=>$label): ?>
-    <span class="participant-avatar" data-avatar="<?= $key ?>" data-preview-avatar <?= $profile['avatar']===$key?'':'hidden' ?>><?= workspaceIcon($key) ?></span>
+    <span class="participant-avatar" data-avatar="<?= $key ?>" data-preview-avatar <?= !$hasPhoto&&$profile['avatar']===$key?'':'hidden' ?>><?= workspaceIcon($key) ?></span>
    <?php endforeach; ?>
+   <span class="participant-avatar" data-photo-preview <?= $hasPhoto?'':'hidden' ?>><img<?= $hasPhoto?' src="participant-photo.php"':'' ?> width="72" height="72" alt="ตัวอย่างรูปโปรไฟล์"></span>
   </div>
+  <label><span><?= workspaceIcon('person') ?> อัปโหลดรูปโปรไฟล์</span><input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG หรือ WebP ขนาดไม่เกิน 5 MB · ตัดกลางเป็นรูปสี่เหลี่ยม</small></label>
+  <?php if ($hasPhoto): ?><label class="participant-remove-photo"><input type="checkbox" name="remove_photo" value="1"> ใช้ไอคอนแทนรูป</label><?php endif; ?>
   <fieldset class="participant-avatar-picker"><legend>เลือกไอคอนโปรไฟล์</legend>
    <?php foreach (ANEMIA_PROFILE_AVATARS as $key=>$label): ?>
     <label><input type="radio" name="avatar" value="<?= $key ?>" <?= $profile['avatar']===$key?'checked':'' ?> required><span><?= workspaceIcon($key) ?> <?= participantEscape($label) ?></span></label>
@@ -282,11 +308,30 @@ if ($account) {
 <script>
 const profileEditor=document.querySelector('#participant-profile-editor');
 if(profileEditor){
+ const photo=profileEditor.querySelector('[name=profile_photo]');
+ const remove=profileEditor.querySelector('[name=remove_photo]');
+ const preview=profileEditor.querySelector('[data-photo-preview]');
+ const previewImage=preview.querySelector('img');
+ const existing=previewImage.getAttribute('src');
+ let photoUrl;
  document.querySelector('[data-open-profile]').addEventListener('click',()=>profileEditor.showModal());
  if(profileEditor.dataset.reopen==='1')profileEditor.showModal();
  profileEditor.addEventListener('change',event=>{
-  if(event.target.name!=='avatar')return;
-  profileEditor.querySelectorAll('[data-preview-avatar]').forEach(icon=>icon.hidden=icon.dataset.avatar!==event.target.value);
+  if(event.target===photo){
+   if(photoUrl)URL.revokeObjectURL(photoUrl);
+   photoUrl=photo.files[0]?URL.createObjectURL(photo.files[0]):null;
+   if(photoUrl&&remove)remove.checked=false;
+  }
+  if(event.target===remove&&remove.checked&&photoUrl){
+   URL.revokeObjectURL(photoUrl);
+   photoUrl=null;
+   photo.value='';
+  }
+  const url=photoUrl||(!remove?.checked&&existing);
+  const avatar=profileEditor.querySelector('[name=avatar]:checked')?.value;
+  preview.hidden=!url;
+  if(url)previewImage.src=url;
+  profileEditor.querySelectorAll('[data-preview-avatar]').forEach(icon=>icon.hidden=Boolean(url)||icon.dataset.avatar!==avatar);
  });
 }
 for(const input of document.querySelectorAll('[data-pin]')){
@@ -307,4 +352,4 @@ for(const button of document.querySelectorAll('[data-password-visibility]')){
  });
 }
 </script>
-</html>
+</body></html>

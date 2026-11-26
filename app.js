@@ -1133,6 +1133,14 @@ function playVoice(key){
  audio.speak(utterance);
 }
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
+const publicProfilePhoto=document.querySelector('[data-public-profile-photo]');
+if(publicProfilePhoto){
+ publicProfilePhoto.addEventListener('load',()=>{
+  publicProfilePhoto.hidden=false;
+  publicProfilePhoto.previousElementSibling.hidden=true;
+ });
+ publicProfilePhoto.src='participant-photo.php';
+}
 const publicMenuToggle=document.querySelector('.public-menu-toggle');
 const publicNavigation=document.querySelector('#public-navigation');
 if(publicMenuToggle&&publicNavigation){

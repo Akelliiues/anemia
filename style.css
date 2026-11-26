@@ -1982,4 +1982,27 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-scanner-page #request-scan-start:not([hidden]) {min-height:48px;background:#56389c;color:#fff;}
 .staff-scanner-install h1 {margin-top:0;}
 .staff-scanner-install [data-install-help] {margin-top:1rem;}
+.staff-app-page main {width:min(100%,46rem);padding:1rem clamp(.65rem,3vw,1.35rem);}
+.staff-app-page .hosted-workspace .admin-content {padding:clamp(.8rem,3vw,1.25rem);}
+.staff-app-bar {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.65rem;padding:.7rem clamp(.8rem,3vw,1.25rem);background:#392656;color:#fff;border-color:#ffffff26;}
+.staff-app-bar strong,.staff-app-bar small {display:block;overflow-wrap:anywhere;}
+.staff-app-bar small {color:#ebe0f9;font-size:.8rem;}
+.staff-app-bar form {margin:0;}
+.staff-app-bar button {display:grid;place-items:center;min-width:44px;min-height:44px;padding:0;color:#fff;border-color:#ffffff4d;background:#ffffff12;}
+.staff-app-bar button:hover {background:#ffffff25;}
+.staff-app-page .staff-mobile-hero {padding:.8rem 1rem;}
+.staff-app-page .staff-mobile-home .staff-mobile-hero > .staff-mobile-mark {display:none;}
+.staff-app-dock {position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem;padding:.4rem;border:1px solid var(--line);border-radius:1rem;background:var(--soft-surface);}
+.staff-app-dock a {display:grid;justify-items:center;gap:.1rem;padding:.3rem;color:var(--ink);text-decoration:none;border-radius:.65rem;font-size:.85rem;}
+.staff-app-dock a[aria-current=page] {background:var(--soft-active);color:var(--violet);font-weight:700;}
+.staff-app-dock svg {width:1.15rem;height:1.15rem;}
+.staff-scan-frame {min-height:7rem;margin-block:.7rem;display:grid;place-items:center;border-radius:.95rem;background:radial-gradient(ellipse,#7451a5,#392656);color:#f4e8ff;}
+.staff-scan-frame svg {width:3.2rem;height:3.2rem;}
+.staff-app-capture:has(#request-scan-video:not([hidden])) .staff-scan-frame {display:none;}
+.staff-app-capture #request-scan-start {width:100%;margin-bottom:.55rem;}
+.staff-app-install-page .staff-install-page {width:min(100%,34rem);}
+.staff-app-install-page .staff-install-card {padding:clamp(1rem,4vw,1.6rem);}
+.staff-app-install-page .staff-install-card .staff-mobile-hero {display:grid;justify-items:start;min-height:10rem;align-content:space-between;}
+.staff-app-install-page .staff-install-card .actions {display:grid;grid-template-columns:1fr;}
+.staff-app-install-page .staff-install-card .actions>a {justify-content:center;}
 @media(max-width:420px){.staff-mobile-home .staff-mobile-metric {align-items:flex-start;flex-direction:column;}.staff-mobile-metric .iconbox {width:2rem;height:2rem;}}

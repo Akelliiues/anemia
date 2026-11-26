@@ -34,6 +34,7 @@ $view = $_GET['view'] ?? 'overview';
 if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report'], true)) $view = 'overview';
 $unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
 $scannerApp = $unitScanner || $view==='scanner-install';
+$staffAppView = $scannerApp || $view==='mobile';
 date_default_timezone_set('Asia/Bangkok');
 $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
@@ -574,7 +575,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-pwa-v75">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-app-v76">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=6"></script>
 <?php if ($showSample): ?>
@@ -584,22 +585,29 @@ function workspaceInfo(string $page, ?array $release = null): void
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
-</head><body class="staff-dashboard-page<?= $scannerApp?' staff-scanner-page':'' ?>">
+</head><body class="staff-dashboard-page<?= $staffAppView?' staff-app-page':'' ?><?= $scannerApp?' staff-scanner-page':'' ?>">
 <main style="max-width:1220px">
-<?php if (!$scannerApp) workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>
+<?php if (!$staffAppView) workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>
 <section class="panel wide" style="padding:0;overflow:hidden">
 <div class="admin-shell hosted-workspace">
+ <?php if ($staffAppView): ?>
+ <header class="staff-app-bar">
+  <span class="staff-mobile-mark"><?= workspaceIcon($scannerApp?'scan':'drop') ?></span>
+  <div><strong><?= $scannerApp?'สแกน QR ประจำหน่วย':'Anemia Staff' ?></strong><small><?= esc($canQueue?$scanUnit:$scopeName) ?></small></div>
+  <form method="post" action="<?= $scannerApp?'login?next=unit-scan':'login?next=mobile' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button type="submit" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
+ </header>
+ <?php else: ?>
  <header class="admin-top no-print">
   <div class="workspace-header-art" aria-hidden="true"></div>
   <div class="admin-top-main">
-   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon($scannerApp?'scan':'drop') ?></span><div><strong><?= $scannerApp?'สแกน QR ประจำหน่วย':'Anemia Portal' ?></strong><span class="workspace-brand-caption"><?= $scannerApp?esc($scanUnit):'ศูนย์จัดการสำหรับเจ้าหน้าที่' ?></span></div></div>
+   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
    <div class="workspace-account">
-    <?php if (!$scannerApp): ?><a class="action staff-install-action" href="staff-install.html" data-staff-install aria-label="ติดตั้ง Anemia Staff" title="ติดตั้ง Anemia Staff"><?= workspaceIcon('download') ?><span>ติดตั้งแอป</span></a><?php endif; ?>
+    <a class="action staff-install-action" href="staff-install.html" data-staff-install aria-label="ติดตั้ง Anemia Staff" title="ติดตั้ง Anemia Staff"><?= workspaceIcon('download') ?><span>ติดตั้งแอป</span></a>
     <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="เปลี่ยนรหัสผ่าน"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
-    <form class="hosted-logout" method="post" action="<?= $scannerApp?'login?next=unit-scan':'login' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
+    <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
    </div>
   </div>
-  <?php if (!$scannerApp): ?><nav class="admin-top-tabs" aria-label="เมนูหลังบ้าน">
+  <nav class="admin-top-tabs" aria-label="เมนูหลังบ้าน">
    <?php
     $groups = [
         ['ภาพรวม','chart',['overview']],
@@ -633,8 +641,9 @@ function workspaceInfo(string $page, ?array $release = null): void
      </div>
     </details>
    <?php endif; endforeach; ?>
-  </nav><?php endif; ?>
+  </nav>
  </header>
+ <?php endif; ?>
  <div class="admin-content">
   <?php if ($view!=='mobile' && !$scannerApp): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
    <p><?= esc($scopeName) ?></p>
@@ -943,25 +952,25 @@ function workspaceInfo(string $page, ?array $release = null): void
     </div>
    </section>
    <?php endif; ?>
-   <section class="card admin-report">
+   <section class="card admin-report<?= $unitScanner?' staff-app-capture':'' ?>">
     <div class="sample-section-heading"><span class="iconbox"><?= workspaceIcon('scan') ?></span><div><h2>ตรวจใบรับคำขอ</h2><p>สแกน QR จากหน้าจอหรือจากใบที่บันทึกไว้</p></div></div>
     <?php if ($scanMessage !== ''): ?><p class="status" role="alert"><?= esc($scanMessage) ?></p><?php endif; ?>
+    <?php if ($unitScanner): ?><div class="staff-scan-frame" aria-hidden="true"><?= workspaceIcon('scan') ?></div><?php endif; ?>
+    <div class="actions request-scan-controls">
+     <button type="button" id="request-scan-start" class="action"><?= workspaceIcon('scan') ?>เปิดกล้อง</button>
+     <button type="button" id="request-scan-stop" class="action" hidden><?= workspaceIcon('close') ?>ปิดกล้อง</button>
+    </div>
+    <video id="request-scan-video" muted playsinline hidden aria-label="ภาพจากกล้องสำหรับสแกน QR"></video>
     <form id="request-scanner-form" method="post" class="request-scanner-form">
      <input type="hidden" name="csrf" value="<?= esc($token) ?>">
      <label>เลขคำขอหรือลิงก์จากใบรับคำขอ<input name="receipt" type="text" required maxlength="512" autocomplete="off" placeholder="เช่น AN-…"></label>
      <button type="submit" class="action primary"><?= workspaceIcon('ready') ?>ตรวจคำขอ</button>
     </form>
-    <div class="actions request-scan-controls">
-     <button type="button" id="request-scan-start" class="action"><?= workspaceIcon('scan') ?>เปิดกล้อง</button>
-     <button type="button" id="request-scan-stop" class="action" hidden><?= workspaceIcon('close') ?>ปิดกล้อง</button>
-
-    </div>
     <label id="request-scan-drop" class="request-scan-drop">
      <span class="iconbox"><?= workspaceIcon('scan') ?></span><span><strong>ใส่ภาพใบรับคำขอ</strong><small>แตะเลือกไฟล์ ลากภาพมาวาง หรือวางภาพที่คัดลอกไว้</small></span>
      <input type="file" id="request-scan-file" accept="image/*">
     </label>
     <p id="request-scan-message" role="status"></p>
-    <video id="request-scan-video" muted playsinline hidden aria-label="ภาพจากกล้องสำหรับสแกน QR"></video>
    </section>
   </div>
   <?php elseif ($view === 'contact-queue'): ?>
@@ -1126,7 +1135,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 </div>
 </section>
 </main>
-<footer class="site-footer no-print">
+<?php if (!$staffAppView): ?><footer class="site-footer no-print">
   <div class="footer-inner">
     <div class="footer-identity">
       <span class="mark"><?= workspaceIcon('province') ?></span>
@@ -1141,7 +1150,7 @@ function workspaceInfo(string $page, ?array $release = null): void
       </div>
     </address>
   </div>
-</footer>
+</footer><?php endif; ?>
 <dialog id="workspace-account" class="workspace-dialog no-print" aria-labelledby="workspace-account-title">
  <header class="workspace-dialog-heading">
   <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> เปลี่ยนรหัสผ่าน</h2>

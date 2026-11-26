@@ -54,7 +54,8 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
             } elseif (($_POST['action'] ?? '') === 'logout') {
                 $_SESSION = [];
                 session_regenerate_id(true);
-                header('Location: '.(($_GET['next']??'')==='unit-scan'?'login?next=unit-scan':'login'), true, 303);
+                $loginPath=match ($_GET['next']??'') {'unit-scan'=>'login?next=unit-scan','mobile'=>'login?next=mobile',default=>'login'};
+                header('Location: '.$loginPath, true, 303);
                 exit;
             } elseif (($_POST['action'] ?? '') === 'login') {
                 $user = is_string($_POST['username'] ?? null) ? strtolower(trim($_POST['username'])) : '';

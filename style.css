@@ -1974,7 +1974,8 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-install-invite .workspace-dialog-heading {background:transparent;}
 .staff-install-invite h2 {font-size:1.25rem;}
 .staff-install-invite .action {min-height:44px;padding:.55rem .85rem;border-radius:.65rem;text-decoration:none;}
-.staff-install-card .actions > a {display:inline-flex;align-items:center;min-height:44px;padding:.55rem .85rem;border:1px solid var(--soft-edge);border-radius:.65rem;text-decoration:none;}
+.staff-install-card .actions > a:not([hidden]) {display:inline-flex;align-items:center;min-height:44px;padding:.55rem .85rem;border:1px solid var(--soft-edge);border-radius:.65rem;text-decoration:none;}
+.hosted-workspace .staff-scanner-install a[data-staff-install][hidden] {display:none;}
 .staff-scanner-page main {width:min(100%,48rem);}
 .staff-scanner-page .hosted-workspace .admin-top-main {margin-bottom:0;}
 .staff-scanner-page .request-scanner-layout {grid-template-columns:minmax(0,1fr);}

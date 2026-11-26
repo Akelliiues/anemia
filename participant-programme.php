@@ -151,13 +151,16 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
          <progress class="programme-watch" data-lesson-watch max="100" value="0" aria-label="สัดส่วนวิดีโอที่ดูแล้ว" hidden></progress>
          <p data-lesson-progress role="status" class="programme-video-status">กดเล่นเพื่อเริ่มดูคลิป หรืออ่านสรุปด้านล่าง</p>
          <details class="programme-reading" data-lesson-reading><summary>อ่านสรุปบทเรียน</summary>
-          <p>ฮีโมโกลบินอยู่ในเม็ดเลือดแดงและช่วยพาออกซิเจนไปทั่วร่างกาย อาการเหนื่อยง่ายหรือเวียนหัวเกิดได้จากหลายสาเหตุ การตรวจเลือดช่วยประเมินภาวะโลหิตจางได้ หากแบบประเมินออนไลน์แนะนำให้ตรวจเพิ่ม คุณติดต่อหน่วยบริการเพื่อปรึกษาเรื่องการตรวจได้เลย</p>
+          <p>เวลาเดินไปโรงเรียนหรือไปทำงาน ร่างกายต้องใช้ออกซิเจน ในเม็ดเลือดแดงมีตัวช่วยพาออกซิเจนชื่อ “ฮีโมโกลบิน” ถ้ามีไม่พอ คุณอาจเหนื่อยง่าย แต่ความเหนื่อยเกิดได้หลายสาเหตุ ถ้าแบบประเมินชวนไปตรวจ ลองถามเจ้าหน้าที่ว่า “ช่วงนี้เหนื่อยง่าย ควรตรวจเลือดไหมคะ”</p>
           <a class="programme-resource" href="index.html?view=learn" target="_blank" rel="noopener">อ่านต่อในคลังความรู้</a>
           <button class="action" type="button" data-lesson-read hidden>อ่านสรุปแล้ว</button>
          </details>
         <?php else: [$reading,$prompt,$right,$wrong,$explanation]=anemiaReadingLessons()[$next]; ?>
          <h3>อ่านแล้วลองนึกตาม</h3><p><?= programmeEscape($reading) ?></p>
-         <?php if (in_array($next,[2,5,8,11],true)): ?><a class="programme-resource" href="https://www.who.int/news-room/fact-sheets/detail/anaemia">อ่านเพิ่มเติมเรื่องโลหิตจางจาก WHO (ภาษาอังกฤษ)</a>
+         <?php if (in_array($next,[3,4],true)): ?><a class="programme-resource" href="https://www.fda.gov/food/nutrition-facts-label/serving-size-nutrition-facts-label">ดูตัวอย่างการอ่านฉลากจาก FDA (ภาษาอังกฤษ)</a>
+         <?php elseif ($next===2): ?><a class="programme-resource" href="https://medlineplus.gov/evaluatinghealthinformation.html">อ่านวิธีเช็กข้อมูลสุขภาพ (ภาษาอังกฤษ)</a>
+         <?php elseif (in_array($next,[5,7],true)): ?><a class="programme-resource" href="https://medlineplus.gov/talkingwithyourdoctor.html">อ่านวิธีเตรียมคำถามก่อนไปพบแพทย์ (ภาษาอังกฤษ)</a>
+         <?php elseif (in_array($next,[8,11],true)): ?><a class="programme-resource" href="https://www.who.int/news-room/fact-sheets/detail/anaemia">อ่านเพิ่มเติมเรื่องโลหิตจางจาก WHO (ภาษาอังกฤษ)</a>
          <?php elseif (in_array($next,[4,9,10],true)): ?><a class="programme-resource" href="https://ods.od.nih.gov/factsheets/Iron-Consumer/">อ่านเพิ่มเติมเรื่องธาตุเหล็กจาก NIH (ภาษาอังกฤษ)</a><?php endif; ?>
          <?php if ($weeks[$next][2]!==''): ?><a class="programme-resource" href="<?= programmeEscape($weeks[$next][2]) ?>" target="_blank" rel="noopener">เปิดหน้าที่ใช้ทำกิจกรรม (แท็บใหม่)</a><?php endif; endif; ?>
         <form method="post" action="participant-programme.php#programme-next">

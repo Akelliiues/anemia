@@ -88,7 +88,8 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
 <script defer src="installed-update.js"></script>
-<link rel="stylesheet" href="participant-programme.css?v=1">
+<link rel="stylesheet" href="participant-programme.css?v=2">
+<script defer src="participant-programme.js?v=1"></script>
 </head>
 <body class="participant-profile-page">
 <main class="participant-account-main">
@@ -137,14 +138,35 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
         </form>
       </section>
     <?php elseif ($next!==null): ?>
-      <section class="programme-card" aria-labelledby="programme-next">
-        <h2 id="programme-next">สัปดาห์ที่ <?= $next ?> · <?= programmeEscape($weeks[$next][0]) ?></h2>
+      <section class="programme-card<?= $next===1?' programme-lesson':'' ?>" aria-labelledby="programme-next">
+        <?php if ($next===1): ?><span class="programme-lesson-label">สัปดาห์ที่ 1 · คลิป 4 นาที</span><?php endif; ?>
+        <h2 id="programme-next"><?= $next===1?'':'สัปดาห์ที่ '.$next.' · ' ?><?= programmeEscape($weeks[$next][0]) ?></h2>
         <p><?= programmeEscape($weeks[$next][1]) ?></p>
-        <?php if ($weeks[$next][2]!==''): ?><a class="programme-resource" href="<?= programmeEscape($weeks[$next][2]) ?>" target="_blank" rel="noopener">เปิดหน้าที่ใช้ทำกิจกรรม (แท็บใหม่)</a><?php endif; ?>
+        <?php if ($next===1): ?>
+         <video class="programme-video" controls playsinline preload="none" src="12weeks/week_01.mp4" aria-label="คลิปรู้จักโลหิตจาง"></video>
+         <p data-lesson-progress role="status" class="programme-video-status">กดเล่นเพื่อเริ่มดูคลิป หรืออ่านสรุปด้านล่าง</p>
+         <details class="programme-reading" data-lesson-reading><summary>อ่านสรุปบทเรียน</summary>
+          <p>ฮีโมโกลบินอยู่ในเม็ดเลือดแดงและช่วยพาออกซิเจนไปทั่วร่างกาย อาการเหนื่อยง่ายหรือเวียนหัวเกิดได้จากหลายสาเหตุ การตรวจเลือดช่วยประเมินภาวะโลหิตจางได้ หากแบบประเมินออนไลน์แนะนำให้ตรวจเพิ่ม คุณติดต่อหน่วยบริการเพื่อปรึกษาเรื่องการตรวจได้เลย</p>
+          <a class="programme-resource" href="index.html?view=learn" target="_blank" rel="noopener">อ่านต่อในคลังความรู้</a>
+          <button class="action" type="button" data-lesson-read hidden>อ่านสรุปแล้ว</button>
+         </details>
+        <?php elseif ($weeks[$next][2]!==''): ?><a class="programme-resource" href="<?= programmeEscape($weeks[$next][2]) ?>" target="_blank" rel="noopener">เปิดหน้าที่ใช้ทำกิจกรรม (แท็บใหม่)</a><?php endif; ?>
         <form method="post" action="participant-programme.php#programme-next">
           <?php programmeFormFields($csrf,'week'); ?>
           <input type="hidden" name="week" value="<?= $next ?>">
-          <button class="action primary" type="submit">บันทึกว่าทำกิจกรรมแล้ว</button>
+          <?php if ($next===1): ?>
+           <h3>ทบทวนหลังเรียน</h3>
+           <?php foreach (anemiaWeekOneQuestions() as $id=>[$question,$choices,$correct,$feedback]): ?>
+            <fieldset class="programme-question" data-lesson-question data-correct="<?= programmeEscape($correct) ?>">
+             <legend><?= programmeEscape($question) ?></legend>
+             <?php foreach ($choices as $value=>$label): ?>
+              <label><input type="radio" name="lesson_answers[<?= programmeEscape($id) ?>]" value="<?= programmeEscape($value) ?>" required> <?= programmeEscape($label) ?></label>
+             <?php endforeach; ?>
+             <p class="programme-answer" data-lesson-answer role="status" hidden><?= programmeEscape($feedback) ?></p>
+            </fieldset>
+           <?php endforeach; ?>
+          <?php endif; ?>
+          <button class="action primary" type="submit"><?= $next===1?'บันทึกและไปสัปดาห์ถัดไป':'บันทึกว่าทำกิจกรรมแล้ว' ?></button>
         </form>
       </section>
     <?php else:

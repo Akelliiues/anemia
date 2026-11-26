@@ -85,3 +85,13 @@
   margin: .3rem 0 .4rem;
   padding-inline-start: 1rem;
 }
+.programme-lesson {background:linear-gradient(145deg,var(--soft-active,#eee8fc),var(--soft-surface,#fff) 20rem);}
+.programme-lesson-label {display:inline-block;padding:.2rem .6rem;margin-bottom:.5rem;border-radius:1rem;background:var(--soft-accent,#5636a5);color:#fff;font-size:.82rem;font-weight:700;}
+.programme-video {display:block;width:100%;aspect-ratio:16/9;max-height:26rem;background:#281c3b;border-radius:.9rem;}
+.programme-video-status {font-size:.9rem;margin:.55rem 0 .8rem;}
+.programme-reading {margin-bottom:1rem;padding:.65rem .8rem;border:1px solid var(--line);border-radius:.75rem;background:var(--soft-surface,#fff);}
+.programme-reading summary {cursor:pointer;font-weight:700;color:var(--violet);}
+.programme-reading .action {min-height:44px;}
+.programme-answer {margin:.35rem 0 .5rem;padding:.4rem .6rem;border-inline-start:3px solid #aa6c19;}
+.programme-answer[data-correct=true] {border-inline-start-color:#41927a;}
+.programme-lesson button:disabled {opacity:.55;cursor:not-allowed;}

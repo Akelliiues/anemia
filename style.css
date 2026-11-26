@@ -1657,3 +1657,8 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .team-challenge-stats {grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr));}
 .team-challenge-stats progress,#team-share-link {width:100%;}
 #team-share-link {display:block;margin:.35rem 0 .7rem;padding:.6rem;border:1px solid var(--line);border-radius:.55rem;background:transparent;color:var(--ink);}
+.participant-signup {display:grid;gap:.6rem;margin-block:1rem;}
+.participant-signup details {border:1px solid var(--line);border-radius:.75rem;padding:.6rem .8rem;}
+.participant-signup summary {cursor:pointer;font-weight:700;}
+.participant-signup label {display:grid;gap:.2rem;margin-block:.6rem;}
+.participant-signup input {font:inherit;padding:.55rem .65rem;border:1px solid var(--line);border-radius:.55rem;background:transparent;color:var(--ink);}

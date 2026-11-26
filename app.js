@@ -366,7 +366,7 @@ async function showTeamChallenge(join=false){
   if(!content.isConnected)return;
   if(!team.enabled){content.innerHTML=`<p>กิจกรรมชวนเพื่อนยังไม่เปิด</p>${teamAccountLink(team.connected)}`;return;}
   if(!team.joined){
-   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><p>${team.connected?'เชื่อมบัญชีแล้ว · ได้รับ 5 แต้ม':'เชื่อมบัญชีเพื่อเก็บแต้มข้ามเครื่อง หรือเข้าร่วมบนเบราว์เซอร์นี้ได้เลย'}</p><div class="actions">${button('เข้าร่วมกิจกรรม','team-join','check',true)}${teamAccountLink(team.connected)}</div>`;
+   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><p>${team.connected?(team.connectionPoints?'เชื่อมบัญชีแล้ว · ได้รับ 5 แต้ม':'เข้าสู่ระบบแล้ว'):'เชื่อมบัญชีเพื่อเก็บแต้มข้ามเครื่อง หรือเข้าร่วมบนเบราว์เซอร์นี้ได้เลย'}</p><div class="actions">${button('เข้าร่วมกิจกรรม','team-join','check',true)}${teamAccountLink(team.connected)}</div>`;
    return;
   }
   const goal=team.completed<5?5:10;

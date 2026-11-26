@@ -89,7 +89,13 @@ try {
         }
         $member['completed_at']=true;
     }
-    $result=['enabled'=>true,'joined'=>$member!==null,'connected'=>$account!==null,'connectionPoints'=>$account!==null?5:0];
+    $linked=false;
+    if ($account!==null) {
+        $identity=$db->prepare('SELECT 1 FROM anemia_participant_identity WHERE account_id=? LIMIT 1');
+        $identity->execute([$account]);
+        $linked=(bool)$identity->fetchColumn();
+    }
+    $result=['enabled'=>true,'joined'=>$member!==null,'connected'=>$account!==null,'connectionPoints'=>$linked?5:0];
     if ($member) {
         $count=$db->prepare('SELECT COUNT(*) FROM anemia_demo_team_member WHERE team_id=? AND completed_at IS NOT NULL');
         $count->execute([$member['team_id']]);

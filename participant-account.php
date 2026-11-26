@@ -52,6 +52,7 @@ function participantDb(): PDO
 function participantEscape(string $text): string {return htmlspecialchars($text,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
 
 $notice='';
+$passwordMode='';
 try {
     if ($_SERVER['REQUEST_METHOD']==='POST') {
         if (!is_string($_POST['csrf']??null)||!hash_equals($_SESSION['csrf'],$_POST['csrf'])) { http_response_code(403); exit('กรุณาเปิดหน้าใหม่'); }
@@ -60,6 +61,20 @@ try {
             $_SESSION=[];
             session_regenerate_id(true);
             header('Location: participant-account.php'.($returnToPortal?'?return=portal':''),true,303); exit;
+        }
+        if (in_array($key,['password-login','password-register'],true)) {
+            if ($account!==null) throw new DomainException('กรุณาออกจากบัญชีเดิมก่อน');
+            $passwordMode=$key;
+            $db=participantDb();
+            if (!consumeAnemiaAttempt($db,'participant-password:'.($_SERVER['REMOTE_ADDR']??'unknown'))) {
+                http_response_code(429);
+                throw new DomainException('ลองหลายครั้งเกินไป กรุณารอสักครู่');
+            }
+            $account=anemiaParticipantPassword($db,$key==='password-register',$_POST,anemiaTeamCookieHash());
+            session_regenerate_id(true);
+            $_SESSION=['account'=>$account,'until'=>time()+28800,'csrf'=>bin2hex(random_bytes(32))];
+            $target=$returnToPortal?'index.html':'index.html?team=1'.($invite!==''?'&invite='.$invite:'');
+            header('Location: '.$target,true,303); exit;
         }
         if (!is_string($key)||!$canConnect($key)) throw new DomainException('ช่องทางนี้ยังไม่เปิดใช้งาน');
         [, $authorize, , $scope,$client]=$providers[$key];
@@ -109,21 +124,49 @@ try {
     $notice=$error instanceof DomainException?$error->getMessage():'เชื่อมบัญชีไม่สำเร็จ กรุณาลองอีกครั้ง';
 }
 $linked=[];
+$username=null;
 if ($account) {
     try {
-        $query=participantDb()->prepare('SELECT provider FROM anemia_participant_identity WHERE account_id=?');
+        $db=participantDb();
+        $query=$db->prepare('SELECT provider FROM anemia_participant_identity WHERE account_id=?');
         $query->execute([$account]);
         $linked=$query->fetchAll(PDO::FETCH_COLUMN);
+        $query=$db->prepare('SELECT username FROM anemia_participant_password WHERE account_id=?');
+        $query->execute([$account]);
+        $username=$query->fetchColumn()?:null;
     } catch (Throwable $error) { $notice='โหลดข้อมูลบัญชีไม่สำเร็จ'; }
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=team-challenge-v46">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-signup-v49">
 <main><section class="panel">
 <h1 class="title">บัญชีของฉัน</h1>
-<p>เชื่อมบัญชีเพื่อเก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อมครั้งแรก</p>
+<p>เก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อม LINE, Google หรือช่องทางภายนอกครั้งแรก</p>
+<?php if ($username): ?><p>ชื่อบัญชี <strong><?= participantEscape($username) ?></strong></p><?php endif; ?>
 <?php if ($linked): ?><p class="status">ได้รับโบนัสเชื่อมบัญชีแล้ว 5 แต้ม</p><?php endif; ?>
 <?php if ($notice!==''): ?><p class="status" role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
+<?php if (!$account): ?>
+<section class="participant-signup">
+ <?php foreach (['password-login'=>'เข้าสู่ระบบด้วยรหัสผ่าน','password-register'=>'สมัครบัญชีใหม่'] as $mode=>$title): $register=$mode==='password-register'; ?>
+ <details <?= $passwordMode===$mode || ($passwordMode==='' && !$register)?'open':'' ?>>
+  <summary><?= participantEscape($title) ?></summary>
+  <form method="post" action="participant-account.php">
+   <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
+   <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
+   <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
+   <label>ชื่อบัญชี<?php if ($register): ?> <small>3–40 ตัว ใช้อักษรอังกฤษ ตัวเลข จุด ขีดกลาง หรือขีดล่าง</small><?php endif; ?>
+    <input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false">
+   </label>
+   <label>รหัสผ่าน<?php if ($register): ?> <small>อย่างน้อย 12 ตัวอักษร</small><?php endif; ?>
+    <input type="password" name="password" autocomplete="<?= $register?'new-password':'current-password' ?>" maxlength="72" <?= $register?'minlength="12"':'' ?> required>
+   </label>
+   <?php if ($register): ?><label>ยืนยันรหัสผ่าน<input type="password" name="confirm_password" autocomplete="new-password" minlength="12" maxlength="72" required></label><?php endif; ?>
+   <button class="action primary" name="provider" value="<?= $mode ?>"><?= $register?'สมัครบัญชี':'เข้าสู่ระบบ' ?></button>
+  </form>
+ </details>
+ <?php endforeach; ?>
+</section>
+<?php endif; ?>
 <form method="post" action="participant-account.php">
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">

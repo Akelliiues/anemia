@@ -16,6 +16,50 @@ function anemiaTeamCookieHash(): ?string
     return is_string($cookie)&&preg_match('/^[a-f0-9]{64}$/D',$cookie)?hash('sha256',$cookie):null;
 }
 
+function anemiaAttachTeam(PDO $db,string $account,?string $teamCookieHash): void
+{
+    if (!$teamCookieHash) return;
+    $db->prepare('UPDATE anemia_participant_account a
+        JOIN anemia_demo_team_member m ON m.cookie_hash=?
+        LEFT JOIN anemia_participant_account owner ON owner.team_member_id=m.id
+        SET a.team_member_id=m.id
+        WHERE a.id=? AND a.team_member_id IS NULL AND owner.id IS NULL')->execute([$teamCookieHash,$account]);
+}
+
+function anemiaParticipantPassword(PDO $db,bool $register,array $input,?string $teamCookieHash): string
+{
+    $username=is_string($input['username']??null)?strtolower(trim($input['username'])):'';
+    $password=$input['password']??null;
+    if (!preg_match('/^[a-z0-9][a-z0-9._-]{2,39}$/D',$username) || !is_string($password) ||
+        $password==='' || strlen($password)>72 || str_contains($password,"\0")) {
+        throw new DomainException($register?'ตรวจชื่อบัญชีและความยาวรหัสผ่าน':'ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง');
+    }
+    if (!$register) {
+        $query=$db->prepare('SELECT account_id,password_hash FROM anemia_participant_password WHERE username=?');
+        $query->execute([$username]);
+        $row=$query->fetch(PDO::FETCH_ASSOC);
+        $hash=$row['password_hash']??'$2y$12$CkxVzYqDSRWD7wAxUXU4ou5jz8lPTZuoSJb1ZGzAz3Rgi7PDgtCL2';
+        if (!password_verify($password,$hash) || !$row) throw new DomainException('ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง');
+        return $row['account_id'];
+    }
+    if (preg_match('/^.{12,}$/usD',$password)!==1) throw new DomainException('ตั้งรหัสผ่านอย่างน้อย 12 ตัวอักษร');
+    if ($password!==($input['confirm_password']??null)) throw new DomainException('รหัสผ่านทั้งสองช่องไม่ตรงกัน');
+    $hash=password_hash($password,PASSWORD_BCRYPT,['cost'=>12]);
+    $account=bin2hex(random_bytes(16));
+    $db->beginTransaction();
+    try {
+        $db->prepare('INSERT INTO anemia_participant_account(id,connected_at) VALUES (?,NOW())')->execute([$account]);
+        $db->prepare('INSERT INTO anemia_participant_password VALUES (?,?,?)')->execute([$username,$account,$hash]);
+        anemiaAttachTeam($db,$account,$teamCookieHash);
+        $db->commit();
+    } catch (Throwable $error) {
+        $db->rollBack();
+        if ($error instanceof PDOException && (int)($error->errorInfo[1]??0)===1062) throw new DomainException('ชื่อบัญชีนี้ถูกใช้แล้ว กรุณาเลือกชื่ออื่น');
+        throw $error;
+    }
+    return $account;
+}
+
 function anemiaConnectParticipant(PDO $db,string $provider,string $subject,?string $active,?string $teamCookieHash): string
 {
     $subjectHash=hash('sha256',$subject);
@@ -39,13 +83,7 @@ function anemiaConnectParticipant(PDO $db,string $provider,string $subject,?stri
             if ($check->fetchColumn()) throw new DomainException('บัญชีนี้เชื่อมช่องทางดังกล่าวแล้ว');
             $db->prepare('INSERT INTO anemia_participant_identity VALUES (?,?,?,NOW())')->execute([$provider,$subjectHash,$account]);
         }
-        if ($teamCookieHash) {
-            $db->prepare('UPDATE anemia_participant_account a
-                JOIN anemia_demo_team_member m ON m.cookie_hash=?
-                LEFT JOIN anemia_participant_account owner ON owner.team_member_id=m.id
-                SET a.team_member_id=m.id
-                WHERE a.id=? AND a.team_member_id IS NULL AND owner.id IS NULL')->execute([$teamCookieHash,$account]);
-        }
+        anemiaAttachTeam($db,$account,$teamCookieHash);
         $db->commit();
         return $account;
     } catch (Throwable $error) {

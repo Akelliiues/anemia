@@ -562,7 +562,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-pwa-v72">
 <link rel="manifest" href="staff.webmanifest"><link rel="apple-touch-icon" href="staff-icon-192.png"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=1"></script>
 <?php if ($showSample): ?>
@@ -624,8 +624,11 @@ function workspaceInfo(string $page, ?array $release = null): void
   </nav>
  </header>
  <div class="admin-content">
-  <div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
-   <p><?= esc($scopeName) ?></p></div>
+  <?php if ($view!=='mobile'): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
+   <p><?= esc($scopeName) ?></p>
+   <?php if (in_array($view,['contact-queue','scan-request'],true)): ?><a class="action no-print" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a><?php endif; ?>
+  </div>
+  <?php endif; ?>
   <?php if ($sampleEnabled && in_array($view,$sampleViews,true)): ?>
    <div class="hosted-sample-caption"><strong><?= $sampleMode ? 'ข้อมูลจำลอง' : 'ข้อมูลจากระบบ' ?></strong>
     <a class="action no-print" href="dashboard.php?<?= esc(http_build_query(['view'=>$view,'region'=>$region,'month'=>$evaluationMonth,'audience'=>$evaluationAudience,'preview'=>$sampleMode?'live':'sample'])) ?>"><?= workspaceIcon($sampleMode ? 'history' : 'chart') ?><?= $sampleMode ? 'กลับไปดูข้อมูลจริง' : 'ดูข้อมูลจำลอง' ?></a>
@@ -881,20 +884,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <section class="card admin-report"><?php workspaceInfo($view, $localRelease); ?></section>
   <?php elseif ($view === 'members'): require __DIR__.'/_private/members-view.php'; ?>
   <?php elseif ($view === 'network'): require __DIR__.'/_private/network-view.php'; ?>
-  <?php elseif ($view === 'mobile'): ?>
-  <section class="card staff-mobile-home">
-   <h2>งานของฉัน</h2>
-   <?php if ($canQueue): ?>
-    <div class="staff-mobile-links">
-     <a class="action primary" href="dashboard.php?view=scan-request"><?= workspaceIcon('scan') ?>สแกน QR</a>
-     <a class="action" href="dashboard.php?view=contact-queue"><?= workspaceIcon('calendar') ?>นัดหมาย</a>
-     <a class="action" href="dashboard.php?view=contact-queue&amp;attention=1"><?= workspaceIcon('history') ?>งานที่ต้องติดตาม</a>
-    </div>
-   <?php else: ?>
-    <p>ดูรายงานตามขอบเขตพื้นที่ของบัญชีคุณ</p>
-    <a class="action primary" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?>เปิดภาพรวม</a>
-   <?php endif; ?>
-  </section>
+  <?php elseif ($view === 'mobile'): require __DIR__.'/_private/staff-mobile-view.php'; ?>
   <?php elseif ($view === 'scan-request'): ?>
   <div class="request-scanner-layout">
    <?php if ($scannedRequest):

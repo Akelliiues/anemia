@@ -56,6 +56,7 @@ define('ANEMIA_STAFF_BOOT',true);
 try {
     $config=require __DIR__.'/_private/config.php';
     require __DIR__.'/_private/database.php';
+    require __DIR__.'/_private/network.php';
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
     $action=$data['action']??null;
@@ -77,9 +78,7 @@ try {
                 requestReply(422,['error'=>'กรุณาเลือกวันที่สะดวกภายใน 6 เดือนข้างหน้า']);
             }
         }
-        $source=file_get_contents(__DIR__.'/facility-directory.js');
-        if (!is_string($source) || !preg_match('/^const hospitalDirectory=(\[.*\]);\s*$/ms',$source,$match)) throw new RuntimeException('Facility directory unavailable');
-        $facility=json_decode($match[1],true,8,JSON_THROW_ON_ERROR)[$index]??null;
+        $facility=anemiaFacilityDirectory()[$index]??null;
         if (!$facility) requestReply(422,['error'=>'ไม่พบหน่วยบริการที่เลือก']);
         if (time()-(int)($_SESSION['last_request_otp']??0)<60) requestReply(429,['error'=>'กรุณารอ 1 นาทีก่อนขอรหัสอีกครั้ง']);
         $window=intdiv(time(),3600);
@@ -100,7 +99,7 @@ try {
         $sent=verifyProvider($service,$apiKey,$secret,false,['To'=>$number,'Channel'=>'sms']);
         if (($sent['status']??null)!=='pending' || !preg_match('/^VE[0-9a-f]{32}$/iD',$sent['sid']??'')) throw new RuntimeException('Verification did not start');
         $_SESSION['pending_contact_request']=['sid'=>$sent['sid'],'number'=>$number,'name'=>trim($name),'kind'=>$kind,'facility'=>$facility[0],
-            'date'=>$date?:null,'until'=>time()+600,'attempts'=>0,'token'=>bin2hex(random_bytes(16))];
+            'facility_key'=>anemiaFacilityKey($facility),'date'=>$date?:null,'until'=>time()+600,'attempts'=>0,'token'=>bin2hex(random_bytes(16))];
         requestReply(200,['token'=>$_SESSION['pending_contact_request']['token'],'last4'=>substr($phone,-4)]);
     }
     if ($action!=='confirm') requestReply(400,['error'=>'คำขอไม่ถูกต้อง']);
@@ -120,8 +119,8 @@ try {
         $_SESSION['pending_contact_request']['approved']=true;
     }
     $receipt='AN-'.strtoupper(substr(hash('sha256',$pending['sid']),0,16));
-    $save=$db->prepare('INSERT INTO anemia_contact_queue (receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE receipt=receipt');
-    $save->execute([$receipt,$pending['facility'],$pending['kind'],$pending['name'],$pending['number'],$pending['date'],date('Y-m-d H:i:s')]);
+    $save=$db->prepare('INSERT INTO anemia_contact_queue (receipt,facility,facility_key,request_kind,contact_name,phone,preferred_date,submitted_at) VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE receipt=receipt');
+    $save->execute([$receipt,$pending['facility'],$pending['facility_key']??null,$pending['kind'],$pending['name'],$pending['number'],$pending['date'],date('Y-m-d H:i:s')]);
     unset($_SESSION['pending_contact_request']);
     $_SESSION['completed_contact_request']=['receipt'=>$receipt,'token'=>$token,'until'=>time()+600];
     requestReply(200,['receipt'=>$receipt]);

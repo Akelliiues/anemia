@@ -33,6 +33,7 @@ try {
     $config=require __DIR__.'/_private/config.php';
     require __DIR__.'/_private/database.php';
     require __DIR__.'/_private/access.php';
+    require __DIR__.'/_private/network.php';
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
     $sampleEnabled=(int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetchColumn()===1;
@@ -60,9 +61,7 @@ try {
                 demoContactReply(422,['error'=>'กรุณาเลือกวันที่ภายใน 6 เดือนข้างหน้า']);
             }
         }
-        $source=file_get_contents(__DIR__.'/facility-directory.js');
-        if (!is_string($source) || !preg_match('/^const hospitalDirectory=(\[.*\]);\s*$/ms',$source,$match)) throw new RuntimeException('Facility directory unavailable');
-        $facility=json_decode($match[1],true,8,JSON_THROW_ON_ERROR)[$index]??null;
+        $facility=anemiaFacilityDirectory()[$index]??null;
         if (!$facility) demoContactReply(422,['error'=>'ไม่พบหน่วยบริการ']);
         if ($publicDemo) {
             if (time()-(int)($_SESSION['demo_otp_started']??0)<15) demoContactReply(429,['error'=>'กรุณารอ 15 วินาทีก่อนลองใหม่']);
@@ -76,7 +75,7 @@ try {
             $_SESSION['demo_otp_started']=time();
         }
         $token=bin2hex(random_bytes(16));
-        $_SESSION['demo_otp']=['token'=>$token,'facility'=>$facility[0],'kind'=>$kind,'date'=>$date?:null,'contact'=>$prefix.' '.trim($firstName).' '.trim($lastName),'phone'=>$phone,'until'=>time()+600];
+        $_SESSION['demo_otp']=['token'=>$token,'facility'=>$facility[0],'facility_key'=>anemiaFacilityKey($facility),'kind'=>$kind,'date'=>$date?:null,'contact'=>$prefix.' '.trim($firstName).' '.trim($lastName),'phone'=>$phone,'until'=>time()+600];
         demoContactReply(200,['token'=>$token,'last4'=>substr($phone,-4),'demoCode'=>'482731']);
     }
     if (($data['action']??null)!=='confirm') demoContactReply(400,['error'=>'คำขอไม่ถูกต้อง']);
@@ -93,9 +92,9 @@ try {
         demoContactReply(503,['error'=>'โฮสต์นี้ปิดโหมดทดสอบแล้ว']);
     }
     $receipt='DE-'.strtoupper(substr($token,0,16));
-    $save=$db->prepare("INSERT INTO anemia_contact_demo_queue (receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at)
-        VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE receipt=receipt");
-    $save->execute([$receipt,$pending['facility'],$pending['kind'],$pending['contact'],$pending['phone'],$pending['date'],date('Y-m-d H:i:s')]);
+    $save=$db->prepare("INSERT INTO anemia_contact_demo_queue (receipt,facility,facility_key,request_kind,contact_name,phone,preferred_date,submitted_at)
+        VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE receipt=receipt");
+    $save->execute([$receipt,$pending['facility'],$pending['facility_key']??null,$pending['kind'],$pending['contact'],$pending['phone'],$pending['date'],date('Y-m-d H:i:s')]);
     $db->commit();
     $_SESSION['demo_otp']=['token'=>$token,'receipt'=>$receipt,'until'=>time()+600];
     demoContactReply(200,['receipt'=>$receipt]);

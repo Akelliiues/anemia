@@ -28,7 +28,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile', 'network'], true)) $view = 'overview';
 date_default_timezone_set('Asia/Bangkok');
 $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
@@ -49,7 +49,17 @@ try {
     $isAdmin = $identity['role'] === 'account_admin';
     $canChooseRegion = $isAdmin || $identity['role'] === 'central_report';
     $roleLabel = $isAdmin ? 'ผู้ดูแลระบบ' : ANEMIA_REPORT_ROLES[$identity['role']];
-    if (in_array($view, ['access','assessment','audit','sample','release','sample-settings','contact-queue','scan-request'], true) && !$isAdmin) { http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้'); }
+    require __DIR__.'/_private/network.php';
+    $grantQuery=$db->prepare('SELECT scope_kind,scope_code FROM anemia_network_grant WHERE username=?');
+    $grantQuery->execute([$staff]);
+    $grant=$grantQuery->fetch(PDO::FETCH_ASSOC) ?: null;
+    $canQueue=$isAdmin || ($grant['scope_kind']??'')==='facility';
+    $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district'],true);
+    [$queueScope,$queueParams]=anemiaQueueNetworkScope($isAdmin,$grant);
+    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings'],true) && !$isAdmin) ||
+        (in_array($view,['contact-queue','scan-request'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
+        http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
+    }
     $sampleSetting = $db->query("SELECT enabled,changed_by,changed_at FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetch(PDO::FETCH_ASSOC);
     $sampleEnabled = (int)($sampleSetting['enabled'] ?? 0) === 1;
     if ($view === 'sample-settings') {
@@ -73,6 +83,30 @@ try {
     if (!$canChooseRegion) $region = (int)($identity['province_region'] ?? $identity['region']);
     $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     $token = $_SESSION['csrf'];
+    $networkNotice='';
+    if ($view==='network') {
+        if ($isAdmin && ($_GET['directory']??'')==='1') {
+            header('Content-Type: application/json; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="anemia-directory-index.json"');
+            $directory=anemiaFacilityDirectory();
+            echo json_encode(array_map(static fn($row,$index)=>['index'=>$index,'name'=>$row[0],'address'=>$row[1]],$directory,array_keys($directory)),JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
+            exit;
+        }
+        if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['network_action'])) {
+            if (!is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
+            $db->beginTransaction();
+            try {
+                $_SESSION['network_notice']=anemiaSaveNetwork($db,$isAdmin,$grant,$staff,$_POST);
+                $db->commit();
+            } catch (DomainException | PDOException $error) {
+                $db->rollBack();
+                $_SESSION['network_notice']=$error instanceof DomainException ? $error->getMessage() : 'บันทึกไม่ได้ กรุณาตรวจรหัสหน่วยหรือรายการที่ซ้ำ';
+            }
+            header('Location: dashboard.php?view=network',true,303); exit;
+        }
+        $networkNotice=$_SESSION['network_notice']??'';
+        unset($_SESSION['network_notice']);
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['account_action'] ?? '') === 'change_password') {
         header('Content-Type: application/json; charset=UTF-8');
         $reply = static function (int $status,string $message): never {
@@ -109,11 +143,15 @@ try {
     $contactTable = $demoQueue ? 'anemia_contact_demo_queue' : 'anemia_contact_queue';
     $pendingContactCounts = ['appointment'=>0,'callback'=>0];
     $pendingDemoCounts = $pendingContactCounts;
-    if ($isAdmin) {
-        $countSql = "SELECT request_kind,COUNT(*) FROM %s WHERE state='pending' GROUP BY request_kind";
-        $pendingContactCounts = array_replace($pendingContactCounts,array_map('intval',$db->query(sprintf($countSql,'anemia_contact_queue'))->fetchAll(PDO::FETCH_KEY_PAIR)));
+    if ($canQueue) {
+        $countPending=static function(string $table) use ($db,$queueScope,$queueParams): array {
+            $query=$db->prepare("SELECT request_kind,COUNT(*) FROM $table q WHERE state='pending' AND $queueScope GROUP BY request_kind");
+            $query->execute($queueParams);
+            return array_map('intval',$query->fetchAll(PDO::FETCH_KEY_PAIR));
+        };
+        $pendingContactCounts = array_replace($pendingContactCounts,$countPending('anemia_contact_queue'));
         if ($view === 'contact-queue') {
-            $pendingDemoCounts = array_replace($pendingDemoCounts,array_map('intval',$db->query(sprintf($countSql,'anemia_contact_demo_queue'))->fetchAll(PDO::FETCH_KEY_PAIR)));
+            $pendingDemoCounts = array_replace($pendingDemoCounts,$countPending('anemia_contact_demo_queue'));
             if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['counts'] ?? '') === '1') {
                 session_write_close();
                 header('Content-Type: application/json; charset=UTF-8');
@@ -132,24 +170,26 @@ try {
             $table = str_starts_with($reference,'DE-') ? 'anemia_contact_demo_queue' : 'anemia_contact_queue';
             if (($_POST['scan_action'] ?? '') === 'check_in') {
                 $db->beginTransaction();
-                $checkedIn = anemiaApplyRequestAction($db,$table,$reference,'attended',$staff,null);
+                $allowed=$db->prepare("SELECT q.receipt FROM $table q WHERE q.receipt=? AND $queueScope FOR UPDATE");
+                $allowed->execute([$reference,...$queueParams]);
+                $checkedIn = $allowed->fetchColumn() && anemiaApplyRequestAction($db,$table,$reference,'attended',$staff,null);
                 $db->commit();
                 $scanMessage = $checkedIn ? 'ยืนยันการเข้ารับบริการแล้ว' : 'คำขอนี้ไม่อยู่ในขั้นเช็กอิน';
             }
-            $lookup = $db->prepare("SELECT q.*, (SELECT MIN(changed_at) FROM anemia_request_history h WHERE h.receipt=q.receipt AND h.state='attended') AS checked_in_at FROM ".$table.' q WHERE q.receipt=?');
-            $lookup->execute([$reference]);
+            $lookup = $db->prepare("SELECT q.*, (SELECT MIN(changed_at) FROM anemia_request_history h WHERE h.receipt=q.receipt AND h.state='attended') AS checked_in_at FROM $table q WHERE q.receipt=? AND $queueScope");
+            $lookup->execute([$reference,...$queueParams]);
             $scannedRequest = $lookup->fetch(PDO::FETCH_ASSOC) ?: null;
         }
         if (!$scannedRequest) $scanMessage = 'ไม่พบคำขอ กรุณาตรวจเลขหรือสแกนใบรับคำขออีกครั้ง';
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($view === 'contact-queue') {
-            if (!$isAdmin || !is_string($_POST['csrf'] ?? null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
+            if (!$canQueue || !is_string($_POST['csrf'] ?? null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
             $receipt = $_POST['receipt'] ?? null;
             $state = $_POST['state'] ?? null;
             if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || ($state !== null && (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])))) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
             $db->beginTransaction();
-            $lookup = $db->prepare('SELECT state,facility,submitted_at,preferred_date,appointment_at,appointment_slot,next_contact_at FROM '.$contactTable.' WHERE receipt=? FOR UPDATE');
-            $lookup->execute([$receipt]);
+            $lookup = $db->prepare("SELECT state,facility,facility_key,submitted_at,preferred_date,appointment_at,appointment_slot,next_contact_at FROM $contactTable q WHERE receipt=? AND $queueScope FOR UPDATE");
+            $lookup->execute([$receipt,...$queueParams]);
             $request = $lookup->fetch(PDO::FETCH_ASSOC);
             if (!$request) { $db->rollBack(); http_response_code(404); exit('ไม่พบคำขอ'); }
             if ($state === null && isset($_POST['round_day'])) {
@@ -161,8 +201,8 @@ try {
                     SUM(q.state IN ('scheduled','attended','test_completed','follow_up') OR h.receipt IS NOT NULL) AS booked,
                     SUM(h.receipt IS NOT NULL) AS checked_in
                     FROM $contactTable q LEFT JOIN (SELECT DISTINCT receipt FROM anemia_request_history WHERE state='attended') h ON h.receipt=q.receipt
-                    WHERE q.facility=? AND q.appointment_at>=? AND q.appointment_at<DATE_ADD(?,INTERVAL 1 DAY) GROUP BY slot");
-                $counts->execute([$request['facility'],$day,$day]);
+                    WHERE q.facility=? AND q.facility_key<=>? AND $queueScope AND q.appointment_at>=? AND q.appointment_at<DATE_ADD(?,INTERVAL 1 DAY) GROUP BY slot");
+                $counts->execute([$request['facility'],$request['facility_key'],...$queueParams,$day,$day]);
                 $rounds = array_fill_keys(array_keys(ANEMIA_APPOINTMENT_SLOTS),['booked'=>0,'checkedIn'=>0]);
                 foreach ($counts as $count) $rounds[$count['slot']] = ['booked'=>(int)$count['booked'],'checkedIn'=>(int)$count['checked_in']];
                 $db->commit();
@@ -202,8 +242,9 @@ try {
                 }
                 if (!in_array($request['state'],ANEMIA_REQUEST_ACTIONS[$state][1] ?? [],true)) { $db->rollBack(); http_response_code(409); exit('ดำเนินการขั้นนี้ไม่ได้'); }
                 anemiaApplyRequestAction($db,$contactTable,$receipt,$state,$staff,$when,$slot);
-                $lookup->execute([$receipt]);
+                $lookup->execute([$receipt,...$queueParams]);
                 $request = $lookup->fetch(PDO::FETCH_ASSOC);
+                if (!$request) { $db->rollBack(); http_response_code(409); exit('สิทธิ์เข้าถึงคำขอเปลี่ยนแล้ว'); }
             }
             $request['actions'] = array_filter(ANEMIA_REQUEST_ACTIONS,static fn($action)=>in_array($request['state'],$action[1],true));
             $request['appointment_label'] = $request['appointment_at'] && in_array($request['state'],['scheduled','attended','test_completed','follow_up'],true) ? anemiaAppointmentLabel($request['appointment_at'],$request['appointment_slot']) : null;
@@ -272,7 +313,12 @@ try {
     $queueNow = $db->quote(date('Y-m-d H:i:s'));
     $overdue = "(state='scheduled' AND CASE WHEN appointment_slot IS NULL THEN appointment_at<$queueNow ELSE DATE(appointment_at)<DATE($queueNow) END)";
     $attention = "($overdue OR state IN ('pending','accepted') OR (state IN ('retry_contact','follow_up') AND next_contact_at<=$queueNow))";
-    $contactQueue = $view === 'contact-queue' ? $db->query('SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,'.$overdue.' AS overdue FROM '.$contactTable.($attentionOnly?' WHERE '.$attention:'').' ORDER BY submitted_at DESC,receipt DESC LIMIT 100')->fetchAll(PDO::FETCH_ASSOC) : [];
+    $contactQueue=[];
+    if ($view==='contact-queue') {
+        $queue=$db->prepare("SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,$overdue AS overdue FROM $contactTable q WHERE $queueScope".($attentionOnly?' AND '.$attention:'').' ORDER BY submitted_at DESC,receipt DESC LIMIT 100');
+        $queue->execute($queueParams);
+        $contactQueue=$queue->fetchAll(PDO::FETCH_ASSOC);
+    }
     $forms = $view === 'assessment' ? $db->query('SELECT version_key,state FROM anemia_form_version ORDER BY version_key')->fetchAll(PDO::FETCH_ASSOC) : [];
     $accessAccounts = $view === 'access' ? $db->query('SELECT s.username,s.role,s.enabled,a.region,a.province_code FROM anemia_staff s LEFT JOIN anemia_staff_access a ON a.username=s.username ORDER BY s.username')->fetchAll(PDO::FETCH_ASSOC) : [];
     $auditRows = $view === 'audit' ? $db->query('SELECT actor,target_username,action_name,role_name,region,province_code,enabled,changed_at FROM anemia_access_audit ORDER BY id DESC LIMIT 100')->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -370,8 +416,11 @@ try {
 $tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจังหวัด','evaluation'=>'ประเมินโครงการ','activity'=>'สถิติการทดลองแบบประเมิน','team'=>'ทีมวิจัยและพัฒนา','guide'=>'คู่มือการใช้งาน','about'=>'เกี่ยวกับระบบ'];
 $tabs['mobile'] = 'Anemia Staff';
 if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
+if ($canQueue) $tabs += ['contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
+if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบริการ';
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
 $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','contact-queue'=>'phone','scan-request'=>'scan'];
+$tabIcons['network']='hospital';
 $scopeName = $identity['role'] === 'provincial_report' ? ($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? zoneLabel($region) : 'ทุกเขตสุขภาพ');
 function accessFields(array $record, array $provinces): void
 {
@@ -470,7 +519,7 @@ function workspaceInfo(string $page, ?array $release = null): void
         ['รายงาน','map',['reports','activity','evaluation']],
         ['แบบประเมิน','ready',['assessment']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
-        ['ระบบ','users',['access','audit','sample-settings']],
+        ['ระบบ','users',['access','audit','sample-settings','network']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];
     foreach ($groups as [$groupLabel,$groupIcon,$keys]):
@@ -741,10 +790,11 @@ function workspaceInfo(string $page, ?array $release = null): void
   </section>
   <?php elseif ($view === 'about'): ?>
   <section class="card admin-report"><?php workspaceInfo($view, $localRelease); ?></section>
+  <?php elseif ($view === 'network'): require __DIR__.'/_private/network-view.php'; ?>
   <?php elseif ($view === 'mobile'): ?>
   <section class="card staff-mobile-home">
    <h2>งานของฉัน</h2>
-   <?php if ($isAdmin): ?>
+   <?php if ($canQueue): ?>
     <div class="staff-mobile-links">
      <a class="action primary" href="dashboard.php?view=scan-request"><?= workspaceIcon('scan') ?>สแกน QR</a>
      <a class="action" href="dashboard.php?view=contact-queue"><?= workspaceIcon('calendar') ?>นัดหมาย</a>
@@ -1061,7 +1111,7 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
  });
 })();
 </script>
-<?php if ($isAdmin): ?>
+<?php if ($canQueue): ?>
 <script>
 (() => {
  let running=false;

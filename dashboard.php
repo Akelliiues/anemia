@@ -69,10 +69,14 @@ try {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
     }
     $scanUnit = $isAdmin ? 'ตามสิทธิ์ผู้ดูแลระบบ' : '';
-    if (!$isAdmin && $canQueue && ($scannerApp || $view==='mobile')) {
+    if (!$isAdmin && $canQueue && $staffAppView) {
         $unitQuery=$db->prepare('SELECT name FROM anemia_network_facility WHERE code=?');
         $unitQuery->execute([$grant['scope_code']]);
         $scanUnit=$unitQuery->fetchColumn() ?: 'หน่วยบริการตามสิทธิ์บัญชี';
+    }
+    if ($view==='mobile' && $canQueue) {
+        header('Location: dashboard.php?view=contact-queue&app=staff',true,303);
+        exit;
     }
     $sampleSetting = $db->query("SELECT enabled,changed_by,changed_at FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetch(PDO::FETCH_ASSOC);
     $sampleEnabled = (int)($sampleSetting['enabled'] ?? 0) === 1;
@@ -372,8 +376,24 @@ try {
     $queueNow = $db->quote(date('Y-m-d H:i:s'));
     $overdue = "(state='scheduled' AND CASE WHEN appointment_slot IS NULL THEN appointment_at<$queueNow ELSE DATE(appointment_at)<DATE($queueNow) END)";
     $attention = "($overdue OR state IN ('pending','accepted') OR (state IN ('retry_contact','follow_up') AND next_contact_at<=$queueNow))";
+    $todayStart=$db->quote(date('Y-m-d').' 00:00:00');
+    $tomorrowStart=$db->quote(date('Y-m-d',strtotime('tomorrow')).' 00:00:00');
+    $mobileFilters=[
+        'pending'=>['รอรับเรื่อง',"q.state='pending'"],
+        'today'=>['นัดวันนี้',"q.state='scheduled' AND q.appointment_at >= $todayStart AND q.appointment_at < $tomorrowStart"],
+        'follow'=>['ต้องติดตาม',"($overdue OR q.state IN ('accepted','contacted','retry_contact','follow_up'))"],
+        'history'=>['ประวัติ',"q.state IN ('attended','test_completed','closed')"],
+    ];
+    $queueTab = $_GET['tab'] ?? ($attentionOnly?'follow':'pending');
+    if (!is_string($queueTab) || !isset($mobileFilters[$queueTab])) $queueTab='pending';
     $contactQueue=[];
     if ($view==='contact-queue') {
+        if ($mobileQueue) {
+            $metrics=array_map(static fn($entry)=>'COALESCE(SUM('.$entry[1].'),0)',$mobileFilters);
+            $counts=$db->prepare('SELECT '.implode(', ',$metrics)." FROM $contactTable q WHERE $queueScope");
+            $counts->execute($queueParams);
+            $mobileTotals=array_combine(array_keys($mobileFilters),$counts->fetch(PDO::FETCH_NUM));
+        } else {
         $report=$db->prepare("SELECT COUNT(*) AS requested,
             SUM(q.state IN ('attended','test_completed','follow_up') OR EXISTS
                 (SELECT 1 FROM anemia_request_history h WHERE h.receipt=q.receipt AND h.state='attended')) AS attended,
@@ -384,11 +404,13 @@ try {
             FROM $contactTable q LEFT JOIN anemia_request_confirmation c ON c.receipt=q.receipt WHERE $queueScope");
         $report->execute($queueParams);
         $referralStats=$report->fetch(PDO::FETCH_ASSOC);
+        }
         $focusReceipt=$_GET['request'] ?? '';
         if (!is_string($focusReceipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$focusReceipt)) $focusReceipt='';
         $queuePage = filter_input(INPUT_GET,'page',FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>1000000]]) ?: 1;
         $queueLimit = $mobileQueue ? '4 OFFSET '.($focusReceipt!==''?0:($queuePage-1)*3) : '100';
-        $queue=$db->prepare("SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,$overdue AS overdue FROM $contactTable q WHERE $queueScope".($focusReceipt!==''?' AND q.receipt=?':($attentionOnly?' AND '.$attention:'')).' ORDER BY submitted_at DESC,receipt DESC LIMIT '.$queueLimit);
+        $queueCondition=$focusReceipt!==''?' AND q.receipt=?':($mobileQueue?' AND ('.$mobileFilters[$queueTab][1].')':($attentionOnly?' AND '.$attention:''));
+        $queue=$db->prepare("SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,appointment_slot,$overdue AS overdue FROM $contactTable q WHERE $queueScope".$queueCondition.' ORDER BY submitted_at DESC,receipt DESC LIMIT '.$queueLimit);
         $queue->execute($focusReceipt!==''?[...$queueParams,$focusReceipt]:$queueParams);
         $contactQueue=$queue->fetchAll(PDO::FETCH_ASSOC);
         $queueNext=$mobileQueue && count($contactQueue)>3;
@@ -582,7 +604,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=mobile-viewport-v80">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-work-v81">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -601,7 +623,13 @@ function workspaceInfo(string $page, ?array $release = null): void
  <header class="staff-app-bar">
   <span class="staff-mobile-mark"><?= workspaceIcon($scannerApp?'scan':'drop') ?></span>
   <div><strong><?= $scannerApp?'สแกน QR ประจำหน่วย':'Anemia Staff' ?></strong><small><?= esc($canQueue?$scanUnit:$scopeName) ?></small></div>
+  <?php if ($mobileQueue): $newCount=array_sum($pendingContactCounts); ?>
+   <a class="staff-app-bell" href="dashboard.php?view=contact-queue&amp;app=staff&amp;tab=pending" aria-label="คำขอใหม่ <?= $newCount ?> รายการ" data-staff-bell><?= workspaceIcon('bell') ?><span class="contact-pending-badge" data-pending-count="live.total" <?= $newCount===0?'hidden':'' ?>><?= $newCount>99?'99+':$newCount ?></span></a>
+  <?php else: ?>
+  <?php if ($unitScanner): ?><a class="staff-app-bell" href="dashboard.php?view=mobile" aria-label="กลับไปที่งานของฉัน"><?= workspaceIcon('back') ?></a><?php else: ?>
   <form method="post" action="<?= $scannerApp?'login?next=unit-scan':'login?next=mobile' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button type="submit" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
+  <?php endif; ?>
+  <?php endif; ?>
  </header>
  <?php else: ?>
  <header class="admin-top no-print">
@@ -952,7 +980,7 @@ function workspaceInfo(string $page, ?array $release = null): void
      <?php if (in_array($scannedRequest['state'],ANEMIA_REQUEST_ACTIONS['attended'][1],true)): ?>
       <form method="post">
        <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="receipt" value="<?= esc($scannedRequest['receipt']) ?>">
-       <button class="action primary" name="scan_action" value="check_in"><?= workspaceIcon('ready') ?>ยืนยันเช็กอิน</button>
+       <button class="action primary" name="scan_action" value="check_in"><?= workspaceIcon('ready') ?>ยืนยันเข้ารับบริการ</button>
       </form>
      <?php endif; ?>
      <a class="action" href="dashboard.php?view=contact-queue<?= $unitScanner?'&amp;app=staff':'' ?><?= $demoScan?'&amp;demo=1':'' ?>&amp;request=<?= esc($scannedRequest['receipt']) ?>"><?= workspaceIcon('next') ?>เปิดไทม์ไลน์</a>
@@ -989,8 +1017,14 @@ function workspaceInfo(string $page, ?array $release = null): void
   <section class="card admin-report">
   <?php if ($mobileQueue): ?>
   <?php $mobileQueueUrl='dashboard.php?view=contact-queue&app=staff'.($demoQueue?'&demo=1':''); ?>
-  <div class="actions staff-queue-switch"><a class="action" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานของฉัน</a><a class="action" href="<?= esc($mobileQueueUrl.($attentionOnly?'':'&attention=1')) ?>"><?= $attentionOnly?'คิวทั้งหมด':'งานติดตาม' ?></a></div>
-  <h1 class="staff-queue-title"><?= $attentionOnly?'งานติดตาม':'คิวนัดหมาย' ?></h1>
+  <h1 class="staff-queue-title"><?= $focusReceipt!==''?'รายละเอียดคำขอ':($queueTab==='history'?'ประวัติ':'งานของฉัน') ?></h1>
+  <?php if ($focusReceipt==='' && $queueTab!=='history'): ?>
+  <nav class="staff-queue-tabs" aria-label="ประเภทงาน">
+   <?php foreach (['pending','today','follow'] as $tab): ?>
+   <a href="<?= esc($mobileQueueUrl.'&tab='.$tab) ?>" <?= $queueTab===$tab?'aria-current="page"':'' ?>><?= esc($mobileFilters[$tab][0]) ?> <strong<?= $tab==='pending'&&!$demoQueue?' data-pending-count="live.total"':'' ?>><?= number_format((int)$mobileTotals[$tab]) ?></strong></a>
+   <?php endforeach; ?>
+  </nav>
+  <?php endif; ?>
   <?php else: ?>
   <div class="actions"><a class="action <?= !$demoQueue?'primary':'' ?>" href="dashboard.php?view=contact-queue"><?= workspaceIcon('phone') ?>คิวจริง</a>
    <a class="action <?= $demoQueue?'primary':'' ?>" href="dashboard.php?view=contact-queue&amp;demo=1"><?= workspaceIcon('chart') ?>คิวทดสอบ</a>
@@ -1018,7 +1052,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <?php if ($mobileQueue): ?>
   <div class="staff-queue-list">
    <?php foreach ($contactQueue as $item): ?>
-   <button type="button" class="action queue-timeline-trigger staff-queue-item" data-queue-timeline="<?= esc($item['receipt']) ?>" <?= $focusReceipt!==''?'data-queue-open':'' ?> aria-haspopup="dialog"><strong><?= esc($item['contact_name']) ?></strong><small><?= esc($item['receipt']) ?> · <?= esc(workspaceThaiShortDate($item['submitted_at'])) ?></small><span><?= esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span></button>
+   <button type="button" class="action queue-timeline-trigger staff-queue-item" data-queue-timeline="<?= esc($item['receipt']) ?>" <?= $focusReceipt!==''?'data-queue-open':'' ?> aria-haspopup="dialog"><strong><?= esc($item['receipt']) ?></strong><small><?= $item['request_kind']==='appointment'?'ขอนัดเข้าตรวจ':'ขอให้ติดต่อกลับ' ?><?= $queueTab==='today'&&$item['appointment_slot']?' · '.esc(ANEMIA_APPOINTMENT_SLOTS[$item['appointment_slot']] ?? ''):'' ?></small><span><?= esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span></button>
    <?php endforeach; ?>
   </div>
   <?php else: ?>
@@ -1083,7 +1117,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <script defer src="queue-timeline.js?v=11"></script>
   <?php endif; ?>
   <?php if ($mobileQueue && $focusReceipt==='' && ($queuePage>1 || $queueNext)): ?>
-   <?php $pageUrl=$mobileQueueUrl.($attentionOnly?'&attention=1':'').'&page='; ?>
+   <?php $pageUrl=$mobileQueueUrl.'&tab='.$queueTab.'&page='; ?>
    <nav class="staff-queue-pager" aria-label="เปลี่ยนหน้าคำขอ">
     <?php if ($queuePage>1): ?><a class="action" href="<?= esc($pageUrl.($queuePage-1)) ?>">ก่อนหน้า</a><?php endif; ?>
     <span>หน้า <?= number_format($queuePage) ?></span>
@@ -1091,6 +1125,14 @@ function workspaceInfo(string $page, ?array $release = null): void
    </nav>
   <?php endif; ?>
   </section>
+  <?php if ($mobileQueue): ?>
+  <nav class="staff-app-dock staff-app-work-dock" aria-label="เมนูแอปเจ้าหน้าที่">
+   <a href="dashboard.php?view=contact-queue&amp;app=staff" <?= $queueTab!=='history'?'aria-current="page"':'' ?>><?= workspaceIcon('ready') ?>งานของฉัน</a>
+   <a class="staff-dock-scan" href="dashboard.php?view=scan-request&amp;app=unit"><?= workspaceIcon('scan') ?>สแกน QR</a>
+   <a href="dashboard.php?view=contact-queue&amp;app=staff&amp;tab=history" <?= $queueTab==='history'?'aria-current="page"':'' ?>><?= workspaceIcon('history') ?>ประวัติ</a>
+   <button type="button" data-workspace-dialog="account" aria-haspopup="dialog"><?= workspaceIcon('users') ?>บัญชี</button>
+  </nav>
+  <?php endif; ?>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">
@@ -1188,10 +1230,17 @@ function workspaceInfo(string $page, ?array $release = null): void
 </footer><?php endif; ?>
 <dialog id="workspace-account" class="workspace-dialog no-print" aria-labelledby="workspace-account-title">
  <header class="workspace-dialog-heading">
-  <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> เปลี่ยนรหัสผ่าน</h2>
+  <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> <?= $mobileQueue?'บัญชีเจ้าหน้าที่':'เปลี่ยนรหัสผ่าน' ?></h2>
   <form method="dialog"><button class="action"><?= workspaceIcon('close') ?>ปิด</button></form>
  </header>
  <p>บัญชี <?= esc($staff) ?> · <?= esc($roleLabel) ?></p>
+ <?php if ($mobileQueue): ?>
+ <div class="actions staff-app-account-actions">
+  <a class="action" data-scanner-install-link href="dashboard.php?view=scanner-install"><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR</a>
+  <a class="action" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?>เปิดแดชบอร์ด</a>
+  <form method="post" action="login?next=mobile"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action" name="action" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></form>
+ </div>
+ <?php endif; ?>
  <form id="account-password-form" method="post">
   <input type="hidden" name="csrf" value="<?= esc($token) ?>">
   <input type="hidden" name="account_action" value="change_password">
@@ -1291,13 +1340,14 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
    const counts=await response.json();
    document.querySelectorAll('[data-pending-count]').forEach(node=>{
     const [scope,kind]=node.dataset.pendingCount.split('.');
-    const value=counts[scope]?.[kind];
+    const value=kind==='total' ? counts[scope]?.appointment+counts[scope]?.callback : counts[scope]?.[kind];
     if(!Number.isInteger(value)||value<0)return;
     node.textContent=value.toLocaleString('th-TH');
     if(node.classList.contains('contact-pending-badge')){
      node.textContent=value>99?'99+':node.textContent;
      node.hidden=value===0;
-     node.setAttribute('aria-label','คำขอนัดรอประสาน '+value+' รายการ');
+     if(node.closest('[data-staff-bell]'))node.closest('[data-staff-bell]').setAttribute('aria-label','คำขอใหม่ '+value+' รายการ');
+     else node.setAttribute('aria-label','คำขอนัดรอประสาน '+value+' รายการ');
     }
    });
   }catch{}finally{running=false;}

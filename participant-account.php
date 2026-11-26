@@ -28,6 +28,7 @@ $canConnect=static fn(string $key): bool => isset($providers[$key]) && $provider
     ($key!=='facebook'||preg_match('/^v\d+\.\d+$/D',$facebookVersion));
 $invite=$_REQUEST['invite']??'';
 $invite=is_string($invite)&&preg_match('/^[a-f0-9]{32}$/D',$invite)?$invite:'';
+$returnToPortal=($_REQUEST['return']??'')==='portal';
 
 function participantProviderJson(string $url,?array $form=null,?string $token=null): array
 {
@@ -58,14 +59,14 @@ try {
         if ($key==='logout') {
             $_SESSION=[];
             session_regenerate_id(true);
-            header('Location: participant-account.php',true,303); exit;
+            header('Location: participant-account.php'.($returnToPortal?'?return=portal':''),true,303); exit;
         }
         if (!is_string($key)||!$canConnect($key)) throw new DomainException('ช่องทางนี้ยังไม่เปิดใช้งาน');
         [, $authorize, , $scope,$client]=$providers[$key];
         $state=bin2hex(random_bytes(24));
         $nonce=bin2hex(random_bytes(24));
         $verifier=bin2hex(random_bytes(32));
-        $_SESSION['oauth']=['state'=>$state,'provider'=>$key,'until'=>time()+600,'account'=>$account,'invite'=>$invite,'nonce'=>$nonce,'verifier'=>$verifier];
+        $_SESSION['oauth']=['state'=>$state,'provider'=>$key,'until'=>time()+600,'account'=>$account,'invite'=>$invite,'nonce'=>$nonce,'verifier'=>$verifier,'portal'=>$returnToPortal];
         $params=['response_type'=>'code','client_id'=>$client,'redirect_uri'=>$redirect,'state'=>$state,'scope'=>$scope];
         if ($key!=='facebook') $params+=['code_challenge'=>rtrim(strtr(base64_encode(hash('sha256',$verifier,true)),'+/','-_'),'='),'code_challenge_method'=>'S256'];
         if ($key==='line') $params['nonce']=$nonce;
@@ -79,6 +80,7 @@ try {
         }
         unset($_SESSION['oauth']);
         $invite=$flow['invite'];
+        $returnToPortal=$flow['portal']??false;
         $code=$_GET['code']??null;
         if (!is_string($code)||$code==='') throw new DomainException('ยังไม่ได้เชื่อมบัญชี');
         [,,$tokenUrl,,$client,$secret]=$providers[$key];
@@ -99,7 +101,7 @@ try {
         $account=anemiaConnectParticipant(participantDb(),$key,$subject,$account,anemiaTeamCookieHash());
         session_regenerate_id(true);
         $_SESSION=['account'=>$account,'until'=>time()+28800,'csrf'=>bin2hex(random_bytes(32))];
-        $target='index.html?team=1'.($invite!==''?'&invite='.$invite:'');
+        $target=$returnToPortal?'index.html':'index.html?team=1'.($invite!==''?'&invite='.$invite:'');
         header('Location: '.$target,true,303); exit;
     }
 } catch (Throwable $error) {
@@ -125,6 +127,7 @@ if ($account) {
 <form method="post" action="participant-account.php" class="actions">
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
+ <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
  <?php foreach ($providers as $key=>[$label]): ?>
   <button class="action" name="provider" value="<?= $key ?>" <?= !$canConnect($key)||in_array($key,$linked,true)?'disabled':'' ?>>
    <?= participantEscape($label) ?><?= in_array($key,$linked,true)?' · เชื่อมแล้ว':(!$canConnect($key)?' · ยังไม่เปิด':'') ?>
@@ -133,5 +136,9 @@ if ($account) {
  <?php if ($account): ?><button class="action" name="provider" value="logout">ออกจากบัญชี</button><?php endif; ?>
 </form>
 <p>ระบบเก็บรหัสบัญชีสำหรับเข้าสู่ระบบและจดจำแต้ม</p>
-<a class="action" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>">กลับไปที่ทีมและแต้ม</a>
+<?php if ($returnToPortal): ?>
+ <a class="action" href="index.html">กลับหน้าบ้าน</a>
+<?php else: ?>
+ <a class="action" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>">กลับไปที่ทีมและแต้ม</a>
+<?php endif; ?>
 </section></main></html>

@@ -5,6 +5,8 @@
  const list=dialog.querySelector('ol');
  const historyPanel=list.closest('details');
  const currentPanel=dialog.querySelector('[data-timeline-current]');
+ const currentLabel=currentPanel.querySelector('[data-current-label]');
+ const currentDetail=currentPanel.querySelector('[data-current-detail]');
  const contactPanel=dialog.querySelector('[data-timeline-contact]');
  const message=dialog.querySelector('[data-timeline-message]');
  const states=form.elements.state;
@@ -120,6 +122,12 @@
   const title=document.createElement('strong');
   title.textContent=label;
   item.append(title);
+  if(kind==='current'){
+   const marker=document.createElement('span');
+   marker.className='queue-current-marker';
+   marker.textContent='ตอนนี้';
+   item.append(marker);
+  }
   if(detail){
    const text=document.createElement('small');
    text.textContent=detail;
@@ -151,7 +159,10 @@
    list.replaceChildren();
    const latest=data.history.at(-1);
    const pending=data.state==='pending'&&!latest;
-   currentPanel.textContent=[labels.get(data.state),data.appointment_label,data.confirmation_label,data.next_contact_label&&'ติดตาม '+data.next_contact_label].filter(Boolean).join(' · ');
+   currentPanel.dataset.state=data.state;
+   currentLabel.textContent=labels.get(data.state)??'ยังไม่ทราบสถานะ';
+   currentDetail.textContent=[data.appointment_label,data.confirmation_label,data.next_contact_label&&'ติดตาม '+data.next_contact_label].filter(Boolean).join(' · ');
+   currentDetail.hidden=!currentDetail.textContent;
    currentPanel.hidden=false;
    if(contactPanel){
     contactPanel.querySelector('span').textContent=[data.contact_name,data.facility].filter(Boolean).join(' · ');
@@ -161,12 +172,12 @@
     contactPanel.hidden=false;
    }
    historyPanel.hidden=false;
-   addEvent('ส่งคำขอแล้ว',pending?'current':'done',data.submitted_at+(pending?' · รอเจ้าหน้าที่รับเรื่อง':''));
+   addEvent(pending?currentLabel.textContent:'ส่งคำขอแล้ว',pending?'current':'done',data.submitted_at);
    data.history.forEach((event,index)=>{
-    const current=index===data.history.length-1;
-    addEvent(labels.get(event.state),current?'current':'done',event.changed_at+' · '+event.actor+(current?' · สถานะปัจจุบัน':''));
+    const current=index===data.history.length-1&&event.state===data.state;
+    addEvent(labels.get(event.state),current?'current':'done',event.changed_at+' · '+event.actor);
    });
-   if(!latest&&!pending)addEvent(labels.get(data.state),'current','สถานะปัจจุบัน · ไม่มีวันเวลาในประวัติเดิม');
+   if(!pending&&latest?.state!==data.state)addEvent(labels.get(data.state),'current','ไม่มีวันเวลาในประวัติเดิม');
    if(data.appointment_label)addEvent('วันนัด','future',data.appointment_label);
    if(data.next_contact_label)addEvent('กำหนดติดตาม','future',data.next_contact_label);
    if(data.state!=='closed'){

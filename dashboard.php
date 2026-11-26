@@ -605,7 +605,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-install-v89">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=timeline-status-v91">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1067,7 +1067,10 @@ function workspaceInfo(string $page, ?array $release = null): void
     <div><h2 id="queue-timeline-title">ไทม์ไลน์คำขอ</h2><small data-timeline-receipt></small></div>
     <form method="dialog"><button class="action" aria-label="ปิดไทม์ไลน์"><?= workspaceIcon('close') ?></button></form>
    </header>
-   <p class="queue-timeline-current" data-timeline-current hidden></p>
+   <div class="queue-timeline-current" data-timeline-current role="status" hidden>
+    <span class="queue-current-icon" aria-hidden="true"><?= workspaceIcon('history') ?></span>
+    <div><small>สถานะปัจจุบัน</small><strong data-current-label></strong><span data-current-detail hidden></span></div>
+   </div>
    <?php if ($mobileQueue): ?><p data-timeline-contact hidden><span></span> <a></a></p><?php endif; ?>
    <details class="queue-timeline-history" hidden>
     <summary>ดูประวัติและขั้นถัดไป</summary>
@@ -1112,7 +1115,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=11"></script>
+  <script defer src="queue-timeline.js?v=12"></script>
   <?php endif; ?>
   <?php if ($mobileQueue && $focusReceipt==='' && ($queuePage>1 || $queueNext)): ?>
    <?php $pageUrl=$mobileQueueUrl.'&tab='.$queueTab.'&page='; ?>

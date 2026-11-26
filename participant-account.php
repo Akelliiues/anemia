@@ -124,16 +124,24 @@ if ($account) {
 <p>เชื่อมบัญชีเพื่อเก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อมครั้งแรก</p>
 <?php if ($linked): ?><p class="status">ได้รับโบนัสเชื่อมบัญชีแล้ว 5 แต้ม</p><?php endif; ?>
 <?php if ($notice!==''): ?><p class="status" role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
-<form method="post" action="participant-account.php" class="actions">
+<form method="post" action="participant-account.php">
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
- <?php foreach ($providers as $key=>[$label]): ?>
-  <button class="action" name="provider" value="<?= $key ?>" <?= !$canConnect($key)||in_array($key,$linked,true)?'disabled':'' ?>>
-   <?= participantEscape($label) ?><?= in_array($key,$linked,true)?' · เชื่อมแล้ว':(!$canConnect($key)?' · ยังไม่เปิด':'') ?>
-  </button>
- <?php endforeach; ?>
- <?php if ($account): ?><button class="action" name="provider" value="logout">ออกจากบัญชี</button><?php endif; ?>
+ <div class="actions">
+  <?php foreach (['line','google'] as $key): $label=$providers[$key][0]; $ready=$canConnect($key); $connected=in_array($key,$linked,true); ?>
+   <button class="action" name="provider" value="<?= $key ?>" <?= !$ready||$connected?'disabled':'' ?>>
+    <?= $connected?'เชื่อมแล้ว · ':($ready?($account?'เชื่อมด้วย ':'เข้าสู่ระบบด้วย '):'') ?><?= participantEscape($label) ?><?= !$ready&&!$connected?' · ยังไม่เปิด':'' ?>
+   </button>
+  <?php endforeach; ?>
+  <button class="action" type="button" disabled>ThaID · รอเปิดบริการ</button>
+ </div>
+ <?php if ($canConnect('facebook') || in_array('facebook',$linked,true)): ?>
+  <details><summary>ช่องทางอื่น</summary>
+   <button class="action" name="provider" value="facebook" <?= !$canConnect('facebook')||in_array('facebook',$linked,true)?'disabled':'' ?>>Facebook<?= in_array('facebook',$linked,true)?' · เชื่อมแล้ว':'' ?></button>
+  </details>
+ <?php endif; ?>
+ <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout">ออกจากบัญชี</button></div><?php endif; ?>
 </form>
 <p>ระบบเก็บรหัสบัญชีสำหรับเข้าสู่ระบบและจดจำแต้ม</p>
 <?php if ($returnToPortal): ?>

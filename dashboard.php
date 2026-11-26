@@ -576,7 +576,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-pwa-v73">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
-<script defer src="staff-install.js?v=3"></script>
+<script defer src="staff-install.js?v=4"></script>
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -901,12 +901,17 @@ function workspaceInfo(string $page, ?array $release = null): void
   <section class="card admin-report staff-scanner-install" data-install-other-app>
    <h1>ติดตั้งแอปสแกน QR</h1><p>เปิดจากหน้าจอหลักเพื่อสแกนใบรับคำขอของผู้มารับบริการ ระบบใช้หน่วยบริการตามสิทธิ์บัญชีของคุณ</p>
    <div class="actions">
-    <button class="action primary" type="button" data-staff-install hidden><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR</button>
+    <a class="action primary" href="#scanner-install-help" data-staff-install><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR</a>
     <a class="action" href="dashboard.php?view=scan-request&amp;app=unit"><?= workspaceIcon('scan') ?>เปิดหน้าสแกน</a>
     <a class="action" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a>
    </div>
    <p data-install-result data-app-name="สแกน QR ประจำหน่วย" role="status" hidden></p>
-   <div data-install-help><p><strong>iPhone / iPad</strong> เปิดใน Safari แล้วเลือก แชร์ → เพิ่มไปยังหน้าจอโฮม</p><p><strong>Android</strong> เปิดใน Chrome แล้วเลือก ติดตั้งแอป หรือ เพิ่มลงในหน้าจอหลัก</p></div>
+   <div id="scanner-install-help" data-install-help>
+    <h2>ติดตั้งผ่านเมนูเบราว์เซอร์</h2>
+    <p>หากเปิดจากแอป Anemia Staff อยู่ ให้เปิด<a href="dashboard.php?view=scan-request&amp;app=unit">หน้าสแกน QR ประจำหน่วย</a>ใน Safari หรือ Chrome ก่อนเพิ่มไปยังหน้าจอหลัก</p>
+    <p><strong>iPhone / iPad</strong> ใน Safari เลือก แชร์ → เพิ่มไปยังหน้าจอโฮม</p>
+    <p><strong>Android</strong> ใน Chrome เปิดเมนู ⋮ แล้วเลือก ติดตั้งแอป หรือ เพิ่มลงในหน้าจอหลัก</p>
+   </div>
   </section>
   <?php elseif ($view === 'scan-request'): ?>
   <div class="request-scanner-layout">

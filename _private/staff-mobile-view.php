@@ -7,6 +7,7 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
   <div><p>Anemia Staff</p><h1 id="staff-mobile-title">งานเจ้าหน้าที่</h1><small><?= esc($roleLabel) ?> · <?= esc($canQueue?$scanUnit:$scopeName) ?></small></div>
  </header>
  <?php if ($canQueue): ?>
+ <a class="action staff-mobile-overview" href="dashboard.php?view=scanner-install"><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR ประจำหน่วย</a>
  <div class="staff-mobile-metrics" aria-label="คำขอรอประสาน">
   <?php foreach (['appointment'=>['calendar','รอรับเรื่องนัดตรวจ'],'callback'=>['phone','รอรับเรื่องติดต่อกลับ']] as $kind=>[$icon,$label]): ?>
    <a class="card staff-mobile-metric" href="dashboard.php?view=contact-queue&amp;attention=1">
@@ -19,7 +20,6 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
   <a class="card staff-mobile-tool" href="dashboard.php?view=contact-queue"><span class="iconbox"><?= workspaceIcon('calendar') ?></span><span><strong>คิวนัดหมาย</strong><small>เปิดและจัดการคำขอ</small></span><?= workspaceIcon('next') ?></a>
   <a class="card staff-mobile-tool" href="dashboard.php?view=contact-queue&amp;attention=1"><span class="iconbox"><?= workspaceIcon('history') ?></span><span><strong>ติดตามงาน</strong><small>ดูรายการที่ต้องดำเนินการ</small></span><?= workspaceIcon('next') ?></a>
  </nav>
- <a class="action staff-mobile-overview" href="dashboard.php?view=scanner-install"><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR ประจำหน่วย</a>
  <?php endif; ?>
  <a class="action staff-mobile-overview" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?><?= $canQueue?'เปิดแดชบอร์ด':'ดูภาพรวมตามพื้นที่ของฉัน' ?></a>
 </section>

@@ -1677,3 +1677,9 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .participant-signup :is(summary,label) svg {color:var(--violet);}
 .participant-provider-mark {display:inline-grid;place-items:center;width:1.4rem;height:1.4rem;border-radius:.4rem;background:#e9f1ff;color:#2956a1;font-size:.8rem;font-weight:800;}
 .participant-provider-mark[data-provider=line] {background:#dbf6e8;color:#096637;}
+.member-filters input[type=search] {width:100%;min-height:44px;padding:.5rem .65rem;border:1px solid var(--line);border-radius:.65rem;background:transparent;color:var(--ink);font:inherit;}
+.member-menu-trigger.action {min-width:38px;min-height:34px;padding:.15rem .45rem;font-size:1.2rem;line-height:1;text-decoration:none;}
+.member-menu {position:fixed;inset:auto;margin:0;padding:.3rem;min-width:10rem;border:1px solid var(--line);border-radius:.7rem;background:var(--dark-surface,#fff);color:var(--ink);box-shadow:0 10px 24px #21163835;}
+.member-menu a {display:flex;align-items:center;gap:.4rem;padding:.45rem .55rem;border-radius:.45rem;color:inherit;text-decoration:none;}
+.member-menu a:is(:hover,:focus-visible) {background:var(--dark-hover,#f0eaff);}
+.member-menu a svg {width:1rem;height:1rem;}

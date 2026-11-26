@@ -1,5 +1,6 @@
 <?php
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
+require_once __DIR__.'/members.php';
 $search=filter_input(INPUT_GET,'member_search')??'';
 $search=is_string($search)?substr(strtolower(trim($search)),0,40):'';
 if (!preg_match('/^[a-z0-9._-]*$/D',$search)) $search='';
@@ -27,6 +28,7 @@ $summary=$db->query('SELECT COUNT(*) AS total,COUNT(suspended_at) AS suspended F
 $base=['view'=>'members','member_search'=>$search,'member_status'=>$status,'member_page'=>$page];
 $memberUrl=static fn(array $add=[]): string=>'dashboard.php?'.http_build_query(array_replace($base,$add));
 $member=filter_input(INPUT_GET,'member')??'';
+$task=filter_input(INPUT_GET,'member_task')??'';
 $detail=null;
 $audit=[];
 if (is_string($member)&&preg_match('/^[a-f0-9]{32}$/D',$member)) {
@@ -58,7 +60,7 @@ $methods=static function(array $row): string {
   <span><?= workspaceIcon('ready') ?> ใช้งานได้ <strong><?= number_format((int)$summary['total']-(int)$summary['suspended']) ?></strong></span>
   <span><?= workspaceIcon('lock') ?> ระงับ <strong><?= number_format((int)$summary['suspended']) ?></strong></span>
  </div>
- <form method="get" class="admin-filters">
+ <form method="get" class="admin-filters member-filters">
   <input type="hidden" name="view" value="members">
   <label>ค้นหาสมาชิก<input type="search" name="member_search" value="<?= esc($search) ?>" placeholder="ชื่อบัญชีหรือรหัสสมาชิก" maxlength="40"></label>
   <label>สถานะ<select name="member_status"><option value="">ทั้งหมด</option><option value="active" <?= $status==='active'?'selected':'' ?>>ใช้งานได้</option><option value="suspended" <?= $status==='suspended'?'selected':'' ?>>ระงับ</option></select></label>
@@ -66,12 +68,20 @@ $methods=static function(array $row): string {
  </form>
  <?php if ($rows): ?>
  <div class="tablewrap"><table class="admin-table">
-  <thead><tr><th>สมาชิก</th><th>วิธีเข้าสู่ระบบ</th><th>วันที่สมัคร</th><th>สถานะ</th><th>รายละเอียด</th></tr></thead>
+  <thead><tr><th>สมาชิก</th><th>วิธีเข้าสู่ระบบ</th><th>วันที่สมัคร</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
   <tbody><?php foreach ($rows as $row): ?>
-   <tr><th scope="row"><?= esc($row['username']??substr($row['id'],0,12)) ?></th>
+   <tr><th scope="row"><?= esc(anemiaMemberListName($row['username'],$row['id'])) ?></th>
     <td><?= esc($methods($row)) ?></td><td><?= esc(workspaceThaiShortDate($row['connected_at'])) ?></td>
     <td><?= $row['suspended_at']?'ระงับ':'ใช้งานได้' ?></td>
-    <td><a class="action" href="<?= esc($memberUrl(['member'=>$row['id']])) ?>"><?= workspaceIcon('next') ?>เปิด</a></td>
+    <td>
+     <?php $detailUrl=['member'=>$row['id']]; $menuId='member-menu-'.$row['id']; ?>
+     <a class="action member-menu-trigger" href="<?= esc($memberUrl($detailUrl)) ?>" data-member-menu="<?= $menuId ?>" aria-label="จัดการสมาชิก <?= esc(anemiaMemberListName($row['username'],$row['id'])) ?>">⋯</a>
+     <div id="<?= $menuId ?>" class="member-menu" popover hidden>
+      <a href="<?= esc($memberUrl($detailUrl)) ?>"><?= workspaceIcon('info') ?>ดูรายละเอียด</a>
+      <?php if ($row['username']): ?><a href="<?= esc($memberUrl($detailUrl+['member_task'=>'rename'])) ?>"><?= workspaceIcon('person') ?>แก้ไขชื่อบัญชี</a><?php endif; ?>
+      <a href="<?= esc($memberUrl($detailUrl+['member_task'=>'status'])) ?>"><?= workspaceIcon($row['suspended_at']?'ready':'lock') ?><?= $row['suspended_at']?'เปิดบัญชีคืน':'ระงับบัญชี' ?></a>
+     </div>
+    </td>
    </tr>
   <?php endforeach; ?></tbody>
  </table></div>
@@ -84,19 +94,26 @@ $methods=static function(array $row): string {
 </section>
 <?php if ($detail): ?>
 <dialog id="member-details" class="workspace-dialog" open aria-labelledby="member-details-title">
- <header class="workspace-dialog-heading"><h2 id="member-details-title">รายละเอียดสมาชิก</h2><a class="action" href="<?= esc($memberUrl()) ?>" aria-label="ปิด"><?= workspaceIcon('close') ?></a></header>
+ <header class="workspace-dialog-heading"><h2 id="member-details-title"><?= $task==='rename'?'แก้ไขชื่อบัญชี':($task==='status'?($detail['suspended_at']?'เปิดบัญชีคืน':'ระงับบัญชี'):'รายละเอียดสมาชิก') ?></h2><a class="action" href="<?= esc($memberUrl()) ?>" aria-label="ปิด"><?= workspaceIcon('close') ?></a></header>
+ <?php if ($memberNotice!==''): ?><p class="status" role="status"><?= esc($memberNotice) ?></p><?php endif; ?>
  <p><strong><?= esc($detail['username']??'บัญชีจากช่องทางภายนอก') ?></strong><br><small><?= esc($detail['id']) ?></small></p>
  <p><?= esc($methods($detail)) ?> · <?= $detail['suspended_at']?'ระงับ':'ใช้งานได้' ?></p>
  <p>แต้มที่บันทึก <?= ($detail['providers']?5:0)+($detail['completed_at']?10:0)+5*(int)$detail['invited_completions'] ?></p>
- <?php $action=$detail['suspended_at']?'restore':'suspend'; ?>
+ <?php if ($task==='status'||($task==='rename'&&$detail['username'])): ?>
+ <?php $action=$task==='rename'?'rename':($detail['suspended_at']?'restore':'suspend'); ?>
  <form method="post" class="participant-signup">
   <input type="hidden" name="csrf" value="<?= esc($token) ?>">
   <input type="hidden" name="member" value="<?= esc($detail['id']) ?>">
-  <label>เหตุผล <textarea name="reason" rows="2" maxlength="500" required></textarea></label>
-  <button class="action" type="submit" name="member_action" value="<?= $action ?>"><?= workspaceIcon($action==='suspend'?'lock':'ready') ?> <?= $action==='suspend'?'ระงับบัญชี':'เปิดบัญชีคืน' ?></button>
+  <?php if ($action==='rename'): ?><label>ชื่อบัญชีใหม่<input name="new_username" value="<?= esc($detail['username']) ?>" maxlength="40" required></label><?php endif; ?>
+  <label>เหตุผล <textarea name="reason" rows="2" maxlength="<?= $action==='rename'?400:500 ?>" required></textarea></label>
+  <button class="action primary" type="submit" name="member_action" value="<?= $action ?>"><?= workspaceIcon($action==='suspend'?'lock':'save') ?> <?= ['suspend'=>'ระงับบัญชี','restore'=>'เปิดบัญชีคืน','rename'=>'บันทึกชื่อบัญชี'][$action] ?></button>
  </form>
+ <?php else: ?><div class="actions">
+  <?php if ($detail['username']): ?><a class="action" href="<?= esc($memberUrl(['member'=>$detail['id'],'member_task'=>'rename'])) ?>"><?= workspaceIcon('person') ?>แก้ไขชื่อบัญชี</a><?php endif; ?>
+  <a class="action" href="<?= esc($memberUrl(['member'=>$detail['id'],'member_task'=>'status'])) ?>"><?= workspaceIcon($detail['suspended_at']?'ready':'lock') ?><?= $detail['suspended_at']?'เปิดบัญชีคืน':'ระงับบัญชี' ?></a>
+ </div><?php endif; ?>
  <?php if ($audit): ?><details><summary>ประวัติเปลี่ยนสถานะ</summary><ul>
-  <?php foreach ($audit as $event): ?><li><?= esc(workspaceThaiShortDate($event['created_at'])) ?> · <?= esc($event['actor']) ?> · <?= $event['action_name']==='suspend'?'ระงับ':'เปิดคืน' ?><br><small><?= esc($event['reason']) ?></small></li><?php endforeach; ?>
+  <?php foreach ($audit as $event): ?><li><?= esc(workspaceThaiShortDate($event['created_at'])) ?> · <?= esc($event['actor']) ?> · <?= ['suspend'=>'ระงับ','restore'=>'เปิดคืน','rename'=>'แก้ชื่อ'][$event['action_name']]??'เปลี่ยนข้อมูล' ?><br><small><?= esc($event['reason']) ?></small></li><?php endforeach; ?>
  </ul></details><?php endif; ?>
 </dialog>
 <script>
@@ -108,3 +125,21 @@ if(typeof memberDialog.showModal==='function'){
 }
 </script>
 <?php endif; ?>
+<script>
+for(const trigger of document.querySelectorAll('[data-member-menu]')){
+ const menu=document.getElementById(trigger.dataset.memberMenu);
+ if(typeof menu.showPopover!=='function')continue;
+ menu.hidden=false;
+ trigger.setAttribute('aria-expanded','false');
+ trigger.addEventListener('click',event=>{
+  if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();
+  if(menu.matches(':popover-open')){menu.hidePopover();return;}
+  menu.showPopover();
+  const rect=trigger.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(rect.right-menu.offsetWidth,innerWidth-menu.offsetWidth-8))+'px';
+  menu.style.top=(rect.bottom+menu.offsetHeight+8<innerHeight?rect.bottom+4:Math.max(8,rect.top-menu.offsetHeight-4))+'px';
+ });
+ menu.addEventListener('toggle',()=>trigger.setAttribute('aria-expanded',String(menu.matches(':popover-open'))));
+}
+</script>

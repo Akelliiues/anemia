@@ -1679,7 +1679,46 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .participant-login-shell .participant-entry-card {padding:0;border:0;}
 .participant-login-shell .participant-entry-card [name=username] {width:100%;min-height:44px;}
 .participant-login-shell .participant-entry-card .primary {width:100%;min-height:46px;}
-.participant-login-shell .participant-signup input:not([type=hidden]) {background:color-mix(in srgb,var(--violet) 4%,transparent);}
+.participant-login-page {
+ --login-surface:#eeebf6;
+ --login-edge:#dcd5ea;
+ --login-light:#ffffffdf;
+ --login-shadow:#b8abc87a;
+ --login-accent:#5636a5;
+ background:radial-gradient(ellipse at 14% 10%,#e7ddf5,transparent 56%),var(--login-surface);
+}
+[data-anemia-theme=dark] .participant-login-page {
+ --login-surface:#2a2236;
+ --login-edge:#554462;
+ --login-light:#ffffff14;
+ --login-shadow:#140d20aa;
+ --login-accent:#6d4dbb;
+ background:radial-gradient(ellipse at 14% 10%,#38274d,transparent 56%),#1b1524;
+}
+.participant-login-page .participant-login-shell {
+ background:var(--login-surface);border-color:var(--login-edge);border-radius:1.8rem;
+ box-shadow:12px 16px 32px var(--login-shadow),-8px -8px 24px var(--login-light);
+}
+.participant-login-shell .staff-access-cover {
+ background:radial-gradient(ellipse at 84% 23%,#8f60ae,transparent 60%),linear-gradient(145deg,#342250,#553781);
+ box-shadow:inset -2px 0 8px #1f103a55;
+}
+.participant-login-shell .staff-cover-mark {box-shadow:5px 5px 12px #25123965,inset 1px 1px 3px #ffffff42;}
+.participant-login-shell .participant-account-tabs,
+.participant-login-shell .participant-signup input:not([type=hidden]) {
+ background:var(--login-surface);border-color:var(--login-edge);
+ box-shadow:inset 3px 3px 7px var(--login-shadow),inset -3px -3px 7px var(--login-light);
+}
+.participant-login-shell .participant-account-tabs a[aria-current=page],
+.participant-login-shell .participant-entry-card .primary {
+ background:var(--login-accent);color:#fff;border-color:transparent;
+ box-shadow:3px 4px 8px var(--login-shadow),inset 0 1px 2px #ffffff30;
+}
+.participant-login-shell .participant-entry-card .primary:hover {background:color-mix(in srgb,var(--login-accent),#241246 18%);}
+.participant-login-shell .participant-signup input:focus-visible,
+.participant-login-shell .participant-account-tabs a:focus-visible {outline:2px solid var(--violet);outline-offset:2px;}
+.participant-login-shell .participant-provider-form .action {background:var(--login-surface);border-color:var(--login-edge);}
+.participant-login-shell .participant-provider-form .action:not(:disabled) {box-shadow:3px 3px 7px var(--login-shadow),-2px -2px 5px var(--login-light);}
 .participant-login-shell .staff-cover-copy p {max-width:26ch;}
 .participant-login-shell .staff-cover-visual i {animation:login-orbit 18s ease-in-out infinite alternate;}
 .participant-login-shell .staff-cover-visual i:nth-child(2) {animation-direction:alternate-reverse;animation-delay:-6s;}

@@ -109,6 +109,12 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
         <p class="staff-access-label">สำหรับเจ้าหน้าที่</p>
         <h1>เข้าสู่ระบบ</h1>
         <p class="staff-access-description">ใช้บัญชีเจ้าหน้าที่เพื่อเข้าใช้งาน Anemia Portal</p>
+        <?php if (($_GET['entry'] ?? '') === 'portal'): ?>
+          <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
+            <a href="participant-account.php?return=portal">PIN สมาชิก</a>
+            <a href="login.php?entry=portal" aria-current="page">รหัสผ่านเจ้าหน้าที่</a>
+          </nav>
+        <?php endif; ?>
         <?php if ($fault !== ''): ?>
           <p class="staff-access-alert" role="status"><?= esc($fault) ?></p>
         <?php else: ?>

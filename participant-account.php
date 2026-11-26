@@ -246,9 +246,9 @@ if ($account) {
      'mode'=>$mode,'invite'=>$invite,'return'=>$returnContext
  ]));
  ?>
- <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าใช้บัญชี">
-  <a href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> เข้าสู่ระบบ</a>
-  <a href="<?= participantEscape($accountModeUrl('password-register')) ?>" <?= $register?'aria-current="page"':'' ?>><?= workspaceIcon('users') ?> สมัครบัญชี</a>
+ <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
+  <a href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
+  <a href="login.php?entry=portal"><?= workspaceIcon('lock') ?> รหัสผ่านเจ้าหน้าที่</a>
  </nav>
  <div class="participant-entry-card">
   <?php if ($migrate): ?><h2 class="title"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</h2><?php endif; ?>
@@ -275,7 +275,12 @@ if ($account) {
    <button class="action primary" name="provider" value="<?= $mode ?>"><?= workspaceIcon($register?'users':'login') ?><?= $register?'สมัครบัญชี':($migrate?'บันทึก PIN':'เข้าสู่ระบบ') ?></button>
   </form>
  </div>
- <?php if ($mode==='password-login'): ?><a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a><?php endif; ?>
+ <?php if ($mode==='password-login'): ?>
+  <div class="actions">
+   <a class="action" href="<?= participantEscape($accountModeUrl('password-register')) ?>"><?= workspaceIcon('users') ?> สมัครบัญชี</a>
+   <a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a>
+  </div>
+ <?php endif; ?>
 </section>
 <?php endif; ?>
 <?php if ($account): ?><details class="participant-settings" id="participant-settings"><summary><span><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</span><?= workspaceIcon('next') ?></summary><?php endif; ?>
@@ -298,7 +303,7 @@ if ($account) {
    <button class="action" name="provider" value="facebook" <?= !$canConnect('facebook')||in_array('facebook',$linked,true)?'disabled':'' ?>>Facebook<?= in_array('facebook',$linked,true)?' · เชื่อมแล้ว':'' ?></button>
   </details>
  <?php endif; ?>
- <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></div><?php endif; ?>
+ <?php if ($account): ?><div class="actions"><a class="action" href="login.php?entry=portal"><?= workspaceIcon('lock') ?> เข้าสู่ระบบเจ้าหน้าที่</a><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></div><?php endif; ?>
 </form>
 <?php if ($account): ?></details><?php endif; ?>
 <?php if (!$returnToPortal && !$account): ?>

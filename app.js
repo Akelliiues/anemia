@@ -521,7 +521,7 @@ function facilities(callbackIntent=false){
  <div id="facility-tabs" class="facility-tabs" role="group" aria-label="ประเภทหน่วยบริการ">${directoryTabs()}</div>
  <p id="facility-feedback" class="notice" role="status">พิมพ์ชื่อหรือพื้นที่ หรือกดค้นจากตำแหน่งปัจจุบัน</p>
  <div id="facility-list" class="facility-list"></div>
- <p class="notice">ชื่อและพิกัดจาก <a href="https://data.go.th/th/dataset/health-citizeninfo" target="_blank" rel="noopener noreferrer">DGA CITIZENinfo (ชุดข้อมูล มีนาคม 2563 · CC BY 4.0)</a> ควรตรวจสอบเวลาเปิดและบริการตรวจเลือดกับหน่วยบริการก่อนเดินทาง</p>`));
+ <details class="notice"><summary>แหล่งข้อมูล</summary><p>ชื่อและพิกัดจาก <a href="https://data.go.th/th/dataset/health-citizeninfo" target="_blank" rel="noopener noreferrer">DGA CITIZENinfo (ชุดข้อมูล มีนาคม 2563 · CC BY 4.0)</a> ควรตรวจสอบเวลาเปิดและบริการตรวจเลือดกับหน่วยบริการก่อนเดินทาง</p></details>`));
 }
 function directoryResults(query,coords){
  const terms=query.trim().split(/\s+/).filter(Boolean).map(directoryKey).filter(Boolean);

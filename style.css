@@ -2127,3 +2127,14 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
  .staff-queue-pager {margin-top:.45rem;}
 }
 @media(max-width:420px){.staff-mobile-home .staff-mobile-metric {align-items:flex-start;flex-direction:column;}.staff-mobile-metric .iconbox {width:2rem;height:2rem;}}
+.public-subpage-header {position:relative;z-index:2;background:var(--soft-surface,#fff);}
+.public-subpage-header .brand {text-decoration:none;color:var(--ink);}
+.public-subpage-header nav> a {white-space:nowrap;}
+.public-subpage-header [aria-current=page] {background:var(--soft-active);font-weight:700;}
+@media(max-width:990px){
+ .public-subpage-header .bar {grid-template-columns:minmax(0,1fr);}
+ .public-subpage-header nav {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .public-subpage-header nav> a {white-space:normal;}
+ .public-subpage-header nav :is(summary,a) {font-size:.82rem;}
+ .public-subpage-header .public-nav-group>summary {white-space:normal;}
+}

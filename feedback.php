@@ -90,9 +90,9 @@ function feedbackOld(string $key): string {
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ประเมินการใช้งาน · Anemia Portal</title>
 
-<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=shared-entry-v87"></head>
-<body class="feedback-page"><main><section class="panel">
-<?php workspaceBack('index.html', false); ?>
+<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=public-subpage-v93"></head>
+<body class="feedback-page"><?php $publicNavPage='feedback'; require __DIR__.'/_private/public-subpage-header.php'; ?><main><section class="panel">
+
 <header class="knowledge-hero feedback-hero">
  <div class="feedback-hero-copy"><h1 class="title">บอกเราว่าใช้เว็บเป็นอย่างไร</h1><p>ตอบตามประสบการณ์ของคุณเพื่อช่วยปรับปรุงเว็บไซต์</p></div>
  <div class="feedback-hero-art" aria-hidden="true"><span class="feedback-hero-orbit"></span><span class="feedback-hero-mark"><?= workspaceIcon('message') ?></span></div>

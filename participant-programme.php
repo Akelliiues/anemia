@@ -86,31 +86,14 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรม 12 สัปดาห์ · Anemia Portal</title>
 <script src="theme.js?v=1"></script>
-<link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
+<link rel="stylesheet" href="style.css?v=public-subpage-v93">
 <script defer src="installed-update.js"></script>
-<link rel="stylesheet" href="participant-programme.css?v=5">
+<link rel="stylesheet" href="participant-programme.css?v=6">
 <script defer src="participant-programme.js?v=2"></script>
 </head>
 <body class="participant-profile-page programme-page">
 <div class="programme-neural programme-neural-page" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-<header class="public-header programme-site-header">
- <div class="bar">
-  <a class="brand" href="index.html"><span class="mark"><?= workspaceIcon('drop') ?></span><span>Anemia Portal<small>ประเมินและดูแลภาวะโลหิตจาง</small></span></a>
-  <nav aria-label="เมนูหลัก">
-   <a class="public-assessment-link" href="index.html?view=start"><?= workspaceIcon('ready') ?>ประเมินสุขภาพ</a>
-   <details class="public-nav-group" name="programme-navigation"><summary><?= workspaceIcon('book') ?>เรียนรู้<span class="public-nav-chevron" aria-hidden="true"></span></summary><div class="public-nav-links">
-    <a href="index.html?view=learn">คลังความรู้</a><a href="participant-programme.php" aria-current="page">กิจกรรม 12 สัปดาห์</a>
-   </div></details>
-   <details class="public-nav-group" name="programme-navigation"><summary><?= workspaceIcon('hospital') ?>ตรวจและติดตาม<span class="public-nav-chevron" aria-hidden="true"></span></summary><div class="public-nav-links">
-    <a href="index.html?view=facility-directory">ค้นหาโรงพยาบาลและ รพ.สต.</a><a href="index.html?view=track">ติดตามคำขอ</a>
-   </div></details>
-   <details class="public-nav-group" name="programme-navigation"><summary><?= workspaceIcon('info') ?>เกี่ยวกับโครงการ<span class="public-nav-chevron" aria-hidden="true"></span></summary><div class="public-nav-links">
-    <a href="index.html?view=project">ข้อมูลโครงการ</a><a href="index.html?view=open-data">สถิติรายพื้นที่ (Open Data)</a><a href="feedback.php">ประเมินการใช้งาน</a>
-   </div></details>
-   <a class="public-account-link" href="participant-account.php?return=programme"><?= workspaceIcon('person') ?><?= $account!==null?'บัญชีของฉัน':'เข้าสู่ระบบ' ?></a>
-  </nav>
- </div>
-</header>
+<?php $publicNavPage='programme'; require __DIR__.'/_private/public-subpage-header.php'; ?>
 <main class="participant-account-main">
 <article class="panel participant-account participant-programme">
   <header class="programme-heading">

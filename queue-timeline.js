@@ -5,6 +5,7 @@
  const list=dialog.querySelector('ol');
  const historyPanel=list.closest('details');
  const currentPanel=dialog.querySelector('[data-timeline-current]');
+ const contactPanel=dialog.querySelector('[data-timeline-contact]');
  const message=dialog.querySelector('[data-timeline-message]');
  const states=form.elements.state;
  const labels=new Map([...states.options].filter(option=>option.value).map(option=>[option.value,option.textContent]));
@@ -152,6 +153,13 @@
    const pending=data.state==='pending'&&!latest;
    currentPanel.textContent=[labels.get(data.state),data.appointment_label,data.confirmation_label,data.next_contact_label&&'ติดตาม '+data.next_contact_label].filter(Boolean).join(' · ');
    currentPanel.hidden=false;
+   if(contactPanel){
+    contactPanel.querySelector('span').textContent=[data.contact_name,data.facility].filter(Boolean).join(' · ');
+    const phone=contactPanel.querySelector('a');
+    phone.textContent=data.phone??'';
+    phone.href='tel:'+(data.phone??'').replace(/[^0-9+]/g,'');
+    contactPanel.hidden=false;
+   }
    historyPanel.hidden=false;
    addEvent('ส่งคำขอแล้ว',pending?'current':'done',data.submitted_at+(pending?' · รอเจ้าหน้าที่รับเรื่อง':''));
    data.history.forEach((event,index)=>{
@@ -206,6 +214,7 @@
   historyPanel.open=false;
   historyPanel.hidden=true;
   currentPanel.hidden=true;
+  if(contactPanel)contactPanel.hidden=true;
   const receipt=button.dataset.queueTimeline;
   form.elements.receipt.value=receipt;
   dialog.querySelector('[data-timeline-receipt]').textContent=receipt;

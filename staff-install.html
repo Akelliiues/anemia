@@ -8,8 +8,8 @@
  <link rel="manifest" href="staff.webmanifest">
  <link rel="apple-touch-icon" href="staff-icon-192.png">
  <script src="theme.js?v=1"></script><script defer src="installed-update.js"></script>
- <link rel="stylesheet" href="style.css?v=staff-pwa-v72">
- <script defer src="staff-install.js?v=4"></script>
+ <link rel="stylesheet" href="style.css?v=staff-install-v74">
+ <script defer src="staff-install.js?v=5"></script>
 </head>
 <body class="portal-install-page">
  <main class="staff-install-page">
@@ -31,5 +31,16 @@
    </div>
   </section>
  </main>
+ <dialog class="workspace-dialog staff-install-invite" data-install-invite aria-labelledby="staff-invite-title">
+  <header class="workspace-dialog-heading">
+   <div><h2 id="staff-invite-title">ติดตั้ง Anemia Staff</h2></div>
+   <form method="dialog"><button type="submit" aria-label="ปิด">✕</button></form>
+  </header>
+  <p>เพิ่มแอปไว้บนหน้าจอหลัก เพื่อเปิดคิวนัดหมายและสแกน QR ได้เร็วขึ้น</p>
+  <div class="actions">
+   <a class="action primary" href="#staff-install-help" data-staff-install>ติดตั้งบนมือถือ</a>
+   <form method="dialog"><button class="action" type="submit">ไว้ภายหลัง</button></form>
+  </div>
+ </dialog>
 </body>
 </html>

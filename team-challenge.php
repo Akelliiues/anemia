@@ -93,8 +93,15 @@ try {
         $count=$db->prepare('SELECT COUNT(*) FROM anemia_team_bonus WHERE inviter=?');
         $count->execute([$member['id']]);
         $bonus=(int)$count->fetchColumn()*5;
+        $count=$db->prepare('SELECT COUNT(*) FROM anemia_team_member WHERE invited_by=?');
+        $count->execute([$member['id']]);
+        $directCount=(int)$count->fetchColumn();
+        $branches=$db->prepare('SELECT (SELECT COUNT(*) FROM anemia_team_member child WHERE child.invited_by=direct.id)
+            FROM anemia_team_member direct WHERE direct.invited_by=? ORDER BY direct.id LIMIT 8');
+        $branches->execute([$member['id']]);
         $result+=['invite'=>$member['id'],'finished'=>(bool)$member['completed_at'],'completed'=>$completed,'bonus'=>$bonus,
-            'points'=>$bonus+($member['completed_at']?10:0)+$result['connectionPoints']];
+            'points'=>$bonus+($member['completed_at']?10:0)+$result['connectionPoints'],
+            'network'=>['direct'=>$directCount,'branches'=>array_map('intval',$branches->fetchAll(PDO::FETCH_COLUMN))]];
     }
     $db->commit();
     teamReply(200,$result);

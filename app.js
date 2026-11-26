@@ -358,6 +358,17 @@ async function teamChallengeApi(input){
  if(!response.ok)throw new Error(data.error??'โหลดกิจกรรมไม่ได้ กรุณาลองอีกครั้ง');
  return data;
 }
+function teamNetworkCard(network={direct:0,branches:[]}){
+ const remainder=network.direct-network.branches.length;
+ const node=(name,detail,symbol)=>`<div class="team-network-node">${box(symbol)}<span><strong>${name}</strong><small>${detail}</small></span></div>`;
+ const branches=network.branches.map((count,index)=>
+  `<li>${node('เพื่อนสายที่ '+(index+1),count?'ชวนต่อ '+count+' คน':'ยังไม่มีคนที่ชวนต่อ','share')}</li>`
+ );
+ if(remainder>0)branches.push(`<li>${node('อีก '+remainder+' สาย','เพื่อนที่คุณชวนโดยตรง','share')}</li>`);
+ if(!branches.length)branches.push(`<li class="team-network-pending">${node('ชวนเพื่อนคนแรก','แชร์ลิงก์เพื่อเริ่มเครือข่าย','share')}</li>`);
+ return `<section class="card team-network-card"><div class="admin-chart-title">${box('share')}<div><h2>เครือข่ายของฉัน</h2><p>คุณชวนโดยตรง ${network.direct} คน</p></div></div>
+  ${node('คุณ','จุดเริ่มต้นของการชวนเพื่อน','person')}<ul class="team-network-branches">${branches.join('')}</ul></section>`;
+}
 async function showTeamChallenge(join=false){
  set(panel(`${backRow()}${pageHeading('share','ทีมของฉัน','ชวนเพื่อนมาเรียนรู้ด้วยกัน')}<div id="team-challenge-content" aria-live="polite">กำลังเปิดกิจกรรม</div>`),'team-challenge');
  const content=document.querySelector('#team-challenge-content');
@@ -366,11 +377,12 @@ async function showTeamChallenge(join=false){
   if(!content.isConnected)return;
   if(!team.enabled){content.innerHTML=`<p>กิจกรรมชวนเพื่อนยังไม่เปิด</p>${teamAccountLink(team.connected)}`;return;}
   if(!team.joined){
-   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><div class="actions">${team.connected?button(teamInvite?'เข้าทีมเพื่อน':'สร้างทีมของฉัน','team-join','check',true):''}${teamAccountLink(team.connected)}</div>`;
+   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><div class="actions">${team.connected?button(teamInvite?'เข้าทีมเพื่อน':'สร้างทีมของฉัน','team-join','check',true):''}${teamAccountLink(team.connected)}</div>${teamInvite?'':teamNetworkCard()}`;
    return;
   }
   const goal=team.completed<5?5:10;
   content.innerHTML=`<div class="grid team-challenge-stats"><div class="card"><strong>${team.points} แต้ม</strong><p>โบนัสจากชวนเพื่อน ${team.bonus} แต้ม</p></div><div class="card"><strong>เรียนจบแล้ว ${team.completed} คน</strong><progress value="${Math.min(team.completed,goal)}" max="${goal}" aria-label="ความคืบหน้าทีม"></progress><p>เป้าหมาย ${goal} คน</p></div></div>
+   ${teamNetworkCard(team.network)}
    <p>${team.completed>=10?'🏅 เหรียญส่งต่อความรู้ · ทีมเรียนครบเป้าหมาย 10 คนแล้ว':team.completed>=5?'🏅 ปลดล็อกเหรียญส่งต่อความรู้แล้ว':'ครบ 5 คนรับเหรียญส่งต่อความรู้'}</p>
    <label>ลิงก์ชวนเพื่อน<input id="team-share-link" type="url" readonly></label>
    <div class="actions">${button('ส่งต่อให้เพื่อน','team-share','share',true)}${button(team.finished?'ทบทวนบทแรก':'เริ่มบทแรก','lesson','book')}${teamAccountLink(team.connected)}</div><p id="team-share-status" role="status"></p>`;

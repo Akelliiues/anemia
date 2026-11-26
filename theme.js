@@ -19,7 +19,6 @@
  });
  document.addEventListener('DOMContentLoaded', () => {
   const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
-  const scenes=new Map();
   const nodes=[[0,210],[115,160],[225,255],[340,135],[445,215],[560,96],[660,170],[765,82],[880,160],[1000,95],[680,310],[805,270],[940,350],[430,380],[180,355],[0,390],[550,285],[1000,240],[850,390],[725,390],[330,43],[115,72],[510,0],[970,14]];
   const routes=[[0,1,2,3,4,5,6,7,8,9],[15,14,2,4,16,10,11,17],[21,1,3,20,22,5,7,23],[14,13,16,6,11,8,17],[13,10,19,18,12,17],[5,16,11,12],[20,4,13],[7,11,18],[1,14],[3,5,8,12],[2,13],[6,10]];
   const traces=routes.map(route=>{
@@ -68,60 +67,38 @@
    }
    context.restore();
   }
-  const resize=new ResizeObserver(entries=>entries.forEach(({target,contentRect})=>{
-   const scene=scenes.get(target);
-   if(!scene)return;
-   const {width,height}=contentRect;
-   const ratio=Math.min(devicePixelRatio||1,1.5);
-   scene.width=width;scene.height=height;
-   target.width=Math.round(width*ratio);target.height=Math.round(height*ratio);
-   paint(scene,performance.now());
-  }));
-  let last=0,frame=0;
-  const refreshScenes=()=>{
-   const dark=root.dataset.anemiaTheme==='dark';
-   for(const scene of scenes.values()){scene.dark=dark;paint(scene,performance.now());}
-  };
-  function animate(time){
-   frame=0;
-   if(document.hidden||reducedMotion.matches)return;
-   if(time-last>=40){
-    for(const [canvas,scene] of scenes){
-     if(canvas.isConnected)paint(scene,time);
-     else{resize.unobserve(canvas);scenes.delete(canvas);}
-    }
-    last=time;
+  const canvas=document.createElement('canvas');
+  const context=canvas.getContext('2d');
+  if(context){
+   const scene={canvas,context};
+   canvas.className='portal-neural portal-neural-page';
+   canvas.setAttribute('aria-hidden','true');
+   document.body.append(canvas);
+   const refresh=()=>{
+    scene.dark=root.dataset.anemiaTheme==='dark';
+    paint(scene,performance.now());
+   };
+   new ResizeObserver(([{contentRect:{width,height}}])=>{
+    const ratio=Math.min(devicePixelRatio||1,1.5);
+    scene.width=width;scene.height=height;
+    canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);
+    refresh();
+   }).observe(canvas);
+   let last=0,frame=0;
+   function animate(time){
+    frame=0;
+    if(document.hidden||reducedMotion.matches)return;
+    if(time-last>=40){paint(scene,time);last=time;}
+    startMotion();
    }
-   frame=requestAnimationFrame(animate);
-  }
-  const startMotion=()=>{if(!frame&&!document.hidden&&!reducedMotion.matches)frame=requestAnimationFrame(animate);};
-  document.addEventListener('visibilitychange',startMotion);
-  reducedMotion.addEventListener('change',()=>{refreshScenes();startMotion();});
-  new MutationObserver(refreshScenes).observe(root,{attributes:true,attributeFilter:['data-anemia-theme']});
-  const addSignalLines=(container,placement)=>{
-   if(!container||container.querySelector(':scope > .portal-neural'))return;
-   const art=document.createElement('canvas');
-   const context=art.getContext('2d');
-   if(!context)return;
-   art.className='portal-neural portal-neural-'+placement;
-   art.setAttribute('aria-hidden','true');
-   container.append(art);
-   scenes.set(art,{canvas:art,context,dark:root.dataset.anemiaTheme==='dark'});
-   resize.observe(art);
+   function startMotion(){
+    if(!frame&&!document.hidden&&!reducedMotion.matches)frame=requestAnimationFrame(animate);
+   }
+   document.addEventListener('visibilitychange',startMotion);
+   reducedMotion.addEventListener('change',()=>{refresh();startMotion();});
+   new MutationObserver(refresh).observe(root,{attributes:true,attributeFilter:['data-anemia-theme']});
    startMotion();
-  };
-  addSignalLines(document.body,'page');
-  const headings='.hero,.page-heading,.result-summary,.question-scene,.feedback-hero,.programme-heading,.admin-heading,.staff-access-cover,.staff-app-bar,.participant-profile-hero,.staff-mobile-hero';
-  const decorateHeadings=container=>container.querySelectorAll(headings).forEach(heading=>{
-   heading.classList.add('portal-neural-surface');
-   addSignalLines(heading,'heading');
-  });
-  decorateHeadings(document);
-  const publicMain=document.querySelector('.public-site #main');
-  if(publicMain)new MutationObserver(()=>{
-   for(const canvas of scenes.keys())if(!canvas.isConnected){resize.unobserve(canvas);scenes.delete(canvas);}
-   decorateHeadings(publicMain);
-  }).observe(publicMain,{childList:true});
+  }
   control = document.createElement('button');
   control.type = 'button';
   control.className = 'theme-float';

@@ -247,9 +247,10 @@ if ($account) {
  ]));
  ?>
  <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
-  <a href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
-  <a href="login.php?entry=portal"><?= workspaceIcon('lock') ?> รหัสผ่านเจ้าหน้าที่</a>
+  <a data-pin-mode href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
+  <a data-staff-mode href="login.php?entry=portal"><?= workspaceIcon('lock') ?> รหัสผ่านเจ้าหน้าที่</a>
  </nav>
+ <div data-member-login>
  <div class="participant-entry-card">
   <?php if ($migrate): ?><h2 class="title"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</h2><?php endif; ?>
   <form method="post" action="participant-account.php">
@@ -281,6 +282,22 @@ if ($account) {
    <a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a>
   </div>
  <?php endif; ?>
+ </div>
+ <div data-staff-login hidden>
+  <div class="participant-entry-card">
+   <form method="post" action="login.php?entry=inline" aria-label="เข้าสู่ระบบเจ้าหน้าที่">
+    <input type="hidden" name="action" value="login">
+    <label><span><?= workspaceIcon('person') ?> ชื่อผู้ใช้</span><input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false"></label>
+    <label for="inline-staff-password"><?= workspaceIcon('lock') ?> รหัสผ่าน</label>
+    <div class="participant-password-control">
+     <input id="inline-staff-password" type="password" name="password" autocomplete="current-password" maxlength="128" required>
+     <button type="button" data-password-visibility aria-controls="inline-staff-password" aria-label="แสดงรหัสผ่าน" aria-pressed="false" hidden><span data-password-show><?= workspaceIcon('eye') ?></span><span data-password-hide hidden><?= workspaceIcon('eye-off') ?></span></button>
+    </div>
+    <button class="action primary" type="submit"><?= workspaceIcon('login') ?> เข้าสู่ระบบ</button>
+    <p role="status" data-staff-status hidden></p>
+   </form>
+  </div>
+ </div>
 </section>
 <?php endif; ?>
 <?php if ($account): ?><details class="participant-settings" id="participant-settings"><summary><span><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</span><?= workspaceIcon('next') ?></summary><?php endif; ?>
@@ -343,6 +360,52 @@ if ($account) {
 </dialog>
 <?php endif; ?>
 <script>
+const staffMode=document.querySelector('[data-staff-mode]');
+const pinMode=document.querySelector('[data-pin-mode]');
+if(staffMode&&pinMode){
+ const staffPanel=document.querySelector('[data-staff-login]');
+ const memberPanel=document.querySelector('[data-member-login]');
+ const providers=document.querySelector('.participant-provider-form');
+ const form=staffPanel.querySelector('form');
+ const endpoint=form.getAttribute('action');
+ const status=form.querySelector('[data-staff-status]');
+ const submit=form.querySelector('[type=submit]');
+ const message=text=>{status.textContent=text;status.hidden=!text;};
+ const normalPin=pinMode.hasAttribute('aria-current');
+ const selectMode=staff=>{
+  staffPanel.hidden=!staff;
+  memberPanel.hidden=staff;
+  providers.hidden=staff;
+  staffMode.toggleAttribute('aria-current',staff);
+  pinMode.toggleAttribute('aria-current',!staff&&normalPin);
+  if(staff)staffMode.setAttribute('aria-current','page');
+  if(!staff&&normalPin)pinMode.setAttribute('aria-current','page');
+  if(!staff)form.elements.password.value='';
+ };
+ staffMode.addEventListener('click',event=>{event.preventDefault();selectMode(true);});
+ pinMode.addEventListener('click',event=>{
+  if(!normalPin)return;
+  event.preventDefault();selectMode(false);
+ });
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const body=new FormData(form);
+  submit.disabled=true;
+  message('กำลังตรวจบัญชีเจ้าหน้าที่…');
+  try{
+   const load=await fetch(endpoint,{cache:'no-store'});
+   const session=await load.json();
+   if(session.destination){location.assign(session.destination);return;}
+   if(!session.csrf){message(session.message||'เปิดการเข้าสู่ระบบไม่ได้ กรุณาลองใหม่');return;}
+   body.set('csrf',session.csrf);
+   const response=await fetch(endpoint,{method:'POST',body,cache:'no-store'});
+   const result=await response.json();
+   if(result.destination){location.assign(result.destination);return;}
+   message(result.message||'เข้าสู่ระบบไม่ได้ กรุณาลองใหม่');
+  }catch{message('ติดต่อระบบไม่ได้ กรุณาลองใหม่');}
+  finally{submit.disabled=false;}
+ });
+}
 const photoButton=document.querySelector('[data-open-photo]');
 const photoDialog=document.querySelector('#participant-photo-view');
 if(photoButton&&photoDialog){

@@ -10,6 +10,7 @@ require __DIR__ . '/_private/icons.php';
 
 $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' && $_SERVER['HTTPS'] !== '';
 $staff = null;
+$inlineLogin = ($_GET['entry'] ?? '') === 'inline';
 $afterLogin = match ($_GET['next'] ?? '') {
     'scan'=>'dashboard.php?view=scan-request',
     'mobile'=>'dashboard.php?view=mobile',
@@ -18,6 +19,11 @@ $afterLogin = match ($_GET['next'] ?? '') {
 $fault = '';
 $message = '';
 $token = '';
+$sendInlineLogin = static function(array $data): never {
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode($data, JSON_THROW_ON_ERROR);
+    exit;
+};
 if (!$secure && PHP_SAPI !== 'cli-server') {
     http_response_code(403);
     $fault = 'เปิดหน้าเจ้าหน้าที่ผ่าน HTTPS';
@@ -62,6 +68,7 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
                     if (hash_equals($account['password_hash'] ?? str_repeat('0', 64), $hash) && $account && (int)$account['enabled'] === 1) {
                         session_regenerate_id(true);
                         $_SESSION = ['username' => $account['username'], 'csrf' => bin2hex(random_bytes(32)), 'until' => time() + 28800];
+                        if ($inlineLogin) $sendInlineLogin(['destination'=>$afterLogin]);
                         header('Location: '.$afterLogin, true, 303);
                         exit;
                     }
@@ -72,6 +79,7 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
             }
         }
         if ($staff && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            if ($inlineLogin) $sendInlineLogin(['destination'=>$afterLogin]);
             header('Location: '.$afterLogin, true, 303);
             exit;
         }
@@ -81,6 +89,7 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
         error_log('Anemia staff startup failed (' . get_class($error) . ')');
     }
 }
+if ($inlineLogin) $sendInlineLogin(['csrf'=>$fault===''?$token:'','message'=>$fault!==''?$fault:$message]);
 function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 ?>
 <!doctype html>

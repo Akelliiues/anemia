@@ -38,6 +38,8 @@ $success=false;
 $completed=[];
 $assessments=[];
 $weeks=anemiaProgrammeWeeks();
+$readings=anemiaReadingLessons();
+$intro='ลองนึกถึงวันที่เดินขึ้นบันไดแล้วเหนื่อยกว่าปกติ ความเหนื่อยเกิดได้จากหลายสาเหตุ ในเม็ดเลือดแดงมีตัวช่วยพาออกซิเจนชื่อ “ฮีโมโกลบิน” เมื่อมีภาวะโลหิตจาง เลือดจะพาออกซิเจนไปเลี้ยงร่างกายได้น้อยลง บางคนจึงเหนื่อยง่ายขึ้น แบบประเมินใช้คำตอบของคุณมาดูว่าควรไปตรวจเพิ่มเติมไหม หากยังเหนื่อยจนกระทบการเรียนหรืองาน คุณปรึกษาเจ้าหน้าที่ได้แม้คะแนนจะต่ำ';
 if ($account!==null) {
     try {
         require_once __DIR__.'/_private/database.php';
@@ -57,13 +59,15 @@ if ($account!==null) {
                 throw new DomainException('กรุณาเปิดหน้านี้ใหม่ก่อนบันทึก');
             }
             anemiaSaveProgrammeAction($db,$account,$epoch,$_POST);
-            $_SESSION['programme_saved']=true;
+            $savedWeek=$_POST['action']==='week'?(int)$_POST['week']:0;
+            $_SESSION['programme_saved']=$readings[$savedWeek][4]??true;
             header('Location: participant-programme.php#programme-next',true,303);
             exit;
         }
         if (!empty($_SESSION['programme_saved'])) {
+            $feedback=$_SESSION['programme_saved'];
             unset($_SESSION['programme_saved']);
-            $notice='บันทึกเรียบร้อย';
+            $notice='บันทึกเรียบร้อย'.(is_string($feedback)?' · '.$feedback:'');
             $success=true;
         }
     } catch (DomainException $error) {
@@ -139,7 +143,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
       <section class="programme-card<?= $next===1?' programme-lesson':'' ?>" aria-labelledby="programme-next">
         <?php if ($next===1): ?><span class="programme-lesson-label">สัปดาห์ที่ 1 · คลิป 4 นาที</span><?php endif; ?>
         <h2 id="programme-next"><?= $next===1?'':'สัปดาห์ที่ '.$next.' · ' ?><?= programmeEscape($weeks[$next][0]) ?></h2>
-        <p><?= programmeEscape($weeks[$next][1]) ?></p>
+
         <?php if ($next===1): ?>
          <div class="programme-media">
           <video class="programme-video" controls playsinline preload="none" src="12weeks/week_01.mp4" aria-label="คลิปรู้จักโลหิตจาง"></video>
@@ -151,11 +155,11 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
          <progress class="programme-watch" data-lesson-watch max="100" value="0" aria-label="สัดส่วนวิดีโอที่ดูแล้ว" hidden></progress>
          <p data-lesson-progress role="status" class="programme-video-status">กดเล่นเพื่อเริ่มดูคลิป หรืออ่านสรุปด้านล่าง</p>
          <details class="programme-reading" data-lesson-reading><summary>อ่านสรุปบทเรียน</summary>
-          <p>เวลาเดินไปโรงเรียนหรือไปทำงาน ร่างกายต้องใช้ออกซิเจน ในเม็ดเลือดแดงมีตัวช่วยพาออกซิเจนชื่อ “ฮีโมโกลบิน” ถ้ามีไม่พอ คุณอาจเหนื่อยง่าย แต่ความเหนื่อยเกิดได้หลายสาเหตุ ถ้าแบบประเมินชวนไปตรวจ ลองถามเจ้าหน้าที่ว่า “ช่วงนี้เหนื่อยง่าย ควรตรวจเลือดไหมคะ”</p>
+          <p><?= programmeEscape($intro) ?></p>
           <a class="programme-resource" href="index.html?view=learn" target="_blank" rel="noopener">อ่านต่อในคลังความรู้</a>
           <button class="action" type="button" data-lesson-read hidden>อ่านสรุปแล้ว</button>
          </details>
-        <?php else: [$reading,$prompt,$right,$wrong,$explanation]=anemiaReadingLessons()[$next]; ?>
+        <?php else: [$reading,$prompt,$right,$wrong,$explanation]=$readings[$next]; ?>
          <h3>อ่านแล้วลองนึกตาม</h3><p><?= programmeEscape($reading) ?></p>
          <?php if (in_array($next,[3,4],true)): ?><a class="programme-resource" href="https://www.fda.gov/food/nutrition-facts-label/serving-size-nutrition-facts-label">ดูตัวอย่างการอ่านฉลากจาก FDA (ภาษาอังกฤษ)</a>
          <?php elseif ($next===2): ?><a class="programme-resource" href="https://medlineplus.gov/evaluatinghealthinformation.html">อ่านวิธีเช็กข้อมูลสุขภาพ (ภาษาอังกฤษ)</a>
@@ -163,6 +167,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
          <?php elseif (in_array($next,[8,11],true)): ?><a class="programme-resource" href="https://www.who.int/news-room/fact-sheets/detail/anaemia">อ่านเพิ่มเติมเรื่องโลหิตจางจาก WHO (ภาษาอังกฤษ)</a>
          <?php elseif (in_array($next,[4,9,10],true)): ?><a class="programme-resource" href="https://ods.od.nih.gov/factsheets/Iron-Consumer/">อ่านเพิ่มเติมเรื่องธาตุเหล็กจาก NIH (ภาษาอังกฤษ)</a><?php endif; ?>
          <?php if ($weeks[$next][2]!==''): ?><a class="programme-resource" href="<?= programmeEscape($weeks[$next][2]) ?>" target="_blank" rel="noopener">เปิดหน้าที่ใช้ทำกิจกรรม (แท็บใหม่)</a><?php endif; endif; ?>
+        <p><strong>ลองทำ</strong> · <?= programmeEscape($weeks[$next][1]) ?></p>
         <form method="post" action="participant-programme.php#programme-next">
           <?php programmeFormFields($csrf,'week'); ?>
           <input type="hidden" name="week" value="<?= $next ?>">
@@ -202,7 +207,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
   <?php endif; ?>
   <section aria-labelledby="programme-plan">
    <details class="programme-roadmap">
-    <summary id="programme-plan">ดูแผนกิจกรรมทั้ง 12 สัปดาห์</summary>
+    <summary id="programme-plan">เปิดอ่านบทเรียนทั้ง 12 สัปดาห์</summary>
     <ol class="programme-weeks">
       <?php foreach ($weeks as $week=>[$title,$activity,$link]): ?>
         <li <?= $ready && isset($assessments['before']) && $week===$next?'aria-current="step"':'' ?>>
@@ -211,7 +216,16 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
               <span>สัปดาห์ที่ <?= $week ?> · <?= programmeEscape($title) ?></span>
               <?php if (in_array($week,$completed,true)): ?><small>บันทึกแล้ว</small><?php endif; ?>
             </summary>
-            <p><?= programmeEscape($activity) ?></p>
+            <p><?= programmeEscape($week===1?$intro:$readings[$week][0]) ?></p>
+            <p><strong>ลองทำ</strong> · <?= programmeEscape($activity) ?></p>
+            <?php if ($week===1): ?>
+             <?php foreach (anemiaWeekOneQuestions() as [$prompt,,,$feedback]): ?>
+              <p><?= programmeEscape($prompt) ?></p><details><summary>ดูแนวคำตอบ</summary><p><?= programmeEscape($feedback) ?></p></details>
+             <?php endforeach; ?>
+            <?php else: ?>
+             <p><strong>ลองตอบ</strong> · <?= programmeEscape($readings[$week][1]) ?></p>
+             <details><summary>ดูแนวคำตอบ</summary><p><?= programmeEscape($readings[$week][4]) ?></p></details>
+            <?php endif; ?>
           </details>
         </li>
       <?php endforeach; ?>

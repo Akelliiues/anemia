@@ -359,6 +359,9 @@ async function teamChallengeApi(input){
  if(!response.ok)throw new Error(data.error??'โหลดกิจกรรมไม่ได้ กรุณาลองอีกครั้ง');
  return data;
 }
+function teamTip(id,label,description){
+ return `<span class="team-tip"><button type="button" data-go="team-tip" aria-label="${label}" aria-describedby="team-tip-${id}" aria-expanded="false">ⓘ</button><span class="team-tip-content" id="team-tip-${id}" role="tooltip">${description}</span></span>`;
+}
 function teamNetworkCard(network={direct:0,branches:[]}){
  const remainder=network.direct-network.branches.length;
  const node=(name,detail,symbol)=>`<div class="team-network-node">${box(symbol)}<span><strong>${name}</strong><small>${detail}</small></span></div>`;
@@ -367,7 +370,7 @@ function teamNetworkCard(network={direct:0,branches:[]}){
  );
  if(remainder>0)branches.push(`<li>${node('อีก '+remainder+' สาย','เพื่อนที่คุณชวนโดยตรง','share')}</li>`);
  if(!branches.length)branches.push(`<li class="team-network-pending">${node('ชวนเพื่อนคนแรก','แชร์ลิงก์เพื่อเริ่มเครือข่าย','share')}</li>`);
- return `<section class="card team-network-card"><div class="admin-chart-title">${box('share')}<div><h2>เครือข่ายของฉัน</h2><p>คุณชวนโดยตรง ${network.direct} คน</p></div></div>
+ return `<section class="card team-network-card"><div class="admin-chart-title">${box('share')}<div><h2>เครือข่ายของฉัน</h2><p>คุณชวนโดยตรง ${network.direct} คน ${teamTip('network','วิธีนับเครือข่าย','แต่ละสายแสดงเพื่อนที่คุณชวนโดยตรง และจำนวนคนที่เพื่อนคนนั้นชวนต่อ')}</p></div></div>
   ${node('คุณ','จุดเริ่มต้นของการชวนเพื่อน','person')}<ul class="team-network-branches">${branches.join('')}</ul></section>`;
 }
 async function showTeamChallenge(join=false){
@@ -382,7 +385,9 @@ async function showTeamChallenge(join=false){
    return;
   }
   const goal=team.completed<5?5:10;
-  content.innerHTML=`<div class="grid team-challenge-stats"><div class="card"><strong>${team.points} แต้ม</strong><p>โบนัสจากชวนเพื่อน ${team.bonus} แต้ม</p></div><div class="card"><strong>เรียนจบแล้ว ${team.completed} คน</strong><progress value="${Math.min(team.completed,goal)}" max="${goal}" aria-label="ความคืบหน้าทีม"></progress><p>เป้าหมาย ${goal} คน</p></div></div>
+  const {perFriend,limit,lesson,remaining}=team.rules??{perFriend:5,limit:3,lesson:10,remaining:Math.max(0,3-team.bonus/5)};
+  const bonusTip=`ได้ ${perFriend} แต้มเมื่อเพื่อนที่คุณชวนโดยตรงจบบทแรก สูงสุด ${limit} ครั้ง ${remaining?`· รับเพิ่มได้อีก ${remaining*perFriend} แต้ม`:'· รับโบนัสครบแล้ว'}`;
+  content.innerHTML=`<div class="grid team-challenge-stats"><div class="card"><strong>${team.points} แต้ม</strong> ${teamTip('points','ที่มาของแต้มสะสม',`จบบทแรกได้ ${lesson} แต้ม เชื่อมบัญชีภายนอกครั้งแรกได้ 5 แต้ม และมีโบนัสจากการชวนเพื่อน`)}<p>โบนัสจากชวนเพื่อน ${team.bonus} แต้ม ${teamTip('bonus','กติกาโบนัสชวนเพื่อน',bonusTip)}</p></div><div class="card"><strong>เรียนจบแล้ว ${team.completed} คน</strong><progress value="${Math.min(team.completed,goal)}" max="${goal}" aria-label="ความคืบหน้าทีม"></progress><p>เป้าหมาย ${goal} คน ${teamTip('goal','เกณฑ์เป้าหมายของทีม','ยอดเรียนจบนับรวมทั้งทีม ครบ 5 คนปลดล็อกเหรียญส่งต่อความรู้ และครบ 10 คนถึงเป้าหมายถัดไป')}</p></div></div>
    ${teamNetworkCard(team.network)}
    <p>${team.completed>=10?'🏅 เหรียญส่งต่อความรู้ · ทีมเรียนครบเป้าหมาย 10 คนแล้ว':team.completed>=5?'🏅 ปลดล็อกเหรียญส่งต่อความรู้แล้ว':'ครบ 5 คนรับเหรียญส่งต่อความรู้'}</p>
    <label>ลิงก์ชวนเพื่อน<input id="team-share-link" type="url" readonly></label>
@@ -1208,6 +1213,15 @@ if(publicMenuToggle&&publicNavigation){
  });
 }
 
+document.addEventListener('pointerdown',event=>{
+ if(!event.target.closest('.team-tip'))main.querySelectorAll('.team-tip button[aria-expanded=true]').forEach(button=>button.setAttribute('aria-expanded','false'));
+});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&document.activeElement?.matches('.team-tip button')){
+  document.activeElement.setAttribute('aria-expanded','false');
+  document.activeElement.blur();
+ }
+});
 document.addEventListener('click',event=>{
  const el=event.target.closest('button,path[data-public-segment],path[data-admin-risk],g[data-public-region]');if(!el)return;
  if(el.dataset.voice){playVoice(el.dataset.voice);return;}
@@ -1299,6 +1313,13 @@ document.addEventListener('click',event=>{
  case 'team-challenge':showTeamChallenge();break;
  case 'team-join':showTeamChallenge(true);break;
  case 'team-share':shareTeamChallenge();break;
+ case 'team-tip':{
+  const open=el.getAttribute('aria-expanded')==='true';
+  main.querySelectorAll('.team-tip button[aria-expanded=true]').forEach(button=>button.setAttribute('aria-expanded','false'));
+  el.setAttribute('aria-expanded',String(!open));
+  if(open)el.blur();
+  break;
+ }
  case 'team-qr':showTeamInviteQr();break;
  case 'tryagain':document.querySelector('#feedback').textContent='ลองมองหาปุ่มที่เปิดรายชื่อหน่วยบริการ';break;
  case 'facilities':logActivity('directory');facilities(false);break;case 'callback-directory':logActivity('directory');facilities(true);break;

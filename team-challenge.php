@@ -3,6 +3,9 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
+const ANEMIA_REFERRAL_POINTS=5;
+const ANEMIA_REFERRAL_LIMIT=3;
+const ANEMIA_TEAM_LESSON_POINTS=10;
 
 function teamReply(int $status,array $body): never
 {
@@ -73,7 +76,7 @@ try {
         if ($complete->rowCount()===1 && $member['invited_by']) {
             $bonuses=$db->prepare('SELECT learner FROM anemia_team_bonus WHERE inviter=? FOR UPDATE');
             $bonuses->execute([$member['invited_by']]);
-            if (count($bonuses->fetchAll(PDO::FETCH_COLUMN))<3) {
+            if (count($bonuses->fetchAll(PDO::FETCH_COLUMN))<ANEMIA_REFERRAL_LIMIT) {
                 $db->prepare('INSERT INTO anemia_team_bonus VALUES (?,?)')->execute([$member['id'],$member['invited_by']]);
             }
         }
@@ -92,7 +95,8 @@ try {
         $completed=(int)$count->fetchColumn();
         $count=$db->prepare('SELECT COUNT(*) FROM anemia_team_bonus WHERE inviter=?');
         $count->execute([$member['id']]);
-        $bonus=(int)$count->fetchColumn()*5;
+        $awards=(int)$count->fetchColumn();
+        $bonus=$awards*ANEMIA_REFERRAL_POINTS;
         $count=$db->prepare('SELECT COUNT(*) FROM anemia_team_member WHERE invited_by=?');
         $count->execute([$member['id']]);
         $directCount=(int)$count->fetchColumn();
@@ -100,7 +104,9 @@ try {
             FROM anemia_team_member direct WHERE direct.invited_by=? ORDER BY direct.id LIMIT 8');
         $branches->execute([$member['id']]);
         $result+=['invite'=>$member['id'],'finished'=>(bool)$member['completed_at'],'completed'=>$completed,'bonus'=>$bonus,
-            'points'=>$bonus+($member['completed_at']?10:0)+$result['connectionPoints'],
+            'points'=>$bonus+($member['completed_at']?ANEMIA_TEAM_LESSON_POINTS:0)+$result['connectionPoints'],
+            'rules'=>['perFriend'=>ANEMIA_REFERRAL_POINTS,'limit'=>ANEMIA_REFERRAL_LIMIT,'lesson'=>ANEMIA_TEAM_LESSON_POINTS,
+                'remaining'=>max(0,ANEMIA_REFERRAL_LIMIT-$awards)],
             'network'=>['direct'=>$directCount,'branches'=>array_map('intval',$branches->fetchAll(PDO::FETCH_COLUMN))]];
     }
     $db->commit();

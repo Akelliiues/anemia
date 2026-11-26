@@ -16,6 +16,22 @@ function anemiaTeamCookieHash(): ?string
     return is_string($cookie)&&preg_match('/^[a-f0-9]{64}$/D',$cookie)?hash('sha256',$cookie):null;
 }
 
+function anemiaParticipantEpoch(PDO $db,string $account): ?int
+{
+    $query=$db->prepare('SELECT session_epoch FROM anemia_participant_account WHERE id=? AND suspended_at IS NULL');
+    $query->execute([$account]);
+    $epoch=$query->fetchColumn();
+    return $epoch===false?null:(int)$epoch;
+}
+
+function anemiaStartParticipantSession(PDO $db,string $account): void
+{
+    $epoch=anemiaParticipantEpoch($db,$account);
+    if ($epoch===null) throw new DomainException('บัญชีนี้ถูกระงับ กรุณาติดต่อผู้ดูแลโครงการ');
+    session_regenerate_id(true);
+    $_SESSION=['account'=>$account,'epoch'=>$epoch,'until'=>time()+28800,'csrf'=>bin2hex(random_bytes(32))];
+}
+
 function anemiaAttachTeam(PDO $db,string $account,?string $teamCookieHash): void
 {
     if (!$teamCookieHash) return;
@@ -53,7 +69,7 @@ function anemiaParticipantPassword(PDO $db,bool $register,array $input,?string $
     if (!is_string($pin) || preg_match('/^[0-9]{6}$/D',$pin)!==1) throw new DomainException('กรุณากรอก PIN เป็นตัวเลข 6 หลัก');
     if (($register||$migrate) && $pin!==($input['confirm_password']??null)) throw new DomainException('PIN ทั้งสองช่องไม่ตรงกัน');
     if (!$register) {
-        $query=$db->prepare('SELECT account_id,password_hash FROM anemia_participant_password WHERE username=?');
+        $query=$db->prepare('SELECT p.account_id,p.password_hash,a.suspended_at FROM anemia_participant_password p JOIN anemia_participant_account a ON a.id=p.account_id WHERE p.username=?');
         $query->execute([$username]);
         $row=$query->fetch(PDO::FETCH_ASSOC);
         $hash=$row['password_hash']??'$2y$12$CkxVzYqDSRWD7wAxUXU4ou5jz8lPTZuoSJb1ZGzAz3Rgi7PDgtCL2';
@@ -63,6 +79,7 @@ function anemiaParticipantPassword(PDO $db,bool $register,array $input,?string $
             !password_verify($material,$prehashed?substr($hash,7):$hash) || !$row) {
             throw new DomainException($migrate?'ชื่อบัญชีหรือรหัสผ่านเดิมไม่ถูกต้อง':'ชื่อบัญชีหรือ PIN ไม่ถูกต้อง');
         }
+        if ($row['suspended_at']!==null) throw new DomainException('บัญชีนี้ถูกระงับ กรุณาติดต่อผู้ดูแลโครงการ');
         if ($migrate) {
             $newHash='sha384:'.password_hash(base64_encode(hash('sha384',$pin,true)),PASSWORD_BCRYPT,['cost'=>12]);
             $save=$db->prepare('UPDATE anemia_participant_password SET password_hash=? WHERE username=? AND password_hash=?');
@@ -103,9 +120,11 @@ function anemiaConnectParticipant(PDO $db,string $provider,string $subject,?stri
             $account=bin2hex(random_bytes(16));
             $db->prepare('INSERT INTO anemia_participant_account(id,connected_at) VALUES (?,NOW())')->execute([$account]);
         }
-        $lock=$db->prepare('SELECT id FROM anemia_participant_account WHERE id=? FOR UPDATE');
+        $lock=$db->prepare('SELECT id,suspended_at FROM anemia_participant_account WHERE id=? FOR UPDATE');
         $lock->execute([$account]);
-        if (!$lock->fetchColumn()) throw new DomainException('ไม่พบบัญชี กรุณาเข้าสู่ระบบใหม่');
+        $row=$lock->fetch(PDO::FETCH_ASSOC);
+        if (!$row) throw new DomainException('ไม่พบบัญชี กรุณาเข้าสู่ระบบใหม่');
+        if ($row['suspended_at']!==null) throw new DomainException('บัญชีนี้ถูกระงับ กรุณาติดต่อผู้ดูแลโครงการ');
         if (!$found) {
             $check=$db->prepare('SELECT 1 FROM anemia_participant_identity WHERE account_id=? AND provider=?');
             $check->execute([$account,$provider]);

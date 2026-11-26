@@ -27,6 +27,7 @@ define('ANEMIA_STAFF_BOOT',true);
 require __DIR__.'/_private/participant-account.php';
 anemiaParticipantSession($secure);
 $account=($_SESSION['until']??0)>=time()?($_SESSION['account']??null):null;
+$epoch=(int)($_SESSION['epoch']??0);
 session_write_close();
 try {
     $config=require __DIR__.'/_private/config.php';
@@ -34,6 +35,9 @@ try {
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
     $db->beginTransaction();
+    if ($account!==null && anemiaParticipantEpoch($db,$account)!==$epoch) {
+        $db->rollBack(); teamReply(403,['error'=>'เซสชันบัญชีสิ้นสุดแล้ว กรุณาเข้าสู่ระบบใหม่']);
+    }
     if ((int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample' LOCK IN SHARE MODE")->fetchColumn()!==1) {
         $db->rollBack(); teamReply(200,['enabled'=>false,'connected'=>$account!==null]);
     }
@@ -42,9 +46,10 @@ try {
     $member=null;
     if ($account!==null) {
         $lookup=$db->prepare('SELECT m.id,m.team_id,m.invited_by,m.completed_at FROM anemia_participant_account a
-            LEFT JOIN anemia_demo_team_member m ON m.id=a.team_member_id WHERE a.id=? FOR UPDATE');
-        $lookup->execute([$account]);
+            LEFT JOIN anemia_demo_team_member m ON m.id=a.team_member_id WHERE a.id=? AND a.suspended_at IS NULL AND a.session_epoch=? FOR UPDATE');
+        $lookup->execute([$account,$epoch]);
         $row=$lookup->fetch(PDO::FETCH_ASSOC);
+        if (!$row) { $db->rollBack(); teamReply(403,['error'=>'เซสชันบัญชีสิ้นสุดแล้ว กรุณาเข้าสู่ระบบใหม่']); }
         $member=!empty($row['id'])?$row:null;
     } elseif ($cookie!=='') {
         $lookup=$db->prepare('SELECT m.id,m.team_id,m.invited_by,m.completed_at FROM anemia_demo_team_member m

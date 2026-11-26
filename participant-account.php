@@ -55,6 +55,14 @@ function participantEscape(string $text): string {return htmlspecialchars($text,
 $notice='';
 $passwordMode=in_array($_GET['mode']??'',['password-register','password-migrate'],true)?$_GET['mode']:'password-login';
 try {
+    if ($account!==null) {
+        $epoch=anemiaParticipantEpoch(participantDb(),$account);
+        if ($epoch===null || $epoch!==(int)($_SESSION['epoch']??0)) {
+            unset($_SESSION['account'],$_SESSION['epoch'],$_SESSION['until'],$_SESSION['oauth']);
+            $account=null;
+            throw new DomainException('เซสชันบัญชีสิ้นสุดแล้ว กรุณาเข้าสู่ระบบใหม่');
+        }
+    }
     if ($_SERVER['REQUEST_METHOD']==='POST') {
         if (!is_string($_POST['csrf']??null)||!hash_equals($_SESSION['csrf'],$_POST['csrf'])) { http_response_code(403); exit('กรุณาเปิดหน้าใหม่'); }
         $key=$_POST['provider']??'';
@@ -72,8 +80,7 @@ try {
                 throw new DomainException('ลองหลายครั้งเกินไป กรุณารอสักครู่');
             }
             $account=anemiaParticipantPassword($db,$key==='password-register',$_POST,anemiaTeamCookieHash(),$key==='password-migrate');
-            session_regenerate_id(true);
-            $_SESSION=['account'=>$account,'until'=>time()+28800,'csrf'=>bin2hex(random_bytes(32))];
+            anemiaStartParticipantSession($db,$account);
             $target=$returnToPortal?'index.html':'index.html?team=1'.($invite!==''?'&invite='.$invite:'');
             header('Location: '.$target,true,303); exit;
         }
@@ -114,9 +121,9 @@ try {
         }
         $subject=$info[$key==='facebook'?'id':'sub']??null;
         if (!is_string($subject)||$subject==='') throw new RuntimeException('Missing provider identifier');
-        $account=anemiaConnectParticipant(participantDb(),$key,$subject,$account,anemiaTeamCookieHash());
-        session_regenerate_id(true);
-        $_SESSION=['account'=>$account,'until'=>time()+28800,'csrf'=>bin2hex(random_bytes(32))];
+        $db=participantDb();
+        $account=anemiaConnectParticipant($db,$key,$subject,$account,anemiaTeamCookieHash());
+        anemiaStartParticipantSession($db,$account);
         $target=$returnToPortal?'index.html':'index.html?team=1'.($invite!==''?'&invite='.$invite:'');
         header('Location: '.$target,true,303); exit;
     }

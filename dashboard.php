@@ -28,7 +28,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile', 'network'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile', 'network', 'members'], true)) $view = 'overview';
 date_default_timezone_set('Asia/Bangkok');
 $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
@@ -56,7 +56,7 @@ try {
     $canQueue=$isAdmin || ($grant['scope_kind']??'')==='facility';
     $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district'],true);
     [$queueScope,$queueParams]=anemiaQueueNetworkScope($isAdmin,$grant);
-    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings'],true) && !$isAdmin) ||
+    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','members'],true) && !$isAdmin) ||
         (in_array($view,['contact-queue','scan-request'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
     }
@@ -83,6 +83,28 @@ try {
     if (!$canChooseRegion) $region = (int)($identity['province_region'] ?? $identity['region']);
     $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     $token = $_SESSION['csrf'];
+    $memberNotice='';
+    if ($view==='members') {
+        if ($_SERVER['REQUEST_METHOD']==='POST') {
+            if (!is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
+            require __DIR__.'/_private/members.php';
+            $id=$_POST['member']??'';
+            $action=$_POST['member_action']??'';
+            $reason=$_POST['reason']??'';
+            if (!is_string($id)||!is_string($action)||!is_string($reason)) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
+            try {
+                $changed=anemiaSetMemberStatus($db,$id,$action,$reason,$staff);
+                $_SESSION['member_notice']=$changed?'บันทึกสถานะแล้ว':'สถานะไม่มีการเปลี่ยนแปลง';
+            } catch (DomainException $error) {
+                $_SESSION['member_notice']=$error->getMessage();
+            }
+            $return=$_GET;
+            $return['view']='members';
+            header('Location: dashboard.php?'.http_build_query($return),true,303); exit;
+        }
+        $memberNotice=$_SESSION['member_notice']??'';
+        unset($_SESSION['member_notice']);
+    }
     $networkNotice='';
     if ($view==='network') {
         if ($isAdmin && ($_GET['directory']??'')==='1') {
@@ -418,9 +440,11 @@ $tabs['mobile'] = 'Anemia Staff';
 if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 if ($canQueue) $tabs += ['contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบริการ';
+if ($isAdmin) $tabs['members']='สมาชิก';
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
 $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','contact-queue'=>'phone','scan-request'=>'scan'];
 $tabIcons['network']='hospital';
+$tabIcons['members']='users';
 $scopeName = $identity['role'] === 'provincial_report' ? ($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? zoneLabel($region) : 'ทุกเขตสุขภาพ');
 function accessFields(array $record, array $provinces): void
 {
@@ -519,7 +543,7 @@ function workspaceInfo(string $page, ?array $release = null): void
         ['รายงาน','map',['reports','activity','evaluation']],
         ['แบบประเมิน','ready',['assessment']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
-        ['ระบบ','users',['access','audit','sample-settings','network']],
+        ['ระบบ','users',['members','access','audit','sample-settings','network']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];
     foreach ($groups as [$groupLabel,$groupIcon,$keys]):
@@ -790,6 +814,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   </section>
   <?php elseif ($view === 'about'): ?>
   <section class="card admin-report"><?php workspaceInfo($view, $localRelease); ?></section>
+  <?php elseif ($view === 'members'): require __DIR__.'/_private/members-view.php'; ?>
   <?php elseif ($view === 'network'): require __DIR__.'/_private/network-view.php'; ?>
   <?php elseif ($view === 'mobile'): ?>
   <section class="card staff-mobile-home">

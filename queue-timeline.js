@@ -153,7 +153,10 @@
    }
    if(response.redirected)throw new Error('กรุณาเข้าสู่ระบบใหม่');
    const data=await response.json();
-   if(saving)button.querySelector('span').textContent=labels.get(data.state);
+   if(saving){
+    button.querySelector('span').textContent=labels.get(data.state);
+    document.dispatchEvent(new Event('anemia:queue-changed'));
+   }
    if(id!==operation||!dialog.open)return;
    defaultAppointmentDay=[data.appointment_at?.slice(0,10),data.preferred_date,today].find(day=>day&&day>=today);
    list.replaceChildren();

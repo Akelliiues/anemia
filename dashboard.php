@@ -1031,7 +1031,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <h2><?= $demoQueue?'คำขอที่บันทึกในโหมดทดสอบ':'คำขอที่ยืนยันเบอร์แล้ว' ?></h2>
   <a class="action" href="dashboard.php?view=contact-queue<?= $demoQueue?'&amp;demo=1':'' ?><?= $attentionOnly?'':'&amp;attention=1' ?>"><?= workspaceIcon('history') ?><?= $attentionOnly?'ดูคำขอทั้งหมด':'งานที่ต้องติดตาม' ?></a>
   <?php $pendingInQueue = $demoQueue ? $pendingDemoCounts : $pendingContactCounts; $counterScope = $demoQueue ? 'demo' : 'live'; ?>
-  <div class="contact-pending-summary">
+  <div class="contact-pending-summary" aria-live="polite" aria-atomic="true">
    <span><?= workspaceIcon('calendar') ?>ขอนัดรอประสาน <strong data-pending-count="<?= $counterScope ?>.appointment"><?= $pendingInQueue['appointment'] ?></strong></span>
    <span><?= workspaceIcon('phone') ?>ขอติดต่อกลับรอประสาน <strong data-pending-count="<?= $counterScope ?>.callback"><?= $pendingInQueue['callback'] ?></strong></span>
   </div>
@@ -1112,7 +1112,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=13"></script>
+  <script defer src="queue-timeline.js?v=14"></script>
   <?php endif; ?>
   <?php if ($mobileQueue && $focusReceipt==='' && ($queuePage>1 || $queueNext)): ?>
    <?php $pageUrl=$mobileQueueUrl.'&tab='.$queueTab.'&page='; ?>
@@ -1328,31 +1328,45 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
 <?php if ($canQueue): ?>
 <script>
 (() => {
+ const counters=[...document.querySelectorAll('[data-pending-count]')];
+ if(!counters.length)return;
  let running=false;
- async function refreshPendingContacts(){
-  if(running||document.hidden)return;
+ let queued=false;
+ async function refreshPendingContacts(force=false){
+  if(document.hidden)return;
+  if(running){if(force)queued=true;return;}
   running=true;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
   try{
-   const response=await fetch('dashboard.php?view=contact-queue&counts=1',{cache:'no-store'});
+   const response=await fetch('dashboard.php?view=contact-queue&counts=1',{cache:'no-store',signal:controller.signal});
    if(!response.ok||!response.headers.get('Content-Type')?.includes('application/json'))return;
    const counts=await response.json();
-   document.querySelectorAll('[data-pending-count]').forEach(node=>{
+   counters.forEach(node=>{
     const [scope,kind]=node.dataset.pendingCount.split('.');
     const value=kind==='total' ? counts[scope]?.appointment+counts[scope]?.callback : counts[scope]?.[kind];
     if(!Number.isInteger(value)||value<0)return;
-    node.textContent=value.toLocaleString('th-TH');
-    if(node.classList.contains('contact-pending-badge')){
-     node.textContent=value>99?'99+':node.textContent;
+    const badge=node.classList.contains('contact-pending-badge');
+    const label=badge&&value>99?'99+':value.toLocaleString('th-TH');
+    if(node.textContent!==label)node.textContent=label;
+    if(badge){
      node.hidden=value===0;
      if(node.closest('[data-staff-bell]'))node.closest('[data-staff-bell]').setAttribute('aria-label','คำขอใหม่ '+value+' รายการ');
      else node.setAttribute('aria-label','คำขอนัดรอประสาน '+value+' รายการ');
     }
    });
-  }catch{}finally{running=false;}
+  }catch{}finally{
+   clearTimeout(timeout);
+   running=false;
+   if(queued){queued=false;refreshPendingContacts();}
+  }
  }
- setInterval(refreshPendingContacts,30000);
- document.addEventListener('visibilitychange',refreshPendingContacts);
+ setInterval(refreshPendingContacts,5000);
+ document.addEventListener('anemia:queue-changed',()=>refreshPendingContacts(true));
+ document.addEventListener('visibilitychange',()=>refreshPendingContacts());
+ window.addEventListener('online',()=>refreshPendingContacts());
  window.addEventListener('pageshow',event=>{if(event.persisted)refreshPendingContacts();});
+ refreshPendingContacts();
 })();
 </script>
 <?php endif; ?>

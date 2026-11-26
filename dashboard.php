@@ -562,13 +562,13 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-neumorphism-v70">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
 <link rel="manifest" href="staff.webmanifest"><link rel="apple-touch-icon" href="staff-icon-192.png"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=1"></script>
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=monthly-bars-v12"></script>
+<script defer src="admin.js?v=staff-details-v13"></script>
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
@@ -656,17 +656,17 @@ function workspaceInfo(string $page, ?array $release = null): void
    </select></label><button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดงข้อมูล</button>
   </form><?php endif; ?>
   <?php $responseCount=(int)$evaluation['overall']['n']; ?>
-  <section class="card admin-report hosted-live-summary">
+  <section class="card admin-report hosted-live-summary staff-detail-card">
    <div class="hosted-registry-heading"><span class="iconbox"><?= workspaceIcon('ready') ?></span><div><h2>ประเมินการใช้งาน</h2><p><?= $sampleMode ? 'ตัวอย่างเดือน' : 'ข้อมูลที่ส่งจริงในเดือน' ?> <?= esc(date('m/Y')) ?></p></div></div>
    <dl><div><dt>แบบประเมินที่ได้รับ</dt><dd><?= number_format($responseCount) ?></dd></div>
    <div><dt>ความพึงพอใจเฉลี่ย เต็ม 5</dt><dd><?= $responseCount ? number_format((float)$evaluation['overall']['average'],2) : '—' ?></dd></div></dl>
-   <a class="action" href="dashboard.php?view=evaluation&amp;region=<?= $region ?>"><?= workspaceIcon('report') ?>เปิดรายงานประเมินโครงการ</a>
+   <a class="action staff-detail-link" href="dashboard.php?view=evaluation&amp;region=<?= $region ?>"><?= workspaceIcon('report') ?>เปิดรายงานประเมินโครงการ</a>
   </section>
-  <section class="card admin-report hosted-live-summary">
+  <section class="card admin-report hosted-live-summary staff-detail-card">
    <div><h2>การใช้งานแบบประเมินต้นแบบ</h2><p>จำนวนครั้งในเดือน <?= esc(workspaceThaiMonth($activityMonth)) ?></p></div>
    <dl><div><dt>เริ่มทดลอง</dt><dd><?= number_format($activity['counts']['start']) ?></dd></div>
    <div><dt>ทำรอบแรกครบ</dt><dd><?= number_format($activity['counts']['first']) ?></dd></div></dl>
-   <a class="action" href="dashboard.php?view=activity&amp;region=<?= $region ?>"><?= workspaceIcon('chart') ?>ดูสถิติแต่ละขั้นตอน</a>
+   <a class="action staff-detail-link" href="dashboard.php?view=activity&amp;region=<?= $region ?>"><?= workspaceIcon('chart') ?>ดูสถิติแต่ละขั้นตอน</a>
   </section>
   <section class="hosted-registry-section" aria-label="ทะเบียนพื้นที่จากฐานข้อมูลจริง">
   <h2><?= $sampleMode ? 'ทะเบียนพื้นที่ตัวอย่าง' : 'ทะเบียนจากฐานข้อมูลบนโฮสต์' ?></h2>
@@ -676,12 +676,12 @@ function workspaceInfo(string $page, ?array $release = null): void
       ['province','จังหวัดในทะเบียน','provinces'],
       ['ready','จังหวัดที่ตั้งสถานะเปิด','province_enabled'],
     ] as [$symbol,$label,$key]): ?>
-      <section class="card"><span class="iconbox"><?= workspaceIcon($symbol) ?></span><div class="admin-kpi-copy"><span><?= esc($label) ?></span><strong><?= number_format((int)$stats[$key]) ?></strong></div></section>
+      <a class="card staff-detail-card staff-kpi-link" href="dashboard.php?view=reports&amp;region=<?= $region ?>#province-register"><span class="iconbox"><?= workspaceIcon($symbol) ?></span><div class="admin-kpi-copy"><span><?= esc($label) ?></span><strong><?= number_format((int)$stats[$key]) ?></strong></div><?= workspaceIcon('next') ?></a>
     <?php endforeach; ?>
   </div>
-  <section class="card admin-report hosted-registry">
+  <section class="card admin-report hosted-registry staff-detail-card">
    <div class="hosted-registry-heading"><span class="iconbox"><?= workspaceIcon('report') ?></span><div><h2>ทะเบียนพื้นที่</h2><p>ดูรายชื่อจังหวัด เขตสุขภาพ และสถานะการเตรียมเปิดบริการ</p></div></div>
-   <a class="action primary" href="dashboard.php?view=reports&amp;region=<?= $region ?>"><?= workspaceIcon('map') ?>ดูรายงานจังหวัด</a>
+   <a class="action primary staff-detail-link" href="dashboard.php?view=reports&amp;region=<?= $region ?>#province-register"><?= workspaceIcon('map') ?>ดูรายงานจังหวัด</a>
   </section>
   <section class="card admin-report hosted-region-progress"><h2>สถานะทะเบียนรายเขต</h2>
    <?php foreach ($regionTotals as $zone=>$totals): ?>
@@ -753,7 +753,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php endif; ?>
    <div class="actions"><?php if (!$sampleMode): ?><a class="action" href="dashboard.php?view=reports&amp;region=<?= $region ?>&amp;download=csv"><?= workspaceIcon('download') ?>ดาวน์โหลด CSV</a><?php endif; ?><button type="button" class="action primary" onclick="window.print()"><?= workspaceIcon('print') ?>พิมพ์รายงาน</button></div>
   </div>
-  <section class="card admin-report"><h2><?= $identity['role'] === 'provincial_report' ? esc($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? esc(zoneLabel($region)) : 'ทุกเขตสุขภาพ') ?></h2>
+  <section class="card admin-report" id="province-register"><h2><?= $identity['role'] === 'provincial_report' ? esc($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? esc(zoneLabel($region)) : 'ทุกเขตสุขภาพ') ?></h2>
   <div class="tablewrap"><table class="admin-table"><thead><tr><th>รหัส</th><th>จังหวัด</th><th>เขตสุขภาพ</th><th>สถานะจังหวัด</th></tr></thead><tbody>
   <?php foreach ($provinces as $p): ?><tr><td><?= esc($p['code']) ?></td><th scope="row"><?= esc($p['name']) ?></th><td><?= esc(zoneLabel((int)$p['region'])) ?></td><td><?= (int)$p['enabled'] ? 'ตั้งสถานะเปิด' : 'ปิด' ?></td></tr><?php endforeach; ?>
   </tbody></table></div></section>

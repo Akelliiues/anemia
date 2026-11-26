@@ -103,7 +103,11 @@ function animateAdminCounters(){
 }
 function adminStats(rows){
  const cards=[['screened','ครั้งที่ประเมิน','check'],['high','ครั้งที่ได้ผลเสี่ยงสูง','alert'],['referred','คำขอประสาน','phone'],['tested','ยืนยันการตรวจ','hospital']];
- return `<div class="admin-kpis">${cards.map(([key,label,symbol])=>`<section class="card">${box(symbol)}<div class="admin-kpi-copy"><span>${label}</span>${adminCounter(metricTotal(rows,key))}</div></section>`).join('')}</div>`;
+ const hosted=Boolean(document.getElementById('hosted-sample-dashboard'));
+ return `<div class="admin-kpis">${cards.map(([key,label,symbol])=>{
+  const content=`${box(symbol)}<div class="admin-kpi-copy"><span>${label}</span>${adminCounter(metricTotal(rows,key))}</div>`;
+  return hosted?`<button type="button" class="card staff-detail-card staff-kpi-link" data-go="admin-reports">${content}${icon('next')}</button>`:`<section class="card">${content}</section>`;
+ }).join('')}</div>`;
 }
 function adminTable(rows,scope){
  return `<div class="tablewrap"><table class="admin-table"><thead><tr><th>พื้นที่</th><th>เดือน</th><th>ประเมิน</th><th>เสี่ยงสูง</th><th>ขอประสาน</th><th>ตรวจแล้ว</th></tr></thead>

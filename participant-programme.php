@@ -86,7 +86,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรม 12 สัปดาห์ · Anemia Portal</title>
 <script src="theme.js?v=1"></script>
-<link rel="stylesheet" href="style.css?v=portal-neumorphism-v69">
+<link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
 <link rel="stylesheet" href="participant-programme.css?v=1">
 </head>
 <body class="participant-profile-page">

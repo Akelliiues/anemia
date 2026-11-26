@@ -1697,7 +1697,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 }
 .participant-login-page .participant-login-shell {
  background:var(--login-surface);border-color:var(--login-edge);border-radius:1.8rem;
- box-shadow:12px 16px 32px var(--login-shadow),-8px -8px 24px var(--login-light);
+ box-shadow:0 6px 16px var(--login-shadow);
 }
 .participant-login-shell .staff-access-cover {
  background:radial-gradient(ellipse at 84% 23%,#8f60ae,transparent 60%),linear-gradient(145deg,#342250,#553781);
@@ -1718,7 +1718,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .participant-login-shell .participant-signup input:focus-visible,
 .participant-login-shell .participant-account-tabs a:focus-visible {outline:2px solid var(--violet);outline-offset:2px;}
 .participant-login-shell .participant-provider-form .action {background:var(--login-surface);border-color:var(--login-edge);}
-.participant-login-shell .participant-provider-form .action:not(:disabled) {box-shadow:3px 3px 7px var(--login-shadow),-2px -2px 5px var(--login-light);}
+.participant-login-shell .participant-provider-form .action:not(:disabled) {box-shadow:0 2px 5px var(--login-shadow);}
 .participant-login-shell .staff-cover-copy p {max-width:26ch;}
 .participant-login-shell .staff-cover-visual i {animation:login-orbit 18s ease-in-out infinite alternate;}
 .participant-login-shell .staff-cover-visual i:nth-child(2) {animation-direction:alternate-reverse;animation-delay:-6s;}
@@ -1857,7 +1857,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
   --soft-shade:#b2a2c34d;
   --soft-active:#e9def8;
   --soft-accent:#55359f;
-  --soft-raised:5px 6px 14px var(--soft-shade),-4px -4px 11px var(--soft-light);
+  --soft-raised:0 3px 8px var(--soft-shade);
   --soft-inset:inset 3px 3px 7px var(--soft-shade),inset -3px -3px 7px var(--soft-light);
  }
  :root[data-anemia-theme=dark] {
@@ -1925,7 +1925,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
   background:#ffffff12;
   border-color:#ffffff42;
   color:#fff;
-  box-shadow:inset 0 1px 0 #ffffff21,0 2px 5px #1d102e40;
+  box-shadow:0 2px 4px #1d102e40;
  }
  .staff-dashboard-page .admin-top .workspace-account :is(a.staff-install-action,button.workspace-identity,button.hosted-logout-button):is(:hover,:focus-visible) {
   background:#ffffff24;
@@ -1936,4 +1936,9 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
   outline:2px solid #f1dcff;
   outline-offset:2px;
  }
+ .staff-detail-card {position:relative;}
+ .staff-detail-link::after {content:"";position:absolute;inset:0;border-radius:inherit;}
+ .staff-dashboard-page .staff-kpi-link {display:flex;align-items:center;gap:.65rem;width:100%;text-align:start;text-decoration:none;color:var(--ink);}
+ .staff-kpi-link > svg {flex:none;width:1rem;height:1rem;margin-inline-start:auto;color:var(--violet);}
+ .staff-dashboard-page .staff-detail-card:is(:hover,:focus-within,:focus-visible) {border-color:var(--violet);}
 }

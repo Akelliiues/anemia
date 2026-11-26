@@ -603,8 +603,8 @@ function workspaceInfo(string $page, ?array $release = null): void
 
 ?>
 <!doctype html>
-<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-work-v81">
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-work-v82">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1125,14 +1125,6 @@ function workspaceInfo(string $page, ?array $release = null): void
    </nav>
   <?php endif; ?>
   </section>
-  <?php if ($mobileQueue): ?>
-  <nav class="staff-app-dock staff-app-work-dock" aria-label="เมนูแอปเจ้าหน้าที่">
-   <a href="dashboard.php?view=contact-queue&amp;app=staff" <?= $queueTab!=='history'?'aria-current="page"':'' ?>><?= workspaceIcon('ready') ?>งานของฉัน</a>
-   <a class="staff-dock-scan" href="dashboard.php?view=scan-request&amp;app=unit"><?= workspaceIcon('scan') ?>สแกน QR</a>
-   <a href="dashboard.php?view=contact-queue&amp;app=staff&amp;tab=history" <?= $queueTab==='history'?'aria-current="page"':'' ?>><?= workspaceIcon('history') ?>ประวัติ</a>
-   <button type="button" data-workspace-dialog="account" aria-haspopup="dialog"><?= workspaceIcon('users') ?>บัญชี</button>
-  </nav>
-  <?php endif; ?>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">
@@ -1209,6 +1201,14 @@ function workspaceInfo(string $page, ?array $release = null): void
   </tbody></table></div><p><a class="action" href="index.html"><?= workspaceIcon('ready') ?>เปิดหน้าประเมิน</a></p></section>
   <?php endif; ?>
  </div>
+  <?php if ($mobileQueue): ?>
+  <nav class="staff-app-dock staff-app-work-dock" aria-label="เมนูแอปเจ้าหน้าที่">
+   <a href="dashboard.php?view=contact-queue&amp;app=staff" <?= $queueTab!=='history'?'aria-current="page"':'' ?>><?= workspaceIcon('ready') ?>งานของฉัน</a>
+   <a class="staff-dock-scan" href="dashboard.php?view=scan-request&amp;app=unit"><span class="staff-dock-scan-icon"><?= workspaceIcon('scan') ?></span><span>สแกน QR</span></a>
+   <a href="dashboard.php?view=contact-queue&amp;app=staff&amp;tab=history" <?= $queueTab==='history'?'aria-current="page"':'' ?>><?= workspaceIcon('history') ?>ประวัติ</a>
+   <button type="button" data-workspace-dialog="account" aria-haspopup="dialog"><?= workspaceIcon('users') ?>บัญชี</button>
+  </nav>
+  <?php endif; ?>
 </div>
 </section>
 </main>

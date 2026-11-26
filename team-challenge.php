@@ -89,6 +89,13 @@ try {
         $linked=(bool)$identity->fetchColumn();
     }
     $result=['enabled'=>true,'joined'=>$member!==null,'connected'=>$account!==null,'connectionPoints'=>$linked?5:0];
+    $demo=$db->prepare('SELECT branches FROM anemia_demo_member_network WHERE account_id=?');
+    $demo->execute([$account]);
+    $demoBranches=$demo->fetchColumn();
+    if (is_string($demoBranches)) {
+        $counts=json_decode($demoBranches,true,8,JSON_THROW_ON_ERROR);
+        $result['demoNetwork']=['direct'=>count($counts),'branches'=>$counts];
+    }
     if ($member) {
         $count=$db->prepare('SELECT COUNT(*) FROM anemia_team_member WHERE team_id=? AND completed_at IS NOT NULL');
         $count->execute([$member['team_id']]);

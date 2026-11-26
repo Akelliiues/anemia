@@ -93,14 +93,17 @@ try {
             $reason=$_POST['reason']??'';
             if (!is_string($id)||!is_string($action)||!is_string($reason)) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
             try {
-                if ($action==='rename') {
+                if (in_array($action,['demo-create','demo-clear'],true)) {
+                    $changed=anemiaSetDemoMemberNetwork($db,$id,$staff,$action==='demo-create');
+                    $_SESSION['member_notice']=$changed?($action==='demo-create'?'สร้างลูกทีมจำลองแล้ว':'ล้างลูกทีมจำลองแล้ว'):'ข้อมูลจำลองไม่มีการเปลี่ยนแปลง';
+                } elseif ($action==='rename') {
                     $username=$_POST['new_username']??null;
                     if (!is_string($username)) throw new DomainException('กรุณาระบุชื่อบัญชีใหม่');
                     $changed=anemiaRenameMember($db,$id,$username,$reason,$staff);
                 } else {
                     $changed=anemiaSetMemberStatus($db,$id,$action,$reason,$staff);
                 }
-                $_SESSION['member_notice']=$changed?'บันทึกการเปลี่ยนแปลงแล้ว':'ข้อมูลไม่มีการเปลี่ยนแปลง';
+                if (!in_array($action,['demo-create','demo-clear'],true)) $_SESSION['member_notice']=$changed?'บันทึกการเปลี่ยนแปลงแล้ว':'ข้อมูลไม่มีการเปลี่ยนแปลง';
             } catch (DomainException $error) {
                 $_SESSION['member_notice']=$error->getMessage();
             }

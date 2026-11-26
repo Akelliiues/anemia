@@ -3,6 +3,21 @@ declare(strict_types=1);
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 require_once __DIR__.'/participant-account.php';
 
+function anemiaSetDemoMemberNetwork(PDO $db,string $id,string $staff,bool $create): bool
+{
+    if (!preg_match('/^[a-f0-9]{32}$/D',$id)) throw new DomainException('ไม่พบรหัสสมาชิก');
+    if ($create) {
+        $query=$db->prepare('INSERT INTO anemia_demo_member_network(account_id,branches,created_by,created_at)
+            SELECT id,?,?,? FROM anemia_participant_account WHERE id=?
+            ON DUPLICATE KEY UPDATE account_id=VALUES(account_id)');
+        $query->execute([json_encode([4,2,3,1,0],JSON_THROW_ON_ERROR),$staff,date('Y-m-d H:i:s'),$id]);
+    } else {
+        $query=$db->prepare('DELETE FROM anemia_demo_member_network WHERE account_id=?');
+        $query->execute([$id]);
+    }
+    return $query->rowCount()>0;
+}
+
 function anemiaRenameMember(PDO $db,string $id,string $username,string $reason,string $staff): bool
 {
     $username=strtolower(trim($username));

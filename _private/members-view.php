@@ -33,6 +33,7 @@ $detail=null;
 $audit=[];
 if (is_string($member)&&preg_match('/^[a-f0-9]{32}$/D',$member)) {
     $query=$db->prepare('SELECT a.id,a.connected_at,a.suspended_at,p.username,m.completed_at,
+        EXISTS(SELECT 1 FROM anemia_demo_member_network d WHERE d.account_id=a.id) AS has_demo_network,
         (SELECT GROUP_CONCAT(i.provider ORDER BY i.provider) FROM anemia_participant_identity i WHERE i.account_id=a.id) AS providers,
         (SELECT COUNT(*) FROM anemia_team_bonus b WHERE b.inviter=m.id) AS invited_completions
         FROM anemia_participant_account a LEFT JOIN anemia_participant_password p ON p.account_id=a.id
@@ -112,6 +113,13 @@ $methods=static function(array $row): string {
   <?php if ($detail['username']): ?><a class="action" href="<?= esc($memberUrl(['member'=>$detail['id'],'member_task'=>'rename'])) ?>"><?= workspaceIcon('person') ?>แก้ไขชื่อบัญชี</a><?php endif; ?>
   <a class="action" href="<?= esc($memberUrl(['member'=>$detail['id'],'member_task'=>'status'])) ?>"><?= workspaceIcon($detail['suspended_at']?'ready':'lock') ?><?= $detail['suspended_at']?'เปิดบัญชีคืน':'ระงับบัญชี' ?></a>
  </div><?php endif; ?>
+ <?php if ($task===''): ?>
+ <form method="post" class="actions">
+  <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="member" value="<?= esc($detail['id']) ?>">
+  <?php if ($detail['has_demo_network']): ?><button class="action" name="member_action" value="demo-clear"><?= workspaceIcon('close') ?>ล้างลูกทีมจำลอง</button>
+  <?php else: ?><button class="action" name="member_action" value="demo-create"><?= workspaceIcon('users') ?>สร้างลูกทีมจำลอง</button><?php endif; ?>
+ </form>
+ <?php endif; ?>
  <?php if ($audit): ?><details><summary>ประวัติเปลี่ยนสถานะ</summary><ul>
   <?php foreach ($audit as $event): ?><li><?= esc(workspaceThaiShortDate($event['created_at'])) ?> · <?= esc($event['actor']) ?> · <?= ['suspend'=>'ระงับ','restore'=>'เปิดคืน','rename'=>'แก้ชื่อ'][$event['action_name']]??'เปลี่ยนข้อมูล' ?><br><small><?= esc($event['reason']) ?></small></li><?php endforeach; ?>
  </ul></details><?php endif; ?>

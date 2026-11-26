@@ -108,7 +108,7 @@ try {
             header('Location: '.$accountReturnUrl(),true,303); exit;
         }
         if (in_array($key,['password-login','password-register','password-migrate'],true)) {
-            if ($account!==null) throw new DomainException('กรุณาออกจากบัญชีเดิมก่อน');
+            if ($account!==null) throw new DomainException('กรุณาออกจากระบบก่อน');
             $passwordMode=$key;
             $db=participantDb();
             if (!consumeAnemiaAttempt($db,'participant-password:'.($_SERVER['REMOTE_ADDR']??'unknown'))) {
@@ -298,7 +298,7 @@ if ($account) {
    <button class="action" name="provider" value="facebook" <?= !$canConnect('facebook')||in_array('facebook',$linked,true)?'disabled':'' ?>>Facebook<?= in_array('facebook',$linked,true)?' · เชื่อมแล้ว':'' ?></button>
   </details>
  <?php endif; ?>
- <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากบัญชี</button></div><?php endif; ?>
+ <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></div><?php endif; ?>
 </form>
 <?php if ($account): ?></details><?php endif; ?>
 <?php if (!$returnToPortal && !$account): ?>

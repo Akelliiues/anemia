@@ -163,7 +163,6 @@
    currentLabel.textContent=labels.get(data.state)??'ยังไม่ทราบสถานะ';
    currentDetail.textContent=[data.appointment_label,data.confirmation_label,data.next_contact_label&&'ติดตาม '+data.next_contact_label].filter(Boolean).join(' · ');
    currentDetail.hidden=!currentDetail.textContent;
-   currentPanel.hidden=false;
    if(contactPanel){
     contactPanel.querySelector('span').textContent=[data.contact_name,data.facility].filter(Boolean).join(' · ');
     const phone=contactPanel.querySelector('a');
@@ -182,8 +181,8 @@
    if(data.next_contact_label)addEvent('กำหนดติดตาม','future',data.next_contact_label);
    if(data.state!=='closed'){
     const keys=[...labels.keys()];
-    const upcoming=keys.slice(keys.indexOf(data.state)+1).filter(key=>!['closed','retry_contact'].includes(key)&&!data.history.some(event=>event.state===key));
-    if(upcoming.length)addEvent('ขั้นถัดไปที่ยังไม่มีบันทึก','future',upcoming.map(key=>labels.get(key)).join(' · '));
+    const upcoming=keys.slice(keys.indexOf(data.state)+1).filter(key=>data.actions[key]);
+    if(upcoming.length)addEvent('ขั้นที่เลือกได้ต่อจากนี้','future',upcoming.map(key=>data.actions[key][0]).join(' · '));
    }
    form.elements.previous.value=data.state;
    for(const option of states.options){
@@ -199,7 +198,10 @@
    message.textContent='';
    if(saving)dialog.close();
   }catch(error){
-   if(id===operation&&dialog.open)message.textContent=error instanceof SyntaxError?'โหลดข้อมูลไม่ได้ กรุณาลองอีกครั้ง':error.message;
+   if(id===operation&&dialog.open){
+    if(!saving)currentLabel.textContent='โหลดสถานะไม่ได้';
+    message.textContent=error instanceof SyntaxError?'โหลดข้อมูลไม่ได้ กรุณาลองอีกครั้ง':error.message;
+   }
   }finally{
    if(id===operation)submit.disabled=false;
   }
@@ -224,7 +226,9 @@
   list.replaceChildren();
   historyPanel.open=false;
   historyPanel.hidden=true;
-  currentPanel.hidden=true;
+  delete currentPanel.dataset.state;
+  currentLabel.textContent='กำลังโหลดสถานะ…';
+  currentDetail.hidden=true;
   if(contactPanel)contactPanel.hidden=true;
   const receipt=button.dataset.queueTimeline;
   form.elements.receipt.value=receipt;

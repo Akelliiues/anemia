@@ -1566,13 +1566,15 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .queue-timeline-dialog {padding:clamp(.75rem,3vw,1.15rem);}
 .queue-timeline-dialog .workspace-dialog-heading h2 {margin:0;}
 .queue-timeline-dialog .workspace-dialog-heading small {color:var(--muted);}
-.queue-timeline-current {
+.queue-timeline-dialog .queue-timeline-current {
  --current-accent:var(--violet);--current-tint:13%;
  margin:.55rem 0;padding:.6rem .7rem;border:1px solid color-mix(in srgb,var(--current-accent) 38%,var(--line));
  border-inline-start:4px solid var(--current-accent);border-radius:.75rem;color:var(--ink);
  background:color-mix(in srgb,var(--current-accent) var(--current-tint),var(--soft-surface,#fff));
 }
-.queue-timeline-current:not([hidden]) {display:flex;align-items:center;gap:.65rem;}
+.queue-timeline-current {display:flex;align-items:center;justify-content:flex-start;gap:.65rem;}
+.queue-timeline-current > div {min-width:0;flex:1;}
+.queue-timeline-current > form {flex:none;}
 .queue-timeline-current[data-state=pending],.queue-timeline-current[data-state=retry_contact] {--current-accent:#88510b;}
 .queue-timeline-current:is([data-state=attended],[data-state=test_completed]) {--current-accent:#17705b;}
 .queue-timeline-current[data-state=closed] {--current-accent:#536078;}
@@ -1581,9 +1583,9 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 [data-anemia-theme=dark] .queue-timeline-current[data-state=closed] {--current-accent:#c4cce4;}
 .queue-current-icon {display:grid;place-items:center;flex:none;width:2.25rem;height:2.25rem;border-radius:.65rem;color:var(--current-accent);background:color-mix(in srgb,var(--current-accent) 14%,transparent);}
 .queue-current-icon svg {width:1.15rem;height:1.15rem;}
-.queue-timeline-current :is(small,strong) {display:block;}
+.queue-timeline-current small {display:block;}
 .queue-timeline-current small {font-size:.78rem;color:var(--muted);}
-.queue-timeline-current strong {font-size:clamp(1rem,4.5vw,1.3rem);line-height:1.3;color:var(--current-accent);overflow-wrap:anywhere;}
+.queue-timeline-current h2 {font-size:clamp(1rem,4.5vw,1.35rem);line-height:1.3;color:var(--current-accent);overflow-wrap:anywhere;}
 .queue-timeline-current [data-current-detail] {font-size:.85rem;}
 .queue-timeline-history {margin:.4rem 0 .6rem;}
 .queue-timeline-history summary {color:var(--violet);cursor:pointer;font-size:.9rem;}

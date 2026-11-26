@@ -265,6 +265,7 @@ try {
                 $db->rollBack(); http_response_code(409); exit('สถานะเปลี่ยนแล้ว กรุณาเปิดไทม์ไลน์อีกครั้ง');
             }
             if ($state !== null) {
+                if (!in_array($request['state'],ANEMIA_REQUEST_ACTIONS[$state][1] ?? [],true)) { $db->rollBack(); http_response_code(409); exit('ดำเนินการขั้นนี้ไม่ได้'); }
                 $when = null;
                 $slot = null;
                 if ($state==='scheduled') {
@@ -291,7 +292,6 @@ try {
                     }
                     $when = $date->format('Y-m-d H:i:s');
                 }
-                if (!in_array($request['state'],ANEMIA_REQUEST_ACTIONS[$state][1] ?? [],true)) { $db->rollBack(); http_response_code(409); exit('ดำเนินการขั้นนี้ไม่ได้'); }
                 if ($state==='test_completed') {
                     $result = $_POST['confirmation_result'] ?? '';
                     $day = $_POST['examined_on'] ?? '';
@@ -605,7 +605,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=timeline-status-v91">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=timeline-status-v92">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1063,14 +1063,11 @@ function workspaceInfo(string $page, ?array $release = null): void
   </tr><?php endforeach; ?></tbody></table></div>
   <?php endif; ?>
   <dialog class="signal-dialog workspace-dialog queue-timeline-dialog" id="queue-timeline" aria-labelledby="queue-timeline-title">
-   <header class="workspace-dialog-heading">
-    <div><h2 id="queue-timeline-title">ไทม์ไลน์คำขอ</h2><small data-timeline-receipt></small></div>
-    <form method="dialog"><button class="action" aria-label="ปิดไทม์ไลน์"><?= workspaceIcon('close') ?></button></form>
-   </header>
-   <div class="queue-timeline-current" data-timeline-current role="status" hidden>
+   <header class="workspace-dialog-heading queue-timeline-current" data-timeline-current>
     <span class="queue-current-icon" aria-hidden="true"><?= workspaceIcon('history') ?></span>
-    <div><small>สถานะปัจจุบัน</small><strong data-current-label></strong><span data-current-detail hidden></span></div>
-   </div>
+    <div><h2 id="queue-timeline-title" data-current-label aria-live="polite">กำลังโหลดสถานะ…</h2><small data-timeline-receipt></small><span data-current-detail hidden></span></div>
+    <form method="dialog"><button class="action" aria-label="ปิด"><?= workspaceIcon('close') ?></button></form>
+   </header>
    <?php if ($mobileQueue): ?><p data-timeline-contact hidden><span></span> <a></a></p><?php endif; ?>
    <details class="queue-timeline-history" hidden>
     <summary>ดูประวัติและขั้นถัดไป</summary>
@@ -1115,7 +1112,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=12"></script>
+  <script defer src="queue-timeline.js?v=13"></script>
   <?php endif; ?>
   <?php if ($mobileQueue && $focusReceipt==='' && ($queuePage>1 || $queueNext)): ?>
    <?php $pageUrl=$mobileQueueUrl.'&tab='.$queueTab.'&page='; ?>

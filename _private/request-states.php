@@ -16,7 +16,7 @@ const ANEMIA_REQUEST_STATES = [
 
 const ANEMIA_REQUEST_ACTIONS = [
     'accepted'=>['รับเรื่อง',['pending']],
-    'contacted'=>['บันทึกว่าติดต่อแล้ว',['pending','accepted','retry_contact']],
+    'contacted'=>['บันทึกว่าติดต่อแล้ว',['pending','accepted']],
     'retry_contact'=>['นัดติดต่อซ้ำ',['pending','accepted','contacted','retry_contact']],
     'scheduled'=>['ยืนยันวันนัด',['pending','accepted','contacted','retry_contact','scheduled']],
     'attended'=>['ยืนยันเช็กอิน',['pending','accepted','contacted','retry_contact','scheduled']],

@@ -9,6 +9,15 @@
  const states=form.elements.state;
  const labels=new Map([...states.options].filter(option=>option.value).map(option=>[option.value,option.textContent]));
  const roundField=dialog.querySelector('[data-workflow-round]');
+ const confirmationField=dialog.querySelector('[data-confirmation-fields]');
+ function showConfirmation(enabled){
+  confirmationField.hidden=!enabled;
+  for(const field of confirmationField.querySelectorAll('select,input')){
+   field.disabled=!enabled;
+   field.required=enabled;
+   if(!enabled)field.value='';
+  }
+ }
  const slotField=roundField.querySelector('[data-round-slots]');
  const contactTime=roundField.querySelector('[data-contact-time]');
  const timeInputs=[...contactTime.querySelectorAll('select')];
@@ -130,7 +139,7 @@
   try{
    const response=await fetch(location.href,{method:'POST',body,cache:'no-store'});
    if(!response.ok){
-    const errors={403:'กรุณาเข้าสู่ระบบใหม่',404:'ไม่พบคำขอนี้',409:'สถานะเปลี่ยนหรือใช้ขั้นตอนนี้ไม่ได้ กรุณาเปิดไทม์ไลน์อีกครั้ง',422:'กรุณาตรวจวันและเวลาที่เลือกอีกครั้ง'};
+    const errors={403:'กรุณาเข้าสู่ระบบใหม่',404:'ไม่พบคำขอนี้',409:'สถานะเปลี่ยนหรือใช้ขั้นตอนนี้ไม่ได้ กรุณาเปิดไทม์ไลน์อีกครั้ง',422:states.value==='test_completed'?'กรุณาตรวจผลตรวจและวันที่ตรวจอีกครั้ง':'กรุณาตรวจวันและเวลาที่เลือกอีกครั้ง'};
     throw new Error(errors[response.status]??'ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง');
    }
    if(response.redirected)throw new Error('กรุณาเข้าสู่ระบบใหม่');
@@ -141,7 +150,7 @@
    list.replaceChildren();
    const latest=data.history.at(-1);
    const pending=data.state==='pending'&&!latest;
-   currentPanel.textContent=[labels.get(data.state),data.appointment_label,data.next_contact_label&&'ติดตาม '+data.next_contact_label].filter(Boolean).join(' · ');
+   currentPanel.textContent=[labels.get(data.state),data.appointment_label,data.confirmation_label,data.next_contact_label&&'ติดตาม '+data.next_contact_label].filter(Boolean).join(' · ');
    currentPanel.hidden=false;
    historyPanel.hidden=false;
    addEvent('ส่งคำขอแล้ว',pending?'current':'done',data.submitted_at+(pending?' · รอเจ้าหน้าที่รับเรื่อง':''));
@@ -165,6 +174,7 @@
     if(action)option.textContent=action[0];
    }
    states.value='';
+   showConfirmation(false);
    states.required=true;
    form.hidden=!Object.keys(data.actions).length;
    message.textContent='';
@@ -181,6 +191,7 @@
   form.hidden=true;
   ++roundOperation;
   roundField.hidden=true;
+  showConfirmation(false);
   dayInput.value='';
   slotInputs.forEach(input=>{input.checked=false;input.required=false;});
   timeInputs.forEach(input=>{input.value='';input.required=false;});
@@ -202,6 +213,7 @@
   request(button,false);
  }));
  states.addEventListener('change',()=>{
+  showConfirmation(states.value==='test_completed');
   historyPanel.open=false;
   const appointment=states.value==='scheduled';
   const callback=states.value==='retry_contact';
@@ -253,4 +265,5 @@
   startedOnBackdrop=false;
   trigger?.focus({preventScroll:true});
  });
+ document.querySelector('[data-queue-open]')?.click();
 })();

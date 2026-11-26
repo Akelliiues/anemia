@@ -1,0 +1,87 @@
+.participant-programme {
+  padding: clamp(1rem, 3vw, 2rem);
+}
+.participant-programme h2 {
+  font-size: 1.25rem;
+  margin: 0 0 .65rem;
+}
+.programme-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem 1rem;
+}
+.programme-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+.programme-nav svg {
+  width: 1rem;
+  height: 1rem;
+}
+.programme-draft, .programme-notice {
+  border-inline-start: .25rem solid var(--violet);
+  padding: .55rem .8rem;
+}
+.programme-card {
+  border: 1px solid var(--line);
+  border-radius: .9rem;
+  padding: clamp(.8rem, 3vw, 1.25rem);
+}
+.programme-card progress {
+  accent-color: var(--violet);
+  width: 100%;
+}
+.programme-resource {
+  display: inline-block;
+  margin-bottom: .85rem;
+}
+.programme-question {
+  border: 1px solid var(--line);
+  border-radius: .65rem;
+  margin: 0 0 .8rem;
+  min-inline-size: 0;
+  padding: .45rem .75rem;
+}
+.programme-question legend {
+  font-weight: 650;
+}
+.programme-question label, .programme-acknowledge {
+  align-items: baseline;
+  display: flex;
+  gap: .6rem;
+  min-height: 2.75rem;
+  padding: .4rem .15rem;
+}
+.programme-question input, .programme-acknowledge input {
+  accent-color: var(--violet);
+  flex: none;
+}
+.programme-acknowledge {
+  margin: .75rem 0;
+}
+.programme-weeks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.programme-weeks li {
+  border-bottom: 1px solid var(--line);
+  padding: .55rem .2rem;
+}
+.programme-weeks [aria-current=step] {
+  border-inline-start: .25rem solid var(--violet);
+  padding-inline-start: .6rem;
+}
+.programme-weeks summary {
+  cursor: pointer;
+  min-height: 2rem;
+  padding: .25rem 0;
+}
+.programme-weeks small {
+  margin-inline-start: .5rem;
+}
+.programme-weeks details p {
+  margin: .3rem 0 .4rem;
+  padding-inline-start: 1rem;
+}

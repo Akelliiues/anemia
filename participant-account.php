@@ -29,7 +29,17 @@ $canConnect=static fn(string $key): bool => isset($providers[$key]) && $provider
     ($key!=='facebook'||preg_match('/^v\d+\.\d+$/D',$facebookVersion));
 $invite=$_REQUEST['invite']??'';
 $invite=is_string($invite)&&preg_match('/^[a-f0-9]{32}$/D',$invite)?$invite:'';
-$returnToPortal=($_REQUEST['return']??'')==='portal';
+$returnContext=$_REQUEST['return']??'';
+$returnContext=in_array($returnContext,['portal','programme'],true)?$returnContext:'';
+$returnToPortal=$returnContext!=='';
+$accountReturnUrl=static fn(): string => 'participant-account.php'.($returnContext!==''?'?return='.$returnContext:'');
+$participantDestination=static function(string $context,string $invite): string {
+    return match ($context) {
+        'programme'=>'participant-programme.php',
+        'portal'=>'index.html',
+        default=>'index.html?team=1'.($invite!==''?'&invite='.$invite:''),
+    };
+};
 
 function participantProviderJson(string $url,?array $form=null,?string $token=null): array
 {
@@ -90,12 +100,12 @@ try {
                 throw $error;
             }
             $_SESSION['profile_saved']=true;
-            header('Location: participant-account.php'.($returnToPortal?'?return=portal':''),true,303); exit;
+            header('Location: '.$accountReturnUrl(),true,303); exit;
         }
         if ($key==='logout') {
             $_SESSION=[];
             session_regenerate_id(true);
-            header('Location: participant-account.php'.($returnToPortal?'?return=portal':''),true,303); exit;
+            header('Location: '.$accountReturnUrl(),true,303); exit;
         }
         if (in_array($key,['password-login','password-register','password-migrate'],true)) {
             if ($account!==null) throw new DomainException('กรุณาออกจากบัญชีเดิมก่อน');
@@ -107,7 +117,7 @@ try {
             }
             $account=anemiaParticipantPassword($db,$key==='password-register',$_POST,anemiaTeamCookieHash(),$key==='password-migrate');
             anemiaStartParticipantSession($db,$account);
-            $target=$returnToPortal?'index.html':'index.html?team=1'.($invite!==''?'&invite='.$invite:'');
+            $target=$participantDestination($returnContext,$invite);
             header('Location: '.$target,true,303); exit;
         }
         if (!is_string($key)||!$canConnect($key)) throw new DomainException('ช่องทางนี้ยังไม่เปิดใช้งาน');
@@ -115,7 +125,7 @@ try {
         $state=bin2hex(random_bytes(24));
         $nonce=bin2hex(random_bytes(24));
         $verifier=bin2hex(random_bytes(32));
-        $_SESSION['oauth']=['state'=>$state,'provider'=>$key,'until'=>time()+600,'account'=>$account,'invite'=>$invite,'nonce'=>$nonce,'verifier'=>$verifier,'portal'=>$returnToPortal];
+        $_SESSION['oauth']=['state'=>$state,'provider'=>$key,'until'=>time()+600,'account'=>$account,'invite'=>$invite,'nonce'=>$nonce,'verifier'=>$verifier,'return_context'=>$returnContext];
         $params=['response_type'=>'code','client_id'=>$client,'redirect_uri'=>$redirect,'state'=>$state,'scope'=>$scope];
         if ($key!=='facebook') $params+=['code_challenge'=>rtrim(strtr(base64_encode(hash('sha256',$verifier,true)),'+/','-_'),'='),'code_challenge_method'=>'S256'];
         if ($key==='line') $params['nonce']=$nonce;
@@ -129,7 +139,8 @@ try {
         }
         unset($_SESSION['oauth']);
         $invite=$flow['invite'];
-        $returnToPortal=$flow['portal']??false;
+        $returnContext=$flow['return_context']??(!empty($flow['portal'])?'portal':'');
+        $returnToPortal=$returnContext!=='';
         $code=$_GET['code']??null;
         if (!is_string($code)||$code==='') throw new DomainException('ยังไม่ได้เชื่อมบัญชี');
         [,,$tokenUrl,,$client,$secret]=$providers[$key];
@@ -150,7 +161,7 @@ try {
         $db=participantDb();
         $account=anemiaConnectParticipant($db,$key,$subject,$account,anemiaTeamCookieHash());
         anemiaStartParticipantSession($db,$account);
-        $target=$returnToPortal?'index.html':'index.html?team=1'.($invite!==''?'&invite='.$invite:'');
+        $target=$participantDestination($returnContext,$invite);
         header('Location: '.$target,true,303); exit;
     }
 } catch (Throwable $error) {
@@ -187,7 +198,8 @@ if ($account) {
 <body<?= $account?' class="participant-profile-page"':'' ?>>
 <main class="participant-account-main"><section class="panel participant-account">
 <nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
- <a href="index.html"><?= workspaceIcon('back') ?>กลับหน้าหลัก</a>
+ <?php if ($returnContext==='programme'): ?><a href="participant-programme.php"><?= workspaceIcon('back') ?>กลับไปที่กิจกรรม 12 สัปดาห์</a>
+ <?php else: ?><a href="index.html"><?= workspaceIcon('back') ?>กลับหน้าหลัก</a><?php endif; ?>
 </nav>
 <?php if ($account): ?>
 <header class="participant-profile-hero">
@@ -201,6 +213,7 @@ if ($account) {
 <div class="participant-profile-points">
  <div class="participant-profile-tile"><span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><span><small>แต้มสะสม</small><strong><?= number_format($activity['points']) ?> แต้ม</strong></span></div>
  <a class="participant-profile-tile participant-team-link" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><span class="participant-team-mark"><?= workspaceIcon('users') ?></span><span><strong>ทีมของฉัน</strong><small><?= $activity['joined']?'ดูความคืบหน้าทีม':'สร้างทีมหรือชวนเพื่อน' ?></small></span><?= workspaceIcon('next') ?></a>
+ <a class="participant-profile-tile participant-team-link" href="participant-programme.php"><span class="participant-team-mark"><?= workspaceIcon('book') ?></span><span><strong>กิจกรรม 12 สัปดาห์</strong><small>ดูแบบประเมินและความคืบหน้า</small></span><?= workspaceIcon('next') ?></a>
 </div>
 <section class="participant-activity-card" aria-labelledby="participant-activity-title">
  <h2 id="participant-activity-title"><?= workspaceIcon('history') ?> กิจกรรมของฉัน</h2>
@@ -230,7 +243,7 @@ if ($account) {
  $register=$mode==='password-register';
  $migrate=$mode==='password-migrate';
  $accountModeUrl=static fn(string $mode): string => 'participant-account.php?'.http_build_query(array_filter([
-     'mode'=>$mode,'invite'=>$invite,'return'=>$returnToPortal?'portal':''
+     'mode'=>$mode,'invite'=>$invite,'return'=>$returnContext
  ]));
  ?>
  <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าใช้บัญชี">
@@ -242,7 +255,7 @@ if ($account) {
   <form method="post" action="participant-account.php">
    <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
    <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
-   <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
+   <?php if ($returnToPortal): ?><input type="hidden" name="return" value="<?= participantEscape($returnContext) ?>"><?php endif; ?>
    <label><span><?= workspaceIcon('person') ?> ชื่อบัญชี</span>
     <input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false">
    </label>
@@ -270,7 +283,7 @@ if ($account) {
  <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบด้วยบัญชีอื่น' ?></h2>
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
- <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
+ <?php if ($returnToPortal): ?><input type="hidden" name="return" value="<?= participantEscape($returnContext) ?>"><?php endif; ?>
  <div class="actions">
   <?php foreach (['line','google'] as $key): $label=$providers[$key][0]; $ready=$canConnect($key); $connected=in_array($key,$linked,true); ?>
    <button class="action" name="provider" value="<?= $key ?>" <?= !$ready||$connected?'disabled':'' ?>>
@@ -303,7 +316,7 @@ if ($account) {
  <header class="workspace-dialog-heading"><h2 id="participant-profile-title"><?= workspaceIcon('edit') ?> แก้ไขโปรไฟล์</h2><form method="dialog"><button class="action" aria-label="ปิด"><?= workspaceIcon('close') ?></button></form></header>
  <form method="post" action="participant-account.php" class="participant-signup" enctype="multipart/form-data">
   <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
-  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
+  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="<?= participantEscape($returnContext) ?>"><?php endif; ?>
   <?php if ($profileEditing&&$notice!==''): ?><p role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
   <div class="participant-avatar-preview" aria-label="ตัวอย่างไอคอน">
    <?php foreach (ANEMIA_PROFILE_AVATARS as $key=>$label): ?>

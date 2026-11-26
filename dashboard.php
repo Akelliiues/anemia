@@ -28,7 +28,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile', 'network', 'members'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile', 'network', 'members', 'programme-report'], true)) $view = 'overview';
 date_default_timezone_set('Asia/Bangkok');
 $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
@@ -56,7 +56,7 @@ try {
     $canQueue=$isAdmin || ($grant['scope_kind']??'')==='facility';
     $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district'],true);
     [$queueScope,$queueParams]=anemiaQueueNetworkScope($isAdmin,$grant);
-    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','members'],true) && !$isAdmin) ||
+    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','members','programme-report'],true) && !$isAdmin) ||
         (in_array($view,['contact-queue','scan-request'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
     }
@@ -272,6 +272,15 @@ try {
                     $when = $date->format('Y-m-d H:i:s');
                 }
                 if (!in_array($request['state'],ANEMIA_REQUEST_ACTIONS[$state][1] ?? [],true)) { $db->rollBack(); http_response_code(409); exit('ดำเนินการขั้นนี้ไม่ได้'); }
+                if ($state==='test_completed') {
+                    $result = $_POST['confirmation_result'] ?? '';
+                    $day = $_POST['examined_on'] ?? '';
+                    $date = is_string($day) && preg_match('/^\d{4}-\d\d-\d\d$/D',$day) ? DateTimeImmutable::createFromFormat('!Y-m-d',$day) : false;
+                    if (!is_string($result) || !isset(ANEMIA_CONFIRMATION_RESULTS[$result]) || !$date || $date->format('Y-m-d')!==$day || $day>date('Y-m-d') || $day<substr($request['submitted_at'],0,10)) {
+                        $db->rollBack(); http_response_code(422); exit('กรุณาระบุผลตรวจและวันที่ตรวจจริง');
+                    }
+                    $db->prepare('INSERT INTO anemia_request_confirmation (receipt,result_code,examined_on) VALUES (?,?,?)')->execute([$receipt,$result,$day]);
+                }
                 anemiaApplyRequestAction($db,$contactTable,$receipt,$state,$staff,$when,$slot);
                 $lookup->execute([$receipt,...$queueParams]);
                 $request = $lookup->fetch(PDO::FETCH_ASSOC);
@@ -283,6 +292,10 @@ try {
             $history = $db->prepare('SELECT state,actor,changed_at FROM anemia_request_history WHERE receipt=? ORDER BY id');
             $history->execute([$receipt]);
             $request['history'] = $history->fetchAll(PDO::FETCH_ASSOC);
+            $confirmation = $db->prepare('SELECT result_code,examined_on FROM anemia_request_confirmation WHERE receipt=?');
+            $confirmation->execute([$receipt]);
+            $exam = $confirmation->fetch(PDO::FETCH_ASSOC);
+            $request['confirmation_label'] = $exam ? ANEMIA_CONFIRMATION_RESULTS[$exam['result_code']].' · '.workspaceThaiShortDate($exam['examined_on']) : null;
             $db->commit();
             header('Content-Type: application/json; charset=UTF-8');
             echo json_encode($request,JSON_THROW_ON_ERROR);
@@ -346,11 +359,38 @@ try {
     $attention = "($overdue OR state IN ('pending','accepted') OR (state IN ('retry_contact','follow_up') AND next_contact_at<=$queueNow))";
     $contactQueue=[];
     if ($view==='contact-queue') {
-        $queue=$db->prepare("SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,$overdue AS overdue FROM $contactTable q WHERE $queueScope".($attentionOnly?' AND '.$attention:'').' ORDER BY submitted_at DESC,receipt DESC LIMIT 100');
-        $queue->execute($queueParams);
+        $report=$db->prepare("SELECT COUNT(*) AS requested,
+            SUM(q.state IN ('attended','test_completed','follow_up') OR EXISTS
+                (SELECT 1 FROM anemia_request_history h WHERE h.receipt=q.receipt AND h.state='attended')) AS attended,
+            SUM(c.receipt IS NOT NULL) AS recorded,
+            SUM(c.result_code='confirmed') AS confirmed,
+            SUM(c.result_code='not_confirmed') AS not_confirmed,
+            SUM(c.result_code='inconclusive') AS inconclusive
+            FROM $contactTable q LEFT JOIN anemia_request_confirmation c ON c.receipt=q.receipt WHERE $queueScope");
+        $report->execute($queueParams);
+        $referralStats=$report->fetch(PDO::FETCH_ASSOC);
+        $focusReceipt=$_GET['request'] ?? '';
+        if (!is_string($focusReceipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$focusReceipt)) $focusReceipt='';
+        $queue=$db->prepare("SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,$overdue AS overdue FROM $contactTable q WHERE $queueScope".($focusReceipt!==''?' AND q.receipt=?':($attentionOnly?' AND '.$attention:'')).' ORDER BY submitted_at DESC,receipt DESC LIMIT 100');
+        $queue->execute($focusReceipt!==''?[...$queueParams,$focusReceipt]:$queueParams);
         $contactQueue=$queue->fetchAll(PDO::FETCH_ASSOC);
     }
     $forms = $view === 'assessment' ? $db->query('SELECT version_key,state FROM anemia_form_version ORDER BY version_key')->fetchAll(PDO::FETCH_ASSOC) : [];
+    if ($view==='programme-report') {
+        require_once __DIR__.'/_private/participant-programme.php';
+        $query=$db->prepare("SELECT COUNT(*) AS started, COUNT(a.account_id) AS paired,
+            AVG(CASE WHEN a.account_id IS NOT NULL THEN 100.0*b.score/NULLIF(b.max_score,0) END) AS before_mean,
+            AVG(100.0*a.score/NULLIF(a.max_score,0)) AS after_mean
+            FROM anemia_participant_programme_assessment b
+            LEFT JOIN anemia_participant_programme_assessment a ON a.account_id=b.account_id AND a.programme_version=b.programme_version
+                AND a.instrument_version=b.instrument_version AND a.phase='after'
+            WHERE b.programme_version=? AND b.instrument_version=? AND b.phase='before'");
+        $query->execute([ANEMIA_PROGRAMME_VERSION,ANEMIA_PROGRAMME_INSTRUMENT_VERSION]);
+        $programmeStats=$query->fetch(PDO::FETCH_ASSOC);
+        $query=$db->prepare('SELECT week_no,COUNT(*) AS completed FROM anemia_participant_programme_progress WHERE programme_version=? GROUP BY week_no');
+        $query->execute([ANEMIA_PROGRAMME_VERSION]);
+        $programmeProgress=$query->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
     $accessAccounts = $view === 'access' ? $db->query('SELECT s.username,s.role,s.enabled,a.region,a.province_code FROM anemia_staff s LEFT JOIN anemia_staff_access a ON a.username=s.username ORDER BY s.username')->fetchAll(PDO::FETCH_ASSOC) : [];
     $auditRows = $view === 'audit' ? $db->query('SELECT actor,target_username,action_name,role_name,region,province_code,enabled,changed_at FROM anemia_access_audit ORDER BY id DESC LIMIT 100')->fetchAll(PDO::FETCH_ASSOC) : [];
     if ($sampleMode && $view === 'assessment') {
@@ -448,12 +488,14 @@ $tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจั�
 $tabs['mobile'] = 'Anemia Staff';
 if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 if ($canQueue) $tabs += ['contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
+if ($isAdmin) $tabs['programme-report']='ผลการเรียนรู้';
 if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบริการ';
 if ($isAdmin) $tabs['members']='สมาชิก';
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
 $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','contact-queue'=>'phone','scan-request'=>'scan'];
 $tabIcons['network']='hospital';
 $tabIcons['members']='users';
+$tabIcons['programme-report']='book';
 $scopeName = $identity['role'] === 'provincial_report' ? ($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? zoneLabel($region) : 'ทุกเขตสุขภาพ');
 function accessFields(array $record, array $provinces): void
 {
@@ -549,7 +591,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php
     $groups = [
         ['ภาพรวม','chart',['overview']],
-        ['รายงาน','map',['reports','activity','evaluation']],
+        ['รายงาน','map',['reports','activity','evaluation','programme-report']],
         ['แบบประเมิน','ready',['assessment']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
         ['ระบบ','users',['members','access','audit','sample-settings','network']],
@@ -715,6 +757,20 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="tablewrap"><table class="admin-table"><thead><tr><th>รหัส</th><th>จังหวัด</th><th>เขตสุขภาพ</th><th>สถานะจังหวัด</th></tr></thead><tbody>
   <?php foreach ($provinces as $p): ?><tr><td><?= esc($p['code']) ?></td><th scope="row"><?= esc($p['name']) ?></th><td><?= esc(zoneLabel((int)$p['region'])) ?></td><td><?= (int)$p['enabled'] ? 'ตั้งสถานะเปิด' : 'ปิด' ?></td></tr><?php endforeach; ?>
   </tbody></table></div></section>
+  <?php elseif ($view === 'programme-report'): ?>
+  <section class="card admin-report">
+   <h2>กิจกรรม 12 สัปดาห์</h2>
+   <p>ข้อมูลจากกิจกรรมฉบับร่าง เปรียบเทียบคะแนนของผู้ที่ตอบครบทั้งก่อนและหลังในแบบประเมินรุ่นเดียวกัน</p>
+   <div class="tablewrap"><table class="admin-table"><thead><tr><th>เริ่มทำแบบประเมิน</th><th>ตอบครบทั้งสองครั้ง</th><th>เฉลี่ยก่อนเรียน</th><th>เฉลี่ยหลังเรียน</th></tr></thead><tbody><tr>
+    <td><?= number_format((int)$programmeStats['started']) ?> คน</td><td><?= number_format((int)$programmeStats['paired']) ?> คน</td>
+    <td><?= $programmeStats['before_mean']===null?'—':number_format((float)$programmeStats['before_mean'],1).'%' ?></td>
+    <td><?= $programmeStats['after_mean']===null?'—':number_format((float)$programmeStats['after_mean'],1).'%' ?></td>
+   </tr></tbody></table></div>
+   <h3>ความคืบหน้ารายสัปดาห์</h3>
+   <div class="tablewrap"><table class="admin-table"><thead><tr><th>สัปดาห์</th><th>กิจกรรม</th><th>ทำเสร็จแล้ว</th></tr></thead><tbody>
+    <?php foreach (anemiaProgrammeWeeks() as $week=>[$title]): ?><tr><th scope="row"><?= $week ?></th><td><?= esc($title) ?></td><td><?= number_format((int)($programmeProgress[$week] ?? 0)) ?> คน</td></tr><?php endforeach; ?>
+   </tbody></table></div>
+  </section>
   <?php elseif ($view === 'evaluation'):
      $total=(int)$evaluation['overall']['n'];
      $average=$total?number_format((float)$evaluation['overall']['average'],2):'—';
@@ -865,7 +921,7 @@ function workspaceInfo(string $page, ?array $release = null): void
        <button class="action primary" name="scan_action" value="check_in"><?= workspaceIcon('ready') ?>ยืนยันเช็กอิน</button>
       </form>
      <?php endif; ?>
-     <a class="action" href="dashboard.php?view=contact-queue<?= $demoScan?'&amp;demo=1':'' ?>"><?= workspaceIcon('next') ?>เปิดคิวคำขอ</a>
+     <a class="action" href="dashboard.php?view=contact-queue<?= $demoScan?'&amp;demo=1':'' ?>&amp;request=<?= esc($scannedRequest['receipt']) ?>"><?= workspaceIcon('next') ?>เปิดไทม์ไลน์คำขอนี้</a>
     </div>
    </section>
    <?php endif; ?>
@@ -904,13 +960,22 @@ function workspaceInfo(string $page, ?array $release = null): void
    <span><?= workspaceIcon('phone') ?>ขอติดต่อกลับรอประสาน <strong data-pending-count="<?= $counterScope ?>.callback"><?= $pendingInQueue['callback'] ?></strong></span>
   </div>
   <p><?= $demoQueue?'แสดงข้อมูลติดต่อที่กรอกในโหมดทดสอบ คิวนี้แยกจากคิวจริงและไม่มีการส่ง SMS':'แสดง 100 คำขอล่าสุด ผู้ดูแลประสานกับหน่วยบริการที่ผู้ขอเลือก' ?></p>
+  <details>
+   <summary>สรุปการส่งต่อในคิวนี้</summary>
+   <p>นับจากคำขอทั้งหมดตามสิทธิ์เข้าถึง ยอดผลตรวจนับเฉพาะรายการที่บันทึกผลแล้ว</p>
+   <dl>
+   <?php foreach (['requested'=>'คำขอทั้งหมด','attended'=>'เข้ารับบริการแล้ว','recorded'=>'บันทึกผลตรวจแล้ว'] + ANEMIA_CONFIRMATION_RESULTS as $key=>$label): ?>
+    <dt><?= esc($label) ?></dt><dd><?= number_format((int)($referralStats[$key] ?? 0)) ?> รายการ</dd>
+   <?php endforeach; ?>
+   </dl>
+  </details>
   <?php if (!$contactQueue): ?><p>ยังไม่มีคำขอ</p><?php else: ?>
   <div class="tablewrap"><table class="admin-table contact-queue-table"><thead><tr><th>เลขคำขอ / เวลาส่ง</th><th>หน่วยบริการ / ความประสงค์</th><th>ข้อมูลติดต่อ</th><th>สถานะ</th></tr></thead><tbody>
   <?php foreach ($contactQueue as $item): ?><tr>
    <th scope="row"><?= esc($item['receipt']) ?><br><small><time datetime="<?= esc(str_replace(' ','T',$item['submitted_at']).'+07:00') ?>" title="<?= esc('ส่งเวลา '.substr($item['submitted_at'],11,5).' น.') ?>"><?= esc(workspaceThaiShortDate($item['submitted_at'])) ?></time></small></th>
    <td><?= esc($item['facility']) ?><br><small><?= $item['request_kind']==='appointment'?'ขอนัดเข้าตรวจ':'ให้ติดต่อกลับ' ?><?= $item['preferred_date']?' · '.esc($item['preferred_date']):'' ?></small></td>
    <td><?= esc($item['contact_name']) ?><br><a href="tel:<?= esc($item['phone']) ?>"><?= esc($item['phone']) ?></a></td>
-   <td><button type="button" class="action queue-timeline-trigger" data-queue-timeline="<?= esc($item['receipt']) ?>" aria-haspopup="dialog"><?= workspaceIcon('history') ?><span><?= $item['overdue']?'เลยวันนัด · รอตรวจสอบ':esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span><?= workspaceIcon('next') ?></button></td>
+   <td><button type="button" class="action queue-timeline-trigger" data-queue-timeline="<?= esc($item['receipt']) ?>" <?= $focusReceipt!==''?'data-queue-open':'' ?> aria-haspopup="dialog"><?= workspaceIcon('history') ?><span><?= $item['overdue']?'เลยวันนัด · รอตรวจสอบ':esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span><?= workspaceIcon('next') ?></button></td>
   </tr><?php endforeach; ?></tbody></table></div>
   <dialog class="signal-dialog workspace-dialog queue-timeline-dialog" id="queue-timeline" aria-labelledby="queue-timeline-title">
    <header class="workspace-dialog-heading">
@@ -932,6 +997,12 @@ function workspaceInfo(string $page, ?array $release = null): void
      <?php endforeach; ?>
     </select><button type="submit" class="action"><?= workspaceIcon('save') ?>บันทึก</button>
    </form>
+   <fieldset data-confirmation-fields hidden><legend>ผลตรวจจากหน่วยบริการ</legend>
+    <label>ผลตรวจ <select form="queue-workflow-form" name="confirmation_result" disabled><option value="">เลือกผลตรวจ</option>
+     <?php foreach (ANEMIA_CONFIRMATION_RESULTS as $code=>$label): ?><option value="<?= esc($code) ?>"><?= esc($label) ?></option><?php endforeach; ?>
+    </select></label>
+    <label>วันที่ตรวจ <input form="queue-workflow-form" type="date" name="examined_on" max="<?= esc(date('Y-m-d')) ?>" disabled></label>
+   </fieldset>
    <section data-workflow-round hidden>
     <details class="request-calendar"><summary><?= workspaceIcon('calendar') ?> <span data-round-date-label>เลือกวันนัด</span></summary><div data-round-calendar></div></details>
     <input form="queue-workflow-form" name="appointment_day" type="hidden">
@@ -955,7 +1026,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=9"></script>
+  <script defer src="queue-timeline.js?v=10"></script>
   <?php endif; ?>
   </section>
   <?php elseif ($view === 'sample-settings'): ?>

@@ -26,6 +26,7 @@ const ANEMIA_REQUEST_ACTIONS = [
 ];
 
 const ANEMIA_APPOINTMENT_SLOTS = ['morning'=>'รอบเช้า','afternoon'=>'รอบบ่าย'];
+const ANEMIA_CONFIRMATION_RESULTS = ['confirmed'=>'ผลยืนยันภาวะโลหิตจาง','not_confirmed'=>'ผลไม่ยืนยันภาวะโลหิตจาง','inconclusive'=>'ยังสรุปผลไม่ได้'];
 
 function anemiaAppointmentLabel(string $appointment,?string $slot): string
 {

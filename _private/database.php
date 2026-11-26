@@ -14,11 +14,11 @@ function anemiaDatabase(array $settings): PDO
 function initializeAnemia(PDO $db, array $settings): void
 {
     $db->exec("CREATE TABLE IF NOT EXISTS anemia_schema (version INTEGER PRIMARY KEY) ENGINE=InnoDB");
-    if ($db->query('SELECT version FROM anemia_schema WHERE version=23')->fetchColumn()) return;
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=24')->fetchColumn()) return;
     $lock = $db->query("SELECT GET_LOCK(CONCAT(DATABASE(), ':anemia-schema'), 10)")->fetchColumn();
     if ((int)$lock !== 1) throw new RuntimeException('migration lock unavailable');
     try {
-        if ($db->query('SELECT version FROM anemia_schema WHERE version=23')->fetchColumn()) return;
+        if ($db->query('SELECT version FROM anemia_schema WHERE version=24')->fetchColumn()) return;
         if (!$db->query('SELECT version FROM anemia_schema WHERE version=1')->fetchColumn()) {
         $db->exec("CREATE TABLE IF NOT EXISTS anemia_province (
             code CHAR(2) PRIMARY KEY, name VARCHAR(100) NOT NULL, region TINYINT UNSIGNED NOT NULL,
@@ -251,7 +251,14 @@ function initializeAnemia(PDO $db, array $settings): void
             branches VARCHAR(100) CHARACTER SET ascii NOT NULL, created_by VARCHAR(40) NOT NULL,
             created_at DATETIME NOT NULL
         ) ENGINE=InnoDB");
-        $db->exec('INSERT INTO anemia_schema (version) VALUES (23)');
+        $db->exec('CREATE TABLE IF NOT EXISTS anemia_request_confirmation (
+            receipt CHAR(19) CHARACTER SET ascii PRIMARY KEY,
+            result_code VARCHAR(24) NOT NULL,
+            examined_on DATE NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+        require_once __DIR__.'/participant-programme.php';
+        anemiaEnsureParticipantProgramme($db);
+        $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (24)');
     } catch (Throwable $error) {
         if ($db->inTransaction()) $db->rollBack();
         throw $error;

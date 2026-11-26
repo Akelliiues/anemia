@@ -1356,5 +1356,7 @@ document.addEventListener('click',event=>{
 home();
 if(testAppointmentOtp)facilities(false);
 else if(teamInvite||new URLSearchParams(location.search).has('team'))showTeamChallenge();
+else if(new URLSearchParams(location.search).get('view')==='learn')learn();
+else if(new URLSearchParams(location.search).get('view')==='facility-directory')facilities(false);
 else openRequestFromHash();
 window.addEventListener('hashchange',openRequestFromHash);

@@ -3,7 +3,7 @@
   "name": "Anemia Portal",
   "short_name": "Anemia Portal",
   "lang": "th",
-  "start_url": "./index.html",
+  "start_url": "./index.html?launch=portal",
   "scope": "./",
   "display": "standalone",
   "background_color": "#faf9fe",

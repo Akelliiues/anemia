@@ -118,7 +118,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=team-challenge-v46">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=team-challenge-v46">
 <main><section class="panel">
 <h1 class="title">บัญชีของฉัน</h1>
 <p>เชื่อมบัญชีเพื่อเก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อมครั้งแรก</p>

@@ -1,4 +1,13 @@
 DirectoryIndex index.html
+AddType application/manifest+json .webmanifest
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css|webmanifest)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <Files "release.json">
+    Header set Cache-Control "no-store"
+  </Files>
+</IfModule>
 <FilesMatch "^\.">
   Require all denied
 </FilesMatch>

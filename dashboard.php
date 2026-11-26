@@ -605,7 +605,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-work-v84">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-work-v85">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -989,25 +989,24 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php endif; ?>
    <?php if (!$unitScanner || !$scannedRequest): ?>
    <section class="card admin-report<?= $unitScanner?' staff-app-capture':'' ?>">
-    <div class="sample-section-heading"><span class="iconbox"><?= workspaceIcon('scan') ?></span><div><h2>ตรวจใบรับคำขอ</h2><p>สแกน QR จากหน้าจอหรือจากใบที่บันทึกไว้</p></div></div>
+    <?php if (!$unitScanner): ?><div class="sample-section-heading"><span class="iconbox"><?= workspaceIcon('scan') ?></span><div><h2>ตรวจใบรับคำขอ</h2><p>สแกน QR จากหน้าจอหรือจากใบที่บันทึกไว้</p></div></div><?php endif; ?>
     <?php if ($scanMessage !== ''): ?><p class="status" role="alert"><?= esc($scanMessage) ?></p><?php endif; ?>
-    <?php if ($unitScanner): ?><div class="staff-scan-frame" aria-hidden="true"><?= workspaceIcon('scan') ?></div><?php endif; ?>
+    <?php if ($unitScanner): ?><div class="staff-scan-frame"><span aria-hidden="true"></span><?php endif; ?>
+    <video id="request-scan-video" muted playsinline hidden aria-label="ภาพจากกล้องสำหรับสแกน QR"></video>
+    <?php if ($unitScanner): ?></div><?php endif; ?>
     <div class="actions request-scan-controls">
      <button type="button" id="request-scan-start" class="action"><?= workspaceIcon('scan') ?>เปิดกล้อง</button>
      <button type="button" id="request-scan-stop" class="action" hidden><?= workspaceIcon('close') ?>ปิดกล้อง</button>
+     <label id="request-scan-drop" class="request-scan-drop">
+      <?php if ($unitScanner): ?><?= workspaceIcon('scan') ?>เลือกภาพ QR<?php else: ?><span class="iconbox"><?= workspaceIcon('scan') ?></span><span><strong>ใส่ภาพใบรับคำขอ</strong><small>แตะเลือกไฟล์ ลากภาพมาวาง หรือวางภาพที่คัดลอกไว้</small></span><?php endif; ?>
+      <input type="file" id="request-scan-file" accept="image/*" aria-label="เลือกภาพ QR">
+     </label>
     </div>
-    <video id="request-scan-video" muted playsinline hidden aria-label="ภาพจากกล้องสำหรับสแกน QR"></video>
-    <?php if ($unitScanner): ?><details class="staff-scan-manual"><summary>กรอกเลขคำขอ</summary><?php endif; ?>
     <form id="request-scanner-form" method="post" class="request-scanner-form">
      <input type="hidden" name="csrf" value="<?= esc($token) ?>">
-     <label>เลขคำขอหรือลิงก์จากใบรับคำขอ<input name="receipt" type="text" required maxlength="512" autocomplete="off" placeholder="เช่น AN-…"></label>
+     <label><?= $unitScanner?'เลขคำขอ':'เลขคำขอหรือลิงก์จากใบรับคำขอ' ?><input name="receipt" type="text" required maxlength="512" autocomplete="off" spellcheck="false" placeholder="เช่น AN-…"></label>
      <button type="submit" class="action primary"><?= workspaceIcon('ready') ?>ตรวจคำขอ</button>
     </form>
-    <?php if ($unitScanner): ?></details><?php endif; ?>
-    <label id="request-scan-drop" class="request-scan-drop">
-     <span class="iconbox"><?= workspaceIcon('scan') ?></span><span><strong>ใส่ภาพใบรับคำขอ</strong><small>แตะเลือกไฟล์ ลากภาพมาวาง หรือวางภาพที่คัดลอกไว้</small></span>
-     <input type="file" id="request-scan-file" accept="image/*">
-    </label>
     <p id="request-scan-message" role="status"></p>
    </section>
    <?php endif; ?>
@@ -1235,7 +1234,6 @@ function workspaceInfo(string $page, ?array $release = null): void
  <p>บัญชี <?= esc($staff) ?> · <?= esc($roleLabel) ?></p>
  <?php if ($staffWorkDock): ?>
  <div class="actions staff-app-account-actions">
-  <a class="action" data-scanner-install-link href="dashboard.php?view=scanner-install"><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR</a>
   <a class="action" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?>เปิดแดชบอร์ด</a>
   <form method="post" action="<?= $unitScanner?'login?next=unit-scan':'login?next=mobile' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action" name="action" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></form>
  </div>

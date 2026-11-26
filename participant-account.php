@@ -8,6 +8,7 @@ $secure=!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off';
 if (!$secure && PHP_SAPI!=='cli-server') { http_response_code(403); exit('เปิดหน้าบัญชีผ่าน HTTPS'); }
 define('ANEMIA_STAFF_BOOT',true);
 require __DIR__.'/_private/participant-account.php';
+require __DIR__.'/_private/icons.php';
 anemiaParticipantSession($secure);
 $_SESSION['csrf']??=bin2hex(random_bytes(32));
 $account=$_SESSION['account']??null;
@@ -138,9 +139,9 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-signup-v49">
-<main><section class="panel">
-<h1 class="title">บัญชีของฉัน</h1>
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-icons-v50">
+<main><section class="panel participant-account">
+<h1 class="title"><span class="iconbox"><?= workspaceIcon('person') ?></span>บัญชีของฉัน</h1>
 <p>เก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อม LINE, Google หรือช่องทางภายนอกครั้งแรก</p>
 <?php if ($username): ?><p>ชื่อบัญชี <strong><?= participantEscape($username) ?></strong></p><?php endif; ?>
 <?php if ($linked): ?><p class="status">ได้รับโบนัสเชื่อมบัญชีแล้ว 5 แต้ม</p><?php endif; ?>
@@ -149,19 +150,19 @@ if ($account) {
 <section class="participant-signup">
  <?php foreach (['password-login'=>'เข้าสู่ระบบด้วยรหัสผ่าน','password-register'=>'สมัครบัญชีใหม่'] as $mode=>$title): $register=$mode==='password-register'; ?>
  <details <?= $passwordMode===$mode || ($passwordMode==='' && !$register)?'open':'' ?>>
-  <summary><?= participantEscape($title) ?></summary>
+  <summary><?= workspaceIcon($register?'users':'login') ?> <?= participantEscape($title) ?></summary>
   <form method="post" action="participant-account.php">
    <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
    <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
    <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
-   <label>ชื่อบัญชี
+   <label><span><?= workspaceIcon('person') ?> ชื่อบัญชี</span>
     <input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false">
    </label>
-   <label>รหัสผ่าน<?php if ($register): ?> <small>อย่างน้อย 6 ตัวอักษร</small><?php endif; ?>
+   <label><span><?= workspaceIcon('lock') ?> รหัสผ่าน<?php if ($register): ?> <small>อย่างน้อย 6 ตัวอักษร</small><?php endif; ?></span>
     <input type="password" name="password" autocomplete="<?= $register?'new-password':'current-password' ?>" <?= $register?'minlength="6"':'' ?> required>
    </label>
-   <?php if ($register): ?><label>ยืนยันรหัสผ่าน<input type="password" name="confirm_password" autocomplete="new-password" minlength="6" required></label><?php endif; ?>
-   <button class="action primary" name="provider" value="<?= $mode ?>"><?= $register?'สมัครบัญชี':'เข้าสู่ระบบ' ?></button>
+   <?php if ($register): ?><label><span><?= workspaceIcon('ready') ?> ยืนยันรหัสผ่าน</span><input type="password" name="confirm_password" autocomplete="new-password" minlength="6" required></label><?php endif; ?>
+   <button class="action primary" name="provider" value="<?= $mode ?>"><?= workspaceIcon($register?'users':'login') ?><?= $register?'สมัครบัญชี':'เข้าสู่ระบบ' ?></button>
   </form>
  </details>
  <?php endforeach; ?>
@@ -174,17 +175,18 @@ if ($account) {
  <div class="actions">
   <?php foreach (['line','google'] as $key): $label=$providers[$key][0]; $ready=$canConnect($key); $connected=in_array($key,$linked,true); ?>
    <button class="action" name="provider" value="<?= $key ?>" <?= !$ready||$connected?'disabled':'' ?>>
+    <span class="participant-provider-mark" data-provider="<?= $key ?>" aria-hidden="true"><?= $key==='line'?'L':'G' ?></span>
     <?= $connected?'เชื่อมแล้ว · ':($ready?($account?'เชื่อมด้วย ':'เข้าสู่ระบบด้วย '):'') ?><?= participantEscape($label) ?><?= !$ready&&!$connected?' · ยังไม่เปิด':'' ?>
    </button>
   <?php endforeach; ?>
-  <button class="action" type="button" disabled>ThaID · รอเปิดบริการ</button>
+  <button class="action" type="button" disabled><?= workspaceIcon('person') ?>ThaID · รอเปิดบริการ</button>
  </div>
  <?php if ($canConnect('facebook') || in_array('facebook',$linked,true)): ?>
   <details><summary>ช่องทางอื่น</summary>
    <button class="action" name="provider" value="facebook" <?= !$canConnect('facebook')||in_array('facebook',$linked,true)?'disabled':'' ?>>Facebook<?= in_array('facebook',$linked,true)?' · เชื่อมแล้ว':'' ?></button>
   </details>
  <?php endif; ?>
- <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout">ออกจากบัญชี</button></div><?php endif; ?>
+ <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากบัญชี</button></div><?php endif; ?>
 </form>
 <p>ระบบเก็บรหัสบัญชีสำหรับเข้าสู่ระบบและจดจำแต้ม</p>
 <?php if ($returnToPortal): ?>

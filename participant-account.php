@@ -53,6 +53,7 @@ function participantDb(): PDO
 function participantEscape(string $text): string {return htmlspecialchars($text,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
 
 $notice='';
+$profileEditing=false;
 $passwordMode=in_array($_GET['mode']??'',['password-register','password-migrate'],true)?$_GET['mode']:'password-login';
 try {
     if ($account!==null) {
@@ -66,6 +67,13 @@ try {
     if ($_SERVER['REQUEST_METHOD']==='POST') {
         if (!is_string($_POST['csrf']??null)||!hash_equals($_SESSION['csrf'],$_POST['csrf'])) { http_response_code(403); exit('กรุณาเปิดหน้าใหม่'); }
         $key=$_POST['provider']??'';
+        if ($key==='profile-save') {
+            $profileEditing=true;
+            if ($account===null) throw new DomainException('กรุณาเข้าสู่ระบบก่อนแก้โปรไฟล์');
+            anemiaSaveParticipantProfile(participantDb(),$account,(int)($_SESSION['epoch']??0),$_POST);
+            $_SESSION['profile_saved']=true;
+            header('Location: participant-account.php'.($returnToPortal?'?return=portal':''),true,303); exit;
+        }
         if ($key==='logout') {
             $_SESSION=[];
             session_regenerate_id(true);
@@ -133,6 +141,9 @@ try {
 }
 $linked=[];
 $username=null;
+$profile=['avatar'=>'drop','display_name'=>'','profile_status'=>''];
+$teamPoints=0;
+$teamJoined=false;
 if ($account) {
     try {
         $db=participantDb();
@@ -142,16 +153,36 @@ if ($account) {
         $query=$db->prepare('SELECT username FROM anemia_participant_password WHERE account_id=?');
         $query->execute([$account]);
         $username=$query->fetchColumn()?:null;
+        $query=$db->prepare('SELECT avatar,display_name,profile_status FROM anemia_participant_profile WHERE account_id=?');
+        $query->execute([$account]);
+        $profile=$query->fetch(PDO::FETCH_ASSOC)?:$profile;
+        $query=$db->prepare('SELECT m.completed_at,(SELECT COUNT(*) FROM anemia_team_bonus b WHERE b.inviter=m.id) AS invites FROM anemia_team_member m WHERE m.account_id=?');
+        $query->execute([$account]);
+        $team=$query->fetch(PDO::FETCH_ASSOC);
+        $teamJoined=(bool)$team;
+        $teamPoints=($linked?5:0)+(!empty($team['completed_at'])?10:0)+5*(int)($team['invites']??0);
+        if (!empty($_SESSION['profile_saved'])) { $notice='บันทึกโปรไฟล์แล้ว'; unset($_SESSION['profile_saved']); }
     } catch (Throwable $error) { $notice='โหลดข้อมูลบัญชีไม่สำเร็จ'; }
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-account-layout-v52">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-profile-v54">
 <main><section class="panel participant-account">
+<?php if ($account): ?>
+<header class="participant-profile-hero">
+ <span class="participant-avatar" data-avatar="<?= participantEscape($profile['avatar']) ?>"><?= workspaceIcon($profile['avatar']) ?></span>
+ <div><p>บัญชีของฉัน</p><h1 class="title"><?= participantEscape($profile['display_name']?:($username??'สมาชิก Anemia Portal')) ?></h1>
+ <?php if ($profile['profile_status']!==''): ?><span class="participant-profile-status"><?= workspaceIcon(['learning'=>'book','mission'=>'star','invite'=>'spark'][$profile['profile_status']]??'ready') ?> <?= participantEscape(ANEMIA_PROFILE_STATUSES[$profile['profile_status']]??'') ?></span><?php endif; ?></div>
+ <button class="action" type="button" data-open-profile><?= workspaceIcon('edit') ?>แก้ไขโปรไฟล์</button>
+</header>
+<div class="participant-profile-points">
+ <span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><strong><?= number_format($teamPoints) ?> แต้ม</strong>
+ <a class="action" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><?= workspaceIcon('next') ?><?= $teamJoined?'ดูทีมของฉัน':'ไปที่ทีมของฉัน' ?></a>
+</div>
+<?php else: ?>
 <h1 class="title"><span class="iconbox"><?= workspaceIcon('person') ?></span>บัญชีของฉัน</h1>
 <p>เก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อม LINE, Google หรือช่องทางภายนอกครั้งแรก</p>
-<?php if ($username): ?><p>ชื่อบัญชี <strong><?= participantEscape($username) ?></strong></p><?php endif; ?>
-<?php if ($linked): ?><p class="status">ได้รับโบนัสเชื่อมบัญชีแล้ว 5 แต้ม</p><?php endif; ?>
+<?php endif; ?>
 <?php if ($notice!==''): ?><p class="status" role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
 <?php if (!$account): ?>
 <section class="participant-signup">
@@ -195,6 +226,7 @@ if ($account) {
  <?php if ($mode==='password-login'): ?><a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a><?php endif; ?>
 </section>
 <?php endif; ?>
+<?php if ($account): ?><details class="participant-settings"><summary><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</summary><?php endif; ?>
 <form method="post" action="participant-account.php" class="participant-provider-form">
  <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบด้วยบัญชีอื่น' ?></h2>
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
@@ -216,14 +248,46 @@ if ($account) {
  <?php endif; ?>
  <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากบัญชี</button></div><?php endif; ?>
 </form>
-<p>ระบบเก็บรหัสบัญชีสำหรับเข้าสู่ระบบและจดจำแต้ม</p>
+<?php if ($account): ?></details><?php endif; ?>
 <?php if ($returnToPortal): ?>
  <a class="action" href="index.html">กลับหน้าบ้าน</a>
 <?php else: ?>
  <a class="action" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>">กลับไปที่ทีมและแต้ม</a>
 <?php endif; ?>
 </section></main>
+<?php if ($account): ?>
+<dialog class="workspace-dialog participant-profile-dialog" id="participant-profile-editor" aria-labelledby="participant-profile-title" data-reopen="<?= $profileEditing?'1':'0' ?>">
+ <header class="workspace-dialog-heading"><h2 id="participant-profile-title"><?= workspaceIcon('edit') ?> แก้ไขโปรไฟล์</h2><form method="dialog"><button class="action" aria-label="ปิด"><?= workspaceIcon('close') ?></button></form></header>
+ <form method="post" action="participant-account.php" class="participant-signup">
+  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
+  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
+  <?php if ($profileEditing&&$notice!==''): ?><p role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
+  <div class="participant-avatar-preview" aria-label="ตัวอย่างไอคอน">
+   <?php foreach (ANEMIA_PROFILE_AVATARS as $key=>$label): ?>
+    <span class="participant-avatar" data-avatar="<?= $key ?>" data-preview-avatar <?= $profile['avatar']===$key?'':'hidden' ?>><?= workspaceIcon($key) ?></span>
+   <?php endforeach; ?>
+  </div>
+  <fieldset class="participant-avatar-picker"><legend>เลือกไอคอนโปรไฟล์</legend>
+   <?php foreach (ANEMIA_PROFILE_AVATARS as $key=>$label): ?>
+    <label><input type="radio" name="avatar" value="<?= $key ?>" <?= $profile['avatar']===$key?'checked':'' ?> required><span><?= workspaceIcon($key) ?> <?= participantEscape($label) ?></span></label>
+   <?php endforeach; ?>
+  </fieldset>
+  <label>ชื่อที่แสดง<input name="display_name" maxlength="40" value="<?= participantEscape($profile['display_name']) ?>"></label>
+  <label>สถานะ<select name="profile_status"><?php foreach (ANEMIA_PROFILE_STATUSES as $key=>$label): ?><option value="<?= $key ?>" <?= $profile['profile_status']===$key?'selected':'' ?>><?= participantEscape($label) ?></option><?php endforeach; ?></select></label>
+  <button class="action primary" name="provider" value="profile-save"><?= workspaceIcon('save') ?>บันทึกโปรไฟล์</button>
+ </form>
+</dialog>
+<?php endif; ?>
 <script>
+const profileEditor=document.querySelector('#participant-profile-editor');
+if(profileEditor){
+ document.querySelector('[data-open-profile]').addEventListener('click',()=>profileEditor.showModal());
+ if(profileEditor.dataset.reopen==='1')profileEditor.showModal();
+ profileEditor.addEventListener('change',event=>{
+  if(event.target.name!=='avatar')return;
+  profileEditor.querySelectorAll('[data-preview-avatar]').forEach(icon=>icon.hidden=icon.dataset.avatar!==event.target.value);
+ });
+}
 for(const input of document.querySelectorAll('[data-pin]')){
  input.addEventListener('input',()=>{
   const pin=input.value.replace(/[^0-9]/g,'').slice(0,6);

@@ -2,6 +2,25 @@
 declare(strict_types=1);
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 
+const ANEMIA_PROFILE_AVATARS=['drop'=>'หยดเลือด','leaf'=>'ใบไม้','star'=>'ดาว','flower'=>'ดอกไม้'];
+const ANEMIA_PROFILE_STATUSES=[''=>'ไม่แสดงสถานะ','learning'=>'กำลังเรียนรู้','mission'=>'กำลังทำภารกิจ','invite'=>'พร้อมชวนเพื่อน'];
+
+function anemiaSaveParticipantProfile(PDO $db,string $account,int $epoch,array $input): void
+{
+    $name=$input['display_name']??null;
+    $avatar=$input['avatar']??null;
+    $status=$input['profile_status']??null;
+    if (!is_string($name) || preg_match('/^[^\p{C}\r\n]{0,40}$/uD',trim($name))!==1 ||
+        !is_string($avatar) || !isset(ANEMIA_PROFILE_AVATARS[$avatar]) ||
+        !is_string($status) || !isset(ANEMIA_PROFILE_STATUSES[$status])) {
+        throw new DomainException('ตรวจชื่อที่แสดง ไอคอน และสถานะอีกครั้ง');
+    }
+    $save=$db->prepare('INSERT INTO anemia_participant_profile(account_id,display_name,avatar,profile_status)
+        SELECT id,?,?,? FROM anemia_participant_account WHERE id=? AND suspended_at IS NULL AND session_epoch=?
+        ON DUPLICATE KEY UPDATE display_name=VALUES(display_name),avatar=VALUES(avatar),profile_status=VALUES(profile_status)');
+    $save->execute([trim($name),$avatar,$status,$account,$epoch]);
+}
+
 function anemiaParticipantSession(bool $secure): void
 {
     ini_set('session.use_strict_mode','1');

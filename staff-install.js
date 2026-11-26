@@ -1,5 +1,5 @@
 (() => {
- const controls=[...document.querySelectorAll('[data-staff-install]')];
+ const controls=[...document.querySelectorAll('[data-staff-install],[data-public-install]')];
  const help=document.querySelector('[data-install-help]');
  const status=document.querySelector('[data-install-result]');
  let promptEvent;
@@ -7,7 +7,7 @@
  function installed(){
   controls.forEach(control=>control.hidden=true);
   if(help)help.hidden=true;
-  if(status){status.textContent='เปิด Anemia Staff จากหน้าจอหลักได้แล้ว';status.hidden=false;}
+  if(status){status.textContent='เปิด '+(status.dataset.appName||'Anemia Staff')+' จากหน้าจอหลักได้แล้ว';status.hidden=false;}
  }
  if(standalone){installed();return;}
  window.addEventListener('beforeinstallprompt',event=>{

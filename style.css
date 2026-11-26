@@ -1276,7 +1276,10 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 }
 
 .public-menu-toggle {display:none;}
+.public-install-link {display:none;}
 @media(max-width:700px){
+ .public-install-link:not([hidden]) {display:inline-flex;align-items:center;gap:.3rem;min-height:44px;padding:.3rem .5rem;border:1px solid var(--line);border-radius:.65rem;color:var(--violet);font-size:.8rem;text-decoration:none;white-space:nowrap;}
+ .public-install-link svg {width:1rem;height:1rem;}
  .public-header .bar {gap:.5rem;}
  .public-menu-toggle:not([hidden]) {display:inline-flex;align-items:center;gap:.35rem;min-height:44px;padding:.35rem .55rem;}
  .public-menu-toggle svg {width:1rem;height:1rem;color:var(--violet);}

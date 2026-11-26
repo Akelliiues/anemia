@@ -1783,3 +1783,13 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .team-tip-content {visibility:hidden;opacity:0;position:absolute;z-index:3;inset-inline:.65rem;max-width:23rem;transform:translateY(.25rem);display:block;padding:.55rem .65rem;border-radius:.6rem;background:#35254b;color:#fff;font-size:.8rem;font-weight:400;line-height:1.5;box-shadow:0 7px 18px #291b4230;pointer-events:none;}
 .team-tip button:is(:focus-visible,[aria-expanded=true]) + .team-tip-content {visibility:visible;opacity:1;}
 @media(hover:hover){.team-tip button:hover + .team-tip-content {visibility:visible;opacity:1;}}
+.team-network-relays {margin-inline-start:auto;display:inline-flex;align-items:center;gap:.18rem;flex:none;}
+.team-network-relays i {width:7px;height:7px;border:1px solid var(--network-line);border-radius:50%;background:var(--network-light);}
+.team-network-relays i+i::before {content:"";display:block;width:.22rem;border-top:1px solid var(--network-line);transform:translate(-.23rem,2px);}
+@media(prefers-reduced-motion:no-preference){
+ .team-network-relays i {animation:team-relay-glow 1.6s ease-in-out 2;}
+ .team-network-relays i:nth-child(2) {animation-delay:.15s;}
+ .team-network-relays i:nth-child(3) {animation-delay:.3s;}
+ .team-network-relays i:nth-child(4) {animation-delay:.45s;}
+ @keyframes team-relay-glow {50% {box-shadow:0 0 8px var(--network-line);background:var(--network-line);}}
+}

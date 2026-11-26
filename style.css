@@ -1290,6 +1290,8 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .public-menu-toggle {display:none;}
 .public-install-link {display:none;}
 .footer-links [data-public-install][hidden] {display:none;}
+.participant-install-actions a[data-public-install][hidden] {display:none;}
+.participant-install-actions a[data-public-install]:not([hidden]) {display:inline-flex;align-items:center;gap:.4rem;min-height:44px;padding:.4rem .7rem;border:1px solid var(--line);border-radius:.7rem;text-decoration:none;}
 .portal-install-card .actions > a:not([hidden]) {display:inline-flex;align-items:center;min-height:44px;padding:.55rem .85rem;border-radius:.65rem;border:1px solid var(--soft-edge);text-decoration:none;}
 @media(max-width:990px){
  .public-header .bar {display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:.45rem .5rem;}

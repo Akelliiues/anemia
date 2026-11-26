@@ -1675,6 +1675,16 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .participant-account-tabs a {display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:44px;padding:.3rem;border-radius:.5rem;color:var(--ink);text-decoration:none;font-weight:650;text-align:center;}
 .participant-account-tabs a[aria-current=page] {background:var(--violet);color:#fff;}
 .participant-entry-card {border:1px solid var(--line);border-radius:.8rem;padding:.65rem .9rem .9rem;}
+.participant-login-shell .staff-access-panel {padding:clamp(1rem,4vw,2.75rem);}
+.participant-login-shell .participant-entry-card {padding:0;border:0;}
+.participant-login-shell .participant-entry-card [name=username] {width:100%;min-height:44px;}
+.participant-login-shell .participant-entry-card .primary {width:100%;min-height:46px;}
+.participant-login-shell .participant-signup input:not([type=hidden]) {background:color-mix(in srgb,var(--violet) 4%,transparent);}
+.participant-login-shell .staff-cover-copy p {max-width:26ch;}
+.participant-login-shell .staff-cover-visual i {animation:login-orbit 18s ease-in-out infinite alternate;}
+.participant-login-shell .staff-cover-visual i:nth-child(2) {animation-direction:alternate-reverse;animation-delay:-6s;}
+@keyframes login-orbit {from {rotate:-5deg;opacity:.6;} to {rotate:7deg;opacity:1;}}
+@media(prefers-reduced-motion:reduce) {.participant-login-shell .staff-cover-visual i {animation:none;}}
 .participant-pin-migration {justify-self:start;font-size:.875rem;}
 .participant-provider-form {border-top:1px solid var(--line);margin-top:1rem;padding-top:.45rem;}
 .participant-provider-form h2.title {font-size:1rem;margin:.5rem 0;}

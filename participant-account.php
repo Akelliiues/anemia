@@ -194,9 +194,22 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=profile-photo-view-v62">
-<body<?= $account?' class="participant-profile-page"':'' ?>>
-<main class="participant-account-main"><section class="panel participant-account">
+<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-login-v67">
+<body class="<?= $account?'participant-profile-page':'staff-access participant-login-page' ?>">
+<main class="<?= $account?'participant-account-main':'staff-access-main' ?>">
+<?php if (!$account): ?>
+<div class="staff-access-shell participant-login-shell">
+ <aside class="staff-access-cover" aria-label="Anemia Portal">
+  <div class="staff-cover-copy">
+   <span class="staff-cover-mark" aria-hidden="true"><?= workspaceIcon('drop') ?></span>
+   <strong>Anemia Portal</strong>
+   <p>ประเมินความเสี่ยง เรียนรู้ และติดตามการดูแลเรื่องโลหิตจาง</p>
+  </div>
+  <div class="staff-cover-visual" aria-hidden="true"><i></i><i></i><img src="hero-women.webp" alt="" width="520" height="337"></div>
+  <p class="staff-cover-agency">ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</p>
+ </aside>
+<?php endif; ?>
+<section class="<?= $account?'panel participant-account':'staff-access-panel participant-account' ?>">
 <nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
  <?php if ($returnContext==='programme'): ?><a href="participant-programme.php"><?= workspaceIcon('back') ?>กลับไปที่กิจกรรม 12 สัปดาห์</a>
  <?php else: ?><a href="index.html"><?= workspaceIcon('back') ?>กลับหน้าหลัก</a><?php endif; ?>
@@ -232,8 +245,8 @@ if ($account) {
  <section class="participant-profile-tile" aria-label="เหรียญที่ได้รับ"><span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><span><strong>เหรียญส่งต่อความรู้</strong><small><?= $activity['team_finished']>=10?'ทีมถึงเป้าหมาย 10 คนแล้ว':'ทีมเรียนจบอย่างน้อย 5 คน' ?></small></span></section>
 <?php endif; ?>
 <?php else: ?>
-<h1 class="title"><span class="iconbox"><?= workspaceIcon('person') ?></span>บัญชีของฉัน</h1>
-<p>เก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อม LINE, Google หรือช่องทางภายนอกครั้งแรก</p>
+<h1>เข้าสู่ระบบ</h1>
+<p class="staff-access-description" data-login-description>ใช้ PIN สมาชิกเพื่อดูแต้มและกลับมาเรียนต่อ</p>
 <?php endif; ?>
 <?php if ($notice!==''): ?><p class="status" role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
 <?php if (!$account): ?>
@@ -326,7 +339,7 @@ if ($account) {
 <?php if (!$returnToPortal && !$account): ?>
  <a class="action participant-team-return" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><?= workspaceIcon('back') ?>กลับไปที่ทีมและแต้ม</a>
 <?php endif; ?>
-</section></main>
+</section><?php if (!$account): ?></div><?php endif; ?></main>
 <?php if ($account && $hasPhoto): ?>
 <dialog class="workspace-dialog participant-photo-dialog" id="participant-photo-view" aria-labelledby="participant-photo-title">
  <header class="workspace-dialog-heading"><h2 id="participant-photo-title">รูปโปรไฟล์</h2><form method="dialog"><button class="action" aria-label="ปิดรูปโปรไฟล์"><?= workspaceIcon('close') ?></button></form></header>
@@ -366,6 +379,7 @@ if(staffMode&&pinMode){
  const staffPanel=document.querySelector('[data-staff-login]');
  const memberPanel=document.querySelector('[data-member-login]');
  const providers=document.querySelector('.participant-provider-form');
+ const description=document.querySelector('[data-login-description]');
  const form=staffPanel.querySelector('form');
  const endpoint=form.getAttribute('action');
  const status=form.querySelector('[data-staff-status]');
@@ -376,6 +390,7 @@ if(staffMode&&pinMode){
   staffPanel.hidden=!staff;
   memberPanel.hidden=staff;
   providers.hidden=staff;
+  description.textContent=staff?'ใช้ชื่อผู้ใช้และรหัสผ่านเจ้าหน้าที่เพื่อเปิดแดชบอร์ด':'ใช้ PIN สมาชิกเพื่อดูแต้มและกลับมาเรียนต่อ';
   staffMode.toggleAttribute('aria-current',staff);
   pinMode.toggleAttribute('aria-current',!staff&&normalPin);
   if(staff)staffMode.setAttribute('aria-current','page');

@@ -1,5 +1,7 @@
 const icons={drop:'<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/><path d="M9 16a3 3 0 0 0 3 3"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',book:'<path d="M12 6v15M3 4c4-1 7 0 9 2 2-2 5-3 9-2v15c-4-1-7 0-9 2-2-2-5-3-9-2z"/>',sound:'<path d="M3 9v6h4l5 4V5L7 9H3m13 0a4 4 0 0 1 0 6m3-9a8 8 0 0 1 0 12"/>',hospital:'<path d="M4 21V4h16v17M2 21h20M9 21v-5h6v5m-3-14v6M9 10h6"/>',refresh:'<path d="M20 7v5h-5M4 17v-5h5m-4-1a7 7 0 0 1 12-5l3 6M4 12l3 6a7 7 0 0 0 12-5"/>',alert:'<path d="M12 3 2 21h20L12 3Zm0 6v5m0 3v1"/>',phone:'<path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a14 14 0 0 1-7-7l2-2z"/>',arrow:'<path d="M19 12H5m6 6-6-6 6-6"/>'};
 Object.assign(icons,{
+ lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/>',
+ star:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9Z"/>',
  person:'<circle cx="12" cy="7" r="3"/><path d="M5 21v-3a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v3"/>',
  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-4m-6 8 6 4"/>',
  qr:'<path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM13 13h4v4h4v4h-4m-4 0v-4m8-4v2"/>',
@@ -1223,16 +1225,33 @@ if(publicProfilePhoto){
 const publicMenuToggle=document.querySelector('.public-menu-toggle');
 const publicNavigation=document.querySelector('#public-navigation');
 if(publicMenuToggle&&publicNavigation){
+ const groups=[...publicNavigation.querySelectorAll('.public-nav-group')];
+ const mobile=window.matchMedia('(max-width: 990px)');
+ const closeGroups=()=>groups.forEach(group=>group.open=false);
  const setMenu=open=>{
   publicMenuToggle.setAttribute('aria-expanded',String(open));
   publicNavigation.classList.toggle('nav-collapsed',!open);
+  if(!open)closeGroups();
  };
  publicMenuToggle.hidden=false;
  setMenu(false);
  publicMenuToggle.addEventListener('click',()=>setMenu(publicMenuToggle.getAttribute('aria-expanded')!=='true'));
- publicNavigation.addEventListener('click',event=>{if(event.target.closest('button,a'))setMenu(false);});
+ publicNavigation.addEventListener('click',event=>{
+  const action=event.target.closest('button,a');
+  if(!action)return;
+  if(action.matches('button[data-go]')){
+   const focusTarget=mobile.matches?publicMenuToggle:action.closest('details')?.querySelector('summary');
+   focusTarget?.focus({preventScroll:true});
+  }
+  setMenu(false);
+ });
+ document.addEventListener('click',event=>{if(!event.target.closest('.public-header'))setMenu(false);});
+ mobile.addEventListener('change',()=>setMenu(false));
  publicNavigation.closest('.public-header').addEventListener('keydown',event=>{
-  if(event.key!=='Escape'||publicMenuToggle.getAttribute('aria-expanded')!=='true')return;
+  if(event.key!=='Escape')return;
+  const group=event.target.closest('.public-nav-group[open]');
+  if(group){group.open=false;group.querySelector('summary').focus();return;}
+  if(publicMenuToggle.getAttribute('aria-expanded')!=='true')return;
   setMenu(false);publicMenuToggle.focus();
  });
 }

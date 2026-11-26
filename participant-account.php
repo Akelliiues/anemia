@@ -278,7 +278,7 @@ if ($account) {
  <?php if ($mode==='password-login'): ?><a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a><?php endif; ?>
 </section>
 <?php endif; ?>
-<?php if ($account): ?><details class="participant-settings"><summary><span><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</span><?= workspaceIcon('next') ?></summary><?php endif; ?>
+<?php if ($account): ?><details class="participant-settings" id="participant-settings"><summary><span><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</span><?= workspaceIcon('next') ?></summary><?php endif; ?>
 <form method="post" action="participant-account.php" class="participant-provider-form">
  <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบด้วยบัญชีอื่น' ?></h2>
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
@@ -397,6 +397,10 @@ for(const button of document.querySelectorAll('[data-password-visibility]')){
   button.querySelector('[data-password-show]').hidden=visible;
   button.querySelector('[data-password-hide]').hidden=!visible;
  });
+}
+if(location.hash==='#participant-settings'){
+ const settings=document.getElementById('participant-settings');
+ if(settings){settings.open=true;settings.scrollIntoView({block:'start'});}
 }
 </script>
 </body></html>

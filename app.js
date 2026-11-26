@@ -216,7 +216,7 @@ function result(showWarning=false){
  <section class="result-summary status ${level}"><div class="result-copy"><span class="small">${level==='unknown'?'ขอบคุณที่ตอบเท่าที่จำได้':'ผลคัดกรองเบื้องต้น · ฉบับทดลอง'}</span><h1 class="title">${title}</h1><p>${message}</p></div><div class="result-art" aria-hidden="true"><span class="result-orbit orbit-wide"></span><span class="result-orbit orbit-inner"></span><span class="result-emblem">${illustration(level==='high'?'history':level==='low'?'pulse':'calendar')}</span><span class="result-satellite">${icon(symbol)}</span><span class="result-glint">✦</span></div></section>
  <section class="card result-next"><h2>ทำอะไรต่อได้บ้าง?</h2>
  <button class="primary next-card" data-go="${next.route}">${box(next.symbol)}<span><strong>${next.title}</strong><small>${next.description}</small></span>${icon('next')}</button>
- <div class="result-links">${level==='high'?'':button('ดูสถานที่ตรวจ','facilities','hospital')}${button('ขอให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone')}</div></section>
+ <div class="result-links">${['low','medium'].includes(level)?'<a class="action" href="participant-programme.php">เข้ากิจกรรมเรียนรู้ 12 สัปดาห์</a>':''}${level==='high'?'':button('ดูสถานที่ตรวจ','facilities','hospital')}${button('ขอให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone')}</div></section>
  ${audioUI(level)}
  <div class="actions"><a class="action" href="participant-account.php">${icon('person')}เก็บแต้มและความคืบหน้าในบัญชี</a></div>
  <section class="card result-review"><div class="result-section-title">${box('refresh')}<h2>ทบทวนหรือเริ่มใหม่</h2></div><p>แก้เฉพาะเรื่องที่จำได้ หรือเริ่มตอบตั้งแต่เรื่องแรก</p>
@@ -929,7 +929,7 @@ function classify(){
   const answer=answers[index];
   return question.multi?(answer??[]).map(item=>question.points[item]):[question.points[answer]];
  });
- if(points.some(value=>value==null))level='unknown';
+ if(missingAnswerIndex()!==-1 || points.some(value=>value==null))level='unknown';
  else {
   const total=points.reduce((sum,value)=>sum+value,0);
   level=total>=14?'high':total>=10?'medium':'low';

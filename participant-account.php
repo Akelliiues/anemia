@@ -255,13 +255,15 @@ if ($account) {
  $mode=$passwordMode;
  $register=$mode==='password-register';
  $migrate=$mode==='password-migrate';
+ $staffNext=$_GET['next']??'';
+ if (!in_array($staffNext,['scan','unit-scan','unit-launch','unit-install','mobile'],true)) $staffNext='';
  $accountModeUrl=static fn(string $mode): string => 'participant-account.php?'.http_build_query(array_filter([
      'mode'=>$mode,'invite'=>$invite,'return'=>$returnContext
  ]));
  ?>
  <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
   <a data-pin-mode href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
-  <a data-staff-mode href="login.php?entry=portal"><?= workspaceIcon('lock') ?> รหัสผ่านเจ้าหน้าที่</a>
+  <a data-staff-mode href="login.php?entry=portal<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>"><?= workspaceIcon('lock') ?> รหัสผ่านเจ้าหน้าที่</a>
  </nav>
  <div class="participant-login-fields">
  <div data-member-login>
@@ -293,7 +295,7 @@ if ($account) {
  </div>
  <div data-staff-login hidden>
   <div class="participant-entry-card">
-   <form method="post" action="login.php?entry=inline" aria-label="เข้าสู่ระบบเจ้าหน้าที่">
+   <form method="post" action="login.php?entry=inline<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>" aria-label="เข้าสู่ระบบเจ้าหน้าที่">
     <input type="hidden" name="action" value="login">
     <label><span><?= workspaceIcon('person') ?> ชื่อผู้ใช้</span><input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false"></label>
     <div class="participant-password-field">
@@ -399,6 +401,7 @@ if(staffMode&&pinMode){
   if(!staff&&normalPin)pinMode.setAttribute('aria-current','page');
   if(!staff)form.elements.password.value='';
  };
+ if(new URLSearchParams(location.search).get('method')==='staff')selectMode(true);
  staffMode.addEventListener('click',event=>{event.preventDefault();selectMode(true);});
  pinMode.addEventListener('click',event=>{
   if(!normalPin)return;

@@ -38,6 +38,16 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
     if (isset($_SESSION['until']) && (int)$_SESSION['until'] < time()) $_SESSION = [];
     $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     $token = $_SESSION['csrf'];
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='logout' &&
+        is_string($_POST['csrf']??null) && hash_equals($token,$_POST['csrf'])) {
+        $_SESSION=[];
+        session_regenerate_id(true);
+        $next=$_GET['next']??'';
+        $return='participant-account.php?return=portal&method=staff';
+        if (in_array($next,['scan','unit-scan','unit-launch','unit-install','mobile'],true)) $return.='&next='.$next;
+        header('Location: '.$return,true,303);
+        exit;
+    }
     try {
         $config = require __DIR__ . '/_private/config.php';
         require __DIR__ . '/_private/database.php';
@@ -52,12 +62,6 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
             if (!is_string($_POST['csrf'] ?? null) || !hash_equals($token, $_POST['csrf'])) {
                 http_response_code(403);
                 $message = 'คำขอหมดอายุ กรุณาเปิดหน้าใหม่แล้วลองอีกครั้ง';
-            } elseif (($_POST['action'] ?? '') === 'logout') {
-                $_SESSION = [];
-                session_regenerate_id(true);
-                $loginPath=match ($_GET['next']??'') {'unit-scan'=>'login?next=unit-scan','mobile'=>'login?next=mobile',default=>'login'};
-                header('Location: '.$loginPath, true, 303);
-                exit;
             } elseif (($_POST['action'] ?? '') === 'login') {
                 $user = is_string($_POST['username'] ?? null) ? strtolower(trim($_POST['username'])) : '';
                 $pass = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
@@ -102,7 +106,7 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>เจ้าหน้าที่ · Anemia Portal</title>
-<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=login-fit-v86">
+<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=shared-entry-v87">
 </head>
 <body class="staff-access">
 <main class="staff-access-main">

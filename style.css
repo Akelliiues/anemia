@@ -597,7 +597,7 @@ body:has(.admin-shell) main { max-width:1380px; }
 }
 /* Floating navigation leaves the heading layout uninterrupted. */
 .back.floating-back {
-  position:fixed; z-index:20; top:50%; left:0; translate:0 -50%;
+  position:fixed; z-index:20; top:50%; left:env(safe-area-inset-left,0px); translate:0 -50%;
   display:grid; place-items:center; padding:0; text-decoration:none;
   width:44px; height:44px; margin:0; border-radius:0 12px 12px 0;
   background:#faf7fe; border:1px solid #dbcfec; border-left:0;
@@ -609,7 +609,6 @@ body:has(.admin-shell) main { max-width:1380px; }
 }
 .back.floating-back:focus-visible { outline-offset:-4px; outline-color:white; }
 .question-top:has(> .progress-caption) { justify-content:flex-end; }
-main:has(.floating-back) { padding-left:max(52px,env(safe-area-inset-left)); }
 @media(prefers-reduced-motion:no-preference) {
   .back.floating-back { transition:opacity .16s,background-color .16s,color .16s,box-shadow .16s; }
 }
@@ -1308,8 +1307,6 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
  .public-install-link:not([hidden]),.public-menu-toggle:not([hidden]) {padding-inline:.3rem;}
 }
 @media(max-width:700px){
- main:has(.floating-back) {padding-inline-start:max(12px,env(safe-area-inset-left));}
- .back.floating-back {top:auto;bottom:max(.65rem,env(safe-area-inset-bottom));left:max(.65rem,env(safe-area-inset-left));translate:none;border:1px solid var(--line);border-radius:50%;}
  .public-site main:has(.floating-next) {padding-inline-end:max(44px,env(safe-area-inset-right));}
  .public-site .panel.wide,.feedback-page .panel {padding-inline:clamp(.65rem,3vw,1.1rem);}
  .public-site :is(input:not([type=checkbox]):not([type=radio]),select,textarea),.feedback-page :is(input[type=search],textarea) {font-size:16px;max-width:100%;}

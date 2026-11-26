@@ -575,7 +575,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-app-v77">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=mobile-viewport-v78">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=6"></script>
 <?php if ($showSample): ?>
@@ -585,7 +585,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
-</head><body class="staff-dashboard-page<?= $staffAppView?' staff-app-page':'' ?><?= $scannerApp?' staff-scanner-page':'' ?>">
+</head><body class="staff-dashboard-page<?= $staffAppView?' staff-app-page':'' ?><?= $view==='mobile'?' staff-app-home':'' ?><?= $scannerApp?' staff-scanner-page':'' ?>">
 <main style="max-width:1220px">
 <?php if (!$staffAppView) workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>
 <section class="panel wide" style="padding:0;overflow:hidden">

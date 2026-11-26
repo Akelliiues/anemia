@@ -101,7 +101,7 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>เจ้าหน้าที่ · Anemia Portal</title>
-<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
+<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=mobile-viewport-v78">
 </head>
 <body class="staff-access">
 <main class="staff-access-main">

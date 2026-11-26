@@ -1308,7 +1308,8 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
  .public-install-link:not([hidden]),.public-menu-toggle:not([hidden]) {padding-inline:.3rem;}
 }
 @media(max-width:700px){
- .public-site main:has(.floating-back),.feedback-page main:has(.floating-back) {padding-inline-start:max(44px,env(safe-area-inset-left));}
+ main:has(.floating-back) {padding-inline-start:max(12px,env(safe-area-inset-left));}
+ .back.floating-back {top:auto;bottom:max(.65rem,env(safe-area-inset-bottom));left:max(.65rem,env(safe-area-inset-left));translate:none;border:1px solid var(--line);border-radius:50%;}
  .public-site main:has(.floating-next) {padding-inline-end:max(44px,env(safe-area-inset-right));}
  .public-site .panel.wide,.feedback-page .panel {padding-inline:clamp(.65rem,3vw,1.1rem);}
  .public-site :is(input:not([type=checkbox]):not([type=radio]),select,textarea),.feedback-page :is(input[type=search],textarea) {font-size:16px;max-width:100%;}
@@ -2005,4 +2006,24 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-app-install-page .staff-install-card .staff-mobile-hero {display:grid;justify-items:start;min-height:10rem;align-content:space-between;}
 .staff-app-install-page .staff-install-card .actions {display:grid;grid-template-columns:1fr;}
 .staff-app-install-page .staff-install-card .actions>a {justify-content:center;}
+.staff-dashboard-page.staff-app-home > main {height:100dvh;flex:0 0 auto;padding:0;overflow:clip;}
+.staff-app-home > main > .panel {height:100%;margin:0;border:0;border-radius:0;}
+.staff-app-home .hosted-workspace {height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);}
+.staff-app-home .staff-app-bar {padding-top:max(.65rem,env(safe-area-inset-top));}
+.staff-app-home .admin-content {min-height:0;overflow-y:auto;padding-bottom:max(.75rem,env(safe-area-inset-bottom));}
+.staff-app-home .staff-mobile-home {min-height:100%;display:flex;flex-direction:column;gap:.65rem;}
+.staff-app-home .staff-app-dock {margin-top:auto;}
+.staff-app-home .staff-mobile-tools {grid-template-columns:repeat(2,minmax(0,1fr));}
+.staff-app-home .staff-mobile-scan {grid-column:1/-1;}
+.staff-app-home .staff-mobile-tool {padding:.6rem;}
+.staff-app-home .staff-mobile-tool .iconbox {width:2rem;height:2rem;flex:none;}
+.staff-app-home .staff-mobile-tool > svg {display:none;}
+@media(max-height:700px){
+ .staff-app-home .staff-mobile-home,.staff-app-home .staff-mobile-tools {gap:.45rem;}
+ .staff-app-home .staff-mobile-hero {padding:.55rem .8rem;}
+ .staff-app-home .staff-mobile-home :is(.staff-mobile-metric,.staff-mobile-tool,.staff-mobile-scan) {padding:.55rem;min-height:52px;}
+ .staff-app-home .staff-mobile-metric {flex-direction:row;align-items:center;}
+ .staff-app-home .staff-mobile-tool small {display:none;}
+ .staff-app-home .staff-app-dock {padding:.25rem;}
+}
 @media(max-width:420px){.staff-mobile-home .staff-mobile-metric {align-items:flex-start;flex-direction:column;}.staff-mobile-metric .iconbox {width:2rem;height:2rem;}}

@@ -364,14 +364,33 @@ function teamTip(id,label,description){
 }
 function teamNetworkCard(network={direct:0,branches:[]},demo=false){
  const remainder=network.direct-network.branches.length;
- const node=(name,detail,symbol,children=0)=>`<div class="team-network-node">${box(symbol)}<span><strong>${name}</strong><small>${detail}</small></span>${children?`<span class="team-network-relays" aria-hidden="true">${'<i></i>'.repeat(Math.min(4,children))}</span>`:''}</div>`;
- const branches=network.branches.map((count,index)=>
-  `<li>${node('เพื่อนสายที่ '+(index+1),count?'ชวนต่อ '+count+' คน':'ยังไม่มีคนที่ชวนต่อ','share',count)}</li>`
- );
- if(remainder>0)branches.push(`<li>${node('อีก '+remainder+' สาย','เพื่อนที่คุณชวนโดยตรง','share')}</li>`);
- if(!branches.length)branches.push(`<li class="team-network-pending">${node('ชวนเพื่อนคนแรก','แชร์ลิงก์เพื่อเริ่มเครือข่าย','share')}</li>`);
+ const branches=network.branches.map((count,index)=>({name:'เพื่อนสายที่ '+(index+1),detail:'ชวนต่อ '+count+' คน',count}));
+ if(remainder>0)branches.push({name:'อีก '+remainder+' สาย',detail:'ชวนโดยตรง',count:0});
+ if(!branches.length)branches.push({name:'ชวนเพื่อนคนแรก',detail:'แชร์ลิงก์เพื่อเริ่มทีม',count:0,pending:true});
+ const height=Math.max(130,branches.length*48+20);
+ const center=height/2;
+ const branchGraphic=branches.map(({name,detail,count,pending},index)=>{
+  const y=center+(index-(branches.length-1)/2)*48;
+  const x=index%2===0?166:181;
+  const path=`M44 ${center} C95 ${center}, 108 ${y}, ${x} ${y}`;
+  const visible=Math.min(4,count);
+  const relays=Array.from({length:visible},(_,i)=>{
+   const endY=y+(i-(visible-1)/2)*10;
+   const endX=228+(i%2)*18;
+   return `<path class="team-neural-relay" d="M${x} ${y} Q${x+24} ${y},${endX} ${endY}"/><circle class="team-neural-end" cx="${endX}" cy="${endY}" r="2.5"/>`;
+  }).join('');
+  return `<g class="team-neural-branch${pending?' is-pending':''}" style="--signal-delay:${index*100}ms">
+   <path class="team-neural-link" d="${path}"/>${pending?'':`<path class="team-neural-signal" d="${path}" pathLength="100"/>`}
+   ${relays}<circle class="team-neural-node" cx="${x}" cy="${y}" r="5.5"/>
+   <text x="264" y="${y-2}">${name}</text><text class="team-neural-caption" x="264" y="${y+14}">${detail}</text>
+  </g>`;
+ }).join('');
  return `<section class="card team-network-card"><div class="admin-chart-title">${box('share')}<div><h2>${demo?'เครือข่ายลูกทีมจำลอง':'เครือข่ายของฉัน'}</h2><p>${demo?'ข้อมูลจำลอง · ':''}ชวนโดยตรง ${network.direct} คน ${teamTip(demo?'demo-network':'network','วิธีนับเครือข่าย','แต่ละสายแสดงเพื่อนที่ชวนโดยตรง และจำนวนคนที่เพื่อนคนนั้นชวนต่อ')}</p></div></div>
-  ${node('คุณ','จุดเริ่มต้นของการชวนเพื่อน','person')}<ul class="team-network-branches">${branches.join('')}</ul></section>`;
+  <div class="team-neural-map"><svg viewBox="0 0 370 ${height}" aria-hidden="true">
+   ${branchGraphic}<circle class="team-neural-halo" cx="44" cy="${center}" r="17"/><circle class="team-neural-root" cx="44" cy="${center}" r="9"/>
+   <text x="44" y="${center+33}" text-anchor="middle">คุณ</text>
+  </svg></div>
+  <ul class="trend-readable">${branches.map(branch=>`<li>${branch.name} · ${branch.detail}</li>`).join('')}</ul></section>`;
 }
 function showTeamNetworkPreview(){
  set(panel(`${backRow()}${pageHeading('share','ตัวอย่างผังทีม','ข้อมูลจำลอง · เพื่อน 5 สาย')} ${teamNetworkCard({direct:5,branches:[4,2,3,1,0]})}`),'team-network-preview');

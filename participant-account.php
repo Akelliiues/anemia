@@ -183,7 +183,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-activity-v57">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=profile-photo-view-v62">
 <body<?= $account?' class="participant-profile-page"':'' ?>>
 <main class="participant-account-main"><section class="panel participant-account">
 <nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
@@ -191,7 +191,9 @@ if ($account) {
 </nav>
 <?php if ($account): ?>
 <header class="participant-profile-hero">
- <span class="participant-avatar" data-avatar="<?= participantEscape($profile['avatar']) ?>"><?php if ($hasPhoto): ?><img src="participant-photo.php" width="72" height="72" alt="รูปโปรไฟล์"><?php else: ?><?= workspaceIcon($profile['avatar']) ?><?php endif; ?></span>
+ <?php if ($hasPhoto): ?>
+ <button type="button" class="participant-avatar participant-photo-button" data-open-photo aria-haspopup="dialog" aria-label="ดูรูปโปรไฟล์ขนาดใหญ่"><img src="participant-photo.php" width="72" height="72" alt=""></button>
+ <?php else: ?><span class="participant-avatar" data-avatar="<?= participantEscape($profile['avatar']) ?>"><?= workspaceIcon($profile['avatar']) ?></span><?php endif; ?>
  <div><p>บัญชีของฉัน</p><h1 class="title"><?= participantEscape($profile['display_name']?:($username??'สมาชิก Anemia Portal')) ?></h1>
  <?php if ($profile['profile_status']!==''): ?><span class="participant-profile-status"><?= workspaceIcon(['learning'=>'book','mission'=>'star','invite'=>'spark'][$profile['profile_status']]??'ready') ?> <?= participantEscape(ANEMIA_PROFILE_STATUSES[$profile['profile_status']]??'') ?></span><?php endif; ?></div>
  <button class="action" type="button" data-open-profile><?= workspaceIcon('edit') ?>แก้ไขโปรไฟล์</button>
@@ -290,6 +292,12 @@ if ($account) {
  <a class="action participant-team-return" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><?= workspaceIcon('back') ?>กลับไปที่ทีมและแต้ม</a>
 <?php endif; ?>
 </section></main>
+<?php if ($account && $hasPhoto): ?>
+<dialog class="workspace-dialog participant-photo-dialog" id="participant-photo-view" aria-labelledby="participant-photo-title">
+ <header class="workspace-dialog-heading"><h2 id="participant-photo-title">รูปโปรไฟล์</h2><form method="dialog"><button class="action" aria-label="ปิดรูปโปรไฟล์"><?= workspaceIcon('close') ?></button></form></header>
+ <img width="256" height="256" alt="รูปโปรไฟล์ของฉัน">
+</dialog>
+<?php endif; ?>
 <?php if ($account): ?>
 <dialog class="workspace-dialog participant-profile-dialog" id="participant-profile-editor" aria-labelledby="participant-profile-title" data-reopen="<?= $profileEditing?'1':'0' ?>">
  <header class="workspace-dialog-heading"><h2 id="participant-profile-title"><?= workspaceIcon('edit') ?> แก้ไขโปรไฟล์</h2><form method="dialog"><button class="action" aria-label="ปิด"><?= workspaceIcon('close') ?></button></form></header>
@@ -317,6 +325,21 @@ if ($account) {
 </dialog>
 <?php endif; ?>
 <script>
+const photoButton=document.querySelector('[data-open-photo]');
+const photoDialog=document.querySelector('#participant-photo-view');
+if(photoButton&&photoDialog){
+ photoButton.addEventListener('click',()=>{
+  const image=photoDialog.querySelector('img');
+  if(!image.hasAttribute('src'))image.src=photoButton.querySelector('img').src;
+  photoDialog.showModal();
+ });
+ photoDialog.addEventListener('click',event=>{
+  if(event.target!==photoDialog)return;
+  const bounds=photoDialog.getBoundingClientRect();
+  if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)photoDialog.close();
+ });
+ photoDialog.addEventListener('close',()=>photoButton.focus({preventScroll:true}));
+}
 const profileEditor=document.querySelector('#participant-profile-editor');
 if(profileEditor){
  const photo=profileEditor.querySelector('[name=profile_photo]');

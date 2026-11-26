@@ -1739,3 +1739,12 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 [data-anemia-theme=dark] .participant-profile-hero {background:radial-gradient(ellipse at 95% 0%,#4b2f50,transparent 60%),#2d2140;}
 @media(max-width:540px){.participant-profile-hero {grid-template-columns:auto minmax(0,1fr);}.participant-profile-hero button {grid-column:1/-1;justify-self:start;}}
 @media(max-width:390px){.participant-profile-points {grid-template-columns:1fr;}}
+.participant-activity-card {padding:.8rem;border:1px solid var(--line);border-radius:.85rem;background:var(--dark-surface,#fff);}
+.participant-activity-card h2 {display:flex;align-items:center;gap:.45rem;margin:0 0 .35rem;font-size:1.05rem;}
+.participant-activity-card h2 svg {width:1rem;height:1rem;color:var(--violet);}
+.participant-activity-card :is(ol,p) {margin:0;padding:0;}
+.participant-activity-card ol {list-style:none;}
+.participant-activity-card li {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.65rem;padding:.55rem 0;}
+.participant-activity-card li+li {border-top:1px solid var(--line);}
+.participant-activity-card li small {display:block;color:var(--muted);}
+.participant-activity-award {border-radius:999px;background:#fff4d8;color:#74501c;padding:.14rem .45rem;font-size:.8rem;font-weight:700;white-space:nowrap;}

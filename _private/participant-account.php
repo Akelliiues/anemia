@@ -5,6 +5,45 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 const ANEMIA_PROFILE_AVATARS=['drop'=>'หยดเลือด','leaf'=>'ใบไม้','star'=>'ดาว','flower'=>'ดอกไม้'];
 const ANEMIA_PROFILE_STATUSES=[''=>'ไม่แสดงสถานะ','learning'=>'กำลังเรียนรู้','mission'=>'กำลังทำภารกิจ','invite'=>'พร้อมชวนเพื่อน'];
 
+function anemiaParticipantActivityDate(string $value): string
+{
+    $date=new DateTimeImmutable($value);
+    $months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return $date->format('j').' '.$months[(int)$date->format('n')-1].' '.((int)$date->format('Y')+543);
+}
+
+function anemiaParticipantActivity(PDO $db,string $account): array
+{
+    $events=[];
+    $query=$db->prepare('SELECT connected_at FROM anemia_participant_account WHERE id=?');
+    $query->execute([$account]);
+    $created=$query->fetchColumn();
+    if ($created) $events[]=['title'=>'สร้างบัญชี Anemia Portal','icon'=>'person','date'=>$created,'points'=>0];
+    $query=$db->prepare('SELECT provider,connected_at FROM anemia_participant_identity WHERE account_id=? ORDER BY connected_at,provider');
+    $query->execute([$account]);
+    $labels=['line'=>'LINE','google'=>'Google','facebook'=>'Facebook'];
+    foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $index=>$identity) {
+        $events[]=['title'=>'เชื่อมบัญชี '.($labels[$identity['provider']]??'ภายนอก'),'icon'=>'ready','date'=>$identity['connected_at'],'points'=>$index===0?5:0];
+    }
+    $query=$db->prepare('SELECT id,team_id,completed_at FROM anemia_team_member WHERE account_id=?');
+    $query->execute([$account]);
+    $team=$query->fetch(PDO::FETCH_ASSOC);
+    $milestone=0;
+    if ($team) {
+        if ($team['completed_at']) $events[]=['title'=>'เรียนจบบทแรก','icon'=>'book','date'=>$team['completed_at'],'points'=>10];
+        $query=$db->prepare('SELECT m.completed_at FROM anemia_team_bonus b JOIN anemia_team_member m ON m.id=b.learner WHERE b.inviter=?');
+        $query->execute([$team['id']]);
+        foreach ($query->fetchAll(PDO::FETCH_COLUMN) as $date) {
+            $events[]=['title'=>'เพื่อนที่ชวนเรียนจบบทแรก','icon'=>'users','date'=>$date,'points'=>5];
+        }
+        $query=$db->prepare('SELECT COUNT(*) FROM anemia_team_member WHERE team_id=? AND completed_at IS NOT NULL');
+        $query->execute([$team['team_id']]);
+        $milestone=(int)$query->fetchColumn();
+    }
+    usort($events,static fn(array $a,array $b): int=>strcmp($b['date'],$a['date']));
+    return ['events'=>$events,'points'=>array_sum(array_column($events,'points')),'joined'=>(bool)$team,'team_finished'=>$milestone];
+}
+
 function anemiaProfilePhoto(array $file): ?string
 {
     if (($file['error']??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_NO_FILE) return null;

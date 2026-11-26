@@ -160,8 +160,7 @@ try {
 $linked=[];
 $username=null;
 $profile=['avatar'=>'drop','display_name'=>'','profile_status'=>''];
-$teamPoints=0;
-$teamJoined=false;
+$activity=['events'=>[],'points'=>0,'joined'=>false,'team_finished'=>0];
 $hasPhoto=false;
 if ($account) {
     try {
@@ -178,17 +177,13 @@ if ($account) {
         $query=$db->prepare('SELECT 1 FROM anemia_participant_photo WHERE account_id=?');
         $query->execute([$account]);
         $hasPhoto=(bool)$query->fetchColumn();
-        $query=$db->prepare('SELECT m.completed_at,(SELECT COUNT(*) FROM anemia_team_bonus b WHERE b.inviter=m.id) AS invites FROM anemia_team_member m WHERE m.account_id=?');
-        $query->execute([$account]);
-        $team=$query->fetch(PDO::FETCH_ASSOC);
-        $teamJoined=(bool)$team;
-        $teamPoints=($linked?5:0)+(!empty($team['completed_at'])?10:0)+5*(int)($team['invites']??0);
+        $activity=anemiaParticipantActivity($db,$account);
         if (!empty($_SESSION['profile_saved'])) { $notice='บันทึกโปรไฟล์แล้ว'; unset($_SESSION['profile_saved']); }
     } catch (Throwable $error) { $notice='โหลดข้อมูลบัญชีไม่สำเร็จ'; }
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-photo-v56">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-activity-v57">
 <body<?= $account?' class="participant-profile-page"':'' ?>>
 <main class="participant-account-main"><section class="panel participant-account">
 <nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
@@ -202,9 +197,25 @@ if ($account) {
  <button class="action" type="button" data-open-profile><?= workspaceIcon('edit') ?>แก้ไขโปรไฟล์</button>
 </header>
 <div class="participant-profile-points">
- <div class="participant-profile-tile"><span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><span><small>แต้มสะสม</small><strong><?= number_format($teamPoints) ?> แต้ม</strong></span></div>
- <a class="participant-profile-tile participant-team-link" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><span class="participant-team-mark"><?= workspaceIcon('users') ?></span><span><strong>ทีมของฉัน</strong><small><?= $teamJoined?'ดูความคืบหน้าทีม':'สร้างทีมหรือชวนเพื่อน' ?></small></span><?= workspaceIcon('next') ?></a>
+ <div class="participant-profile-tile"><span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><span><small>แต้มสะสม</small><strong><?= number_format($activity['points']) ?> แต้ม</strong></span></div>
+ <a class="participant-profile-tile participant-team-link" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><span class="participant-team-mark"><?= workspaceIcon('users') ?></span><span><strong>ทีมของฉัน</strong><small><?= $activity['joined']?'ดูความคืบหน้าทีม':'สร้างทีมหรือชวนเพื่อน' ?></small></span><?= workspaceIcon('next') ?></a>
 </div>
+<section class="participant-activity-card" aria-labelledby="participant-activity-title">
+ <h2 id="participant-activity-title"><?= workspaceIcon('history') ?> กิจกรรมของฉัน</h2>
+ <?php if (!$activity['events']): ?><p>ยังไม่มีรายการกิจกรรม</p><?php else: ?>
+ <ol>
+  <?php foreach ($activity['events'] as $event): ?>
+   <li><span class="participant-team-mark"><?= workspaceIcon($event['icon']) ?></span>
+    <span><strong><?= participantEscape($event['title']) ?></strong><small><?= participantEscape(anemiaParticipantActivityDate($event['date'])) ?></small></span>
+    <?php if ($event['points']>0): ?><span class="participant-activity-award">+<?= $event['points'] ?> แต้ม</span><?php endif; ?>
+   </li>
+  <?php endforeach; ?>
+ </ol>
+ <?php endif; ?>
+</section>
+<?php if ($activity['team_finished']>=5): ?>
+ <section class="participant-profile-tile" aria-label="เหรียญที่ได้รับ"><span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><span><strong>เหรียญส่งต่อความรู้</strong><small><?= $activity['team_finished']>=10?'ทีมถึงเป้าหมาย 10 คนแล้ว':'ทีมเรียนจบอย่างน้อย 5 คน' ?></small></span></section>
+<?php endif; ?>
 <?php else: ?>
 <h1 class="title"><span class="iconbox"><?= workspaceIcon('person') ?></span>บัญชีของฉัน</h1>
 <p>เก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อม LINE, Google หรือช่องทางภายนอกครั้งแรก</p>

@@ -33,7 +33,7 @@ const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const button=(label,go,symbol,primary=false)=>`<button class="action ${primary?'primary':''}" data-go="${go}">${icon(symbol)}${label}</button>`;
 const box=name=>`<span class="iconbox">${icon(name)}</span>`;
 const main=document.querySelector('#main');
-const levels={unknown:['คุณดูคำแนะนำต่อได้เลย','บางเรื่องยังไม่แน่ใจ จึงยังสรุประดับความเสี่ยงไม่ได้ หากนึกออก ค่อยเติมเฉพาะส่วนนั้นได้','book'],low:['ผลคัดกรองอยู่ในระดับความเสี่ยงต่ำ','คุณอ่านคำแนะนำเพื่อดูแลตัวเองได้ หากมีอาการหรือยังเป็นกังวล คุณปรึกษาหน่วยบริการได้','check'],medium:['ผลคัดกรองอยู่ในระดับความเสี่ยงปานกลาง','ลองอ่านหรือฟังคำแนะนำเพื่อดูแลตัวเอง คุณยังเลือกปรึกษาหน่วยบริการได้','book'],high:['แนะนำให้ตรวจเพิ่มเติม','คุณดูสถานที่ตรวจหรือขอให้เจ้าหน้าที่ช่วยประสานได้ค่ะ','alert']};
+const levels={unknown:['คุณดูคำแนะนำต่อได้เลย','บางเรื่องยังไม่แน่ใจ จึงยังสรุประดับความเสี่ยงไม่ได้ หากนึกออก ค่อยเติมเฉพาะส่วนนั้นได้','book'],low:['ดูแลตัวเองต่อได้เลย','จากคำตอบของคุณ ผลเบื้องต้นบ่งชี้ว่ามีความเสี่ยงน้อย ลองอ่านคำแนะนำเพื่อดูแลตัวเองต่อได้ หากมีอาการหรือยังเป็นกังวล คุณปรึกษาหน่วยบริการได้','check'],medium:['ผลคัดกรองอยู่ในระดับความเสี่ยงปานกลาง','ลองอ่านหรือฟังคำแนะนำเพื่อดูแลตัวเอง คุณยังเลือกปรึกษาหน่วยบริการได้','book'],high:['แนะนำให้ตรวจเพิ่มเติม','คุณดูสถานที่ตรวจหรือขอให้เจ้าหน้าที่ช่วยประสานได้ค่ะ','alert']};
 let answers=[],originalAnswers=[],bodyMeasurements=null,reviewingMissing=false,multipleSymptoms=false,step=0,level='low',request=null,requestKind=null,requestReceipt=null,stage=0,lessonProgress=0;
 let reviewed=false, reviewIndex=null;
 let activityRound=null, activityQueue=Promise.resolve();

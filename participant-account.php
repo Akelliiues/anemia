@@ -63,7 +63,7 @@ try {
             session_regenerate_id(true);
             header('Location: participant-account.php'.($returnToPortal?'?return=portal':''),true,303); exit;
         }
-        if (in_array($key,['password-login','password-register'],true)) {
+        if (in_array($key,['password-login','password-register','password-migrate'],true)) {
             if ($account!==null) throw new DomainException('กรุณาออกจากบัญชีเดิมก่อน');
             $passwordMode=$key;
             $db=participantDb();
@@ -71,7 +71,7 @@ try {
                 http_response_code(429);
                 throw new DomainException('ลองหลายครั้งเกินไป กรุณารอสักครู่');
             }
-            $account=anemiaParticipantPassword($db,$key==='password-register',$_POST,anemiaTeamCookieHash());
+            $account=anemiaParticipantPassword($db,$key==='password-register',$_POST,anemiaTeamCookieHash(),$key==='password-migrate');
             session_regenerate_id(true);
             $_SESSION=['account'=>$account,'until'=>time()+28800,'csrf'=>bin2hex(random_bytes(32))];
             $target=$returnToPortal?'index.html':'index.html?team=1'.($invite!==''?'&invite='.$invite:'');
@@ -148,8 +148,9 @@ if ($account) {
 <?php if ($notice!==''): ?><p class="status" role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
 <?php if (!$account): ?>
 <section class="participant-signup">
- <?php foreach (['password-login'=>'เข้าสู่ระบบด้วยรหัสผ่าน','password-register'=>'สมัครบัญชีใหม่'] as $mode=>$title): $register=$mode==='password-register'; ?>
- <details <?= $passwordMode===$mode || ($passwordMode==='' && !$register)?'open':'' ?>>
+ <?php foreach (['password-login'=>'เข้าสู่ระบบด้วย PIN','password-register'=>'สมัครบัญชีใหม่','password-migrate'=>'เปลี่ยนรหัสผ่านเดิมเป็น PIN'] as $mode=>$title):
+    $register=$mode==='password-register'; $migrate=$mode==='password-migrate'; ?>
+ <details <?= $passwordMode===$mode || ($passwordMode==='' && $mode==='password-login')?'open':'' ?>>
   <summary><?= workspaceIcon($register?'users':'login') ?> <?= participantEscape($title) ?></summary>
   <form method="post" action="participant-account.php">
    <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
@@ -158,18 +159,20 @@ if ($account) {
    <label><span><?= workspaceIcon('person') ?> ชื่อบัญชี</span>
     <input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false">
    </label>
-   <?php foreach ($register?['password','confirm_password']:['password'] as $field): $confirm=$field==='confirm_password'; $id=$mode.'-'.$field; ?>
+   <?php foreach ($migrate?['password','new_pin','confirm_password']:($register?['password','confirm_password']:['password']) as $field):
+      $confirm=$field==='confirm_password'; $id=$mode.'-'.$field; $legacy=$migrate&&$field==='password';
+      $label=$legacy?'รหัสผ่านเดิม':($confirm?'ยืนยัน PIN':($mode==='password-login'?'PIN':'ตั้ง PIN 6 หลัก')); ?>
     <div class="participant-password-field">
-     <label for="<?= $id ?>"><span><?= workspaceIcon($confirm?'ready':'lock') ?> <?= $confirm?'ยืนยันรหัสผ่าน':'รหัสผ่าน' ?><?php if ($register&&!$confirm): ?> <small>อย่างน้อย 6 ตัวอักษร</small><?php endif; ?></span></label>
+     <label for="<?= $id ?>"><span><?= workspaceIcon($confirm?'ready':'lock') ?> <?= $label ?></span></label>
      <div class="participant-password-control">
-      <input type="password" id="<?= $id ?>" name="<?= $field ?>" autocomplete="<?= $register?'new-password':'current-password' ?>" <?= $register?'minlength="6"':'' ?> required>
-      <button type="button" data-password-visibility aria-controls="<?= $id ?>" aria-label="แสดง<?= $confirm?'รหัสผ่านยืนยัน':'รหัสผ่าน' ?>" aria-pressed="false" hidden>
+      <input type="password" id="<?= $id ?>" name="<?= $field ?>" autocomplete="<?= $legacy||$mode==='password-login'?'current-password':'new-password' ?>" <?= !$legacy?'inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" data-pin':'' ?> required>
+      <button type="button" data-password-visibility aria-controls="<?= $id ?>" aria-label="แสดง<?= $label ?>" aria-pressed="false" hidden>
        <span data-password-show><?= workspaceIcon('eye') ?></span><span data-password-hide hidden><?= workspaceIcon('eye-off') ?></span>
       </button>
      </div>
     </div>
    <?php endforeach; ?>
-   <button class="action primary" name="provider" value="<?= $mode ?>"><?= workspaceIcon($register?'users':'login') ?><?= $register?'สมัครบัญชี':'เข้าสู่ระบบ' ?></button>
+   <button class="action primary" name="provider" value="<?= $mode ?>"><?= workspaceIcon($register?'users':'login') ?><?= $register?'สมัครบัญชี':($migrate?'บันทึก PIN':'เข้าสู่ระบบ') ?></button>
   </form>
  </details>
  <?php endforeach; ?>
@@ -203,6 +206,12 @@ if ($account) {
 <?php endif; ?>
 </section></main>
 <script>
+for(const input of document.querySelectorAll('[data-pin]')){
+ input.addEventListener('input',()=>{
+  const pin=input.value.replace(/[^0-9]/g,'').slice(0,6);
+  if(pin!==input.value)input.value=pin;
+ });
+}
 for(const button of document.querySelectorAll('[data-password-visibility]')){
  const input=document.getElementById(button.getAttribute('aria-controls'));
  button.hidden=false;

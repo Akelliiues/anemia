@@ -139,7 +139,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-icons-v50">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-password-toggle-v51">
 <main><section class="panel participant-account">
 <h1 class="title"><span class="iconbox"><?= workspaceIcon('person') ?></span>บัญชีของฉัน</h1>
 <p>เก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อม LINE, Google หรือช่องทางภายนอกครั้งแรก</p>
@@ -158,10 +158,17 @@ if ($account) {
    <label><span><?= workspaceIcon('person') ?> ชื่อบัญชี</span>
     <input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false">
    </label>
-   <label><span><?= workspaceIcon('lock') ?> รหัสผ่าน<?php if ($register): ?> <small>อย่างน้อย 6 ตัวอักษร</small><?php endif; ?></span>
-    <input type="password" name="password" autocomplete="<?= $register?'new-password':'current-password' ?>" <?= $register?'minlength="6"':'' ?> required>
-   </label>
-   <?php if ($register): ?><label><span><?= workspaceIcon('ready') ?> ยืนยันรหัสผ่าน</span><input type="password" name="confirm_password" autocomplete="new-password" minlength="6" required></label><?php endif; ?>
+   <?php foreach ($register?['password','confirm_password']:['password'] as $field): $confirm=$field==='confirm_password'; $id=$mode.'-'.$field; ?>
+    <div class="participant-password-field">
+     <label for="<?= $id ?>"><span><?= workspaceIcon($confirm?'ready':'lock') ?> <?= $confirm?'ยืนยันรหัสผ่าน':'รหัสผ่าน' ?><?php if ($register&&!$confirm): ?> <small>อย่างน้อย 6 ตัวอักษร</small><?php endif; ?></span></label>
+     <div class="participant-password-control">
+      <input type="password" id="<?= $id ?>" name="<?= $field ?>" autocomplete="<?= $register?'new-password':'current-password' ?>" <?= $register?'minlength="6"':'' ?> required>
+      <button type="button" data-password-visibility aria-controls="<?= $id ?>" aria-label="แสดง<?= $confirm?'รหัสผ่านยืนยัน':'รหัสผ่าน' ?>" aria-pressed="false" hidden>
+       <span data-password-show><?= workspaceIcon('eye') ?></span><span data-password-hide hidden><?= workspaceIcon('eye-off') ?></span>
+      </button>
+     </div>
+    </div>
+   <?php endforeach; ?>
    <button class="action primary" name="provider" value="<?= $mode ?>"><?= workspaceIcon($register?'users':'login') ?><?= $register?'สมัครบัญชี':'เข้าสู่ระบบ' ?></button>
   </form>
  </details>
@@ -194,4 +201,18 @@ if ($account) {
 <?php else: ?>
  <a class="action" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>">กลับไปที่ทีมและแต้ม</a>
 <?php endif; ?>
-</section></main></html>
+</section></main>
+<script>
+for(const button of document.querySelectorAll('[data-password-visibility]')){
+ const input=document.getElementById(button.getAttribute('aria-controls'));
+ button.hidden=false;
+ button.addEventListener('click',()=>{
+  const visible=input.type==='password';
+  input.type=visible?'text':'password';
+  button.setAttribute('aria-pressed',String(visible));
+  button.querySelector('[data-password-show]').hidden=visible;
+  button.querySelector('[data-password-hide]').hidden=!visible;
+ });
+}
+</script>
+</html>

@@ -35,6 +35,8 @@ function workspaceIcon(string $name): string
         'users' => '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M17 5a3 3 0 0 1 0 6m1 3a4 4 0 0 1 3 4v2"/>',
         'person' => '<circle cx="12" cy="8" r="3"/><path d="M5 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/>',
         'lock' => '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/>',
+        'eye' => '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/>',
+        'eye-off' => '<path d="m3 3 18 18M10.5 6.1c.5-.1 1-.1 1.5-.1 6.5 0 10 6 10 6a17 17 0 0 1-3 3.6M6.3 7.8A17 17 0 0 0 2 12s3.5 6 10 6c1.6 0 3-.4 4.2-.9"/>',
         'login' => '<path d="M14 4h5v16h-5M4 12h10m-4-4 4 4-4 4"/>',
         'history' => '<path d="M3 10a9 9 0 1 1 2 8m-2-8V5m0 5h5m4-3v5l3 2"/>',
         'logout' => '<path d="M11 4H5v16h6m3-12 4 4-4 4m-5-4h9"/>',

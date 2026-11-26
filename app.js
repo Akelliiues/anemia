@@ -33,7 +33,7 @@ const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const button=(label,go,symbol,primary=false)=>`<button class="action ${primary?'primary':''}" data-go="${go}">${icon(symbol)}${label}</button>`;
 const box=name=>`<span class="iconbox">${icon(name)}</span>`;
 const main=document.querySelector('#main');
-const levels={unknown:['คุณดูคำแนะนำต่อได้เลย','บางเรื่องยังไม่แน่ใจ จึงยังสรุประดับความเสี่ยงไม่ได้ หากนึกออก ค่อยเติมเฉพาะส่วนนั้นได้','book'],low:['คำตอบของคุณบ่งชี้ว่าความเสี่ยงโลหิตจางน้อย','มื้อต่อไปลองเพิ่มผัก และเลือกอาหารที่มีธาตุเหล็ก เช่น เนื้อไม่ติดมันหรือถั่ว หากมีอาการหรือยังเป็นกังวล ปรึกษาหน่วยบริการได้เลย','check'],medium:['ผลคัดกรองอยู่ในระดับความเสี่ยงปานกลาง','ลองอ่านหรือฟังคำแนะนำเพื่อดูแลตัวเอง คุณยังเลือกปรึกษาหน่วยบริการได้','book'],high:['แนะนำให้ตรวจเพิ่มเติม','คุณดูสถานที่ตรวจหรือขอให้เจ้าหน้าที่ช่วยประสานได้ค่ะ','alert']};
+const levels={unknown:['คุณดูคำแนะนำต่อได้เลย','บางเรื่องยังไม่แน่ใจ จึงยังสรุประดับความเสี่ยงไม่ได้ หากนึกออก ค่อยเติมเฉพาะส่วนนั้นได้','book'],low:['คำตอบของคุณบ่งชี้ว่าความเสี่ยงโลหิตจางน้อย','มื้อต่อไปลองเพิ่มผัก และเลือกอาหารที่มีธาตุเหล็ก เช่น เนื้อไม่ติดมันหรือถั่ว หากมีอาการหรือยังเป็นกังวล ปรึกษาหน่วยบริการได้เลย','check'],medium:['ลองทบทวนคำตอบอีกนิดนะคะ','มีบางคำตอบที่ควรดูเพิ่ม ลองตอบอีกมุมได้ หรือเลือกปรึกษาหน่วยบริการเรื่องตรวจเลือดได้เลย','book'],high:['ตรวจเลือดเพื่อให้รู้ชัดขึ้นนะคะ','จากคำตอบของคุณ เราแนะนำให้ตรวจเลือดเพิ่มเติม คุณเลือกสถานที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้ตามที่สะดวก','hospital']};
 let answers=[],originalAnswers=[],bodyMeasurements=null,reviewingMissing=false,multipleSymptoms=false,step=0,level='low',request=null,requestKind=null,requestReceipt=null,stage=0,lessonProgress=0;
 let reviewed=false, reviewIndex=null;
 let activityRound=null, activityQueue=Promise.resolve();
@@ -123,8 +123,8 @@ function goBack(){
 const voiceText={
  unknown:'ขอบคุณที่ตอบเท่าที่จำได้ค่ะ แบบประเมินนี้ยังสรุประดับความเสี่ยงไม่ได้ คุณอ่านคำแนะนำต่อได้เลย หากนึกข้อมูลออก ค่อยกลับมาเติม หรือเลือกดูช่องทางปรึกษาหน่วยบริการได้ค่ะ',
  low:'จากคำตอบของคุณ ผลเบื้องต้นบ่งชี้ว่าความเสี่ยงโลหิตจางน้อยค่ะ มื้อต่อไปลองเพิ่มผัก และเลือกอาหารที่มีธาตุเหล็ก เช่น เนื้อไม่ติดมันหรือถั่ว หากมีอาการหรือยังเป็นกังวล ปรึกษาหน่วยบริการได้เลยค่ะ',
- medium:'คุณลองอ่านหรือฟังคำแนะนำเพื่อดูแลตัวเอง คุณยังเลือกปรึกษาหน่วยบริการได้ได้ค่ะ',
- high:'จากคำตอบตัวอย่าง แนะนำให้ปรึกษาหน่วยบริการเรื่องตรวจเลือดค่ะ คุณกดดูสถานที่ตรวจ หรือขอให้เจ้าหน้าที่ช่วยประสานได้เลย',
+ medium:'มีบางคำตอบที่ควรดูเพิ่มค่ะ คุณลองตอบอีกมุม หรือเลือกปรึกษาหน่วยบริการเรื่องตรวจเลือดได้เลย',
+ high:'เราแนะนำให้ตรวจเลือดเพิ่มเติมเพื่อให้รู้ชัดขึ้นค่ะ คุณเลือกสถานที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้ตามที่สะดวก',
  learn:'ผลจากแบบประเมินมาจากคำตอบที่คุณให้ หากหน้าจอแนะนำให้ตรวจเพิ่มเติม กดดูสถานที่ตรวจ หรือเลือกขอให้เจ้าหน้าที่ติดต่อกลับได้ค่ะ'
 };
 const audioUI=(key,showText=true)=>`<div class="status">${box('sound')}<div><strong>Voice Coach ภาษาไทย</strong>${showText?`<p class="small">${voiceText[key]}</p>`: '<p class="small">กดฟังเนื้อหาบทนี้</p>'}<div class="actions"><button class="action" data-voice="${key}">${icon('play')}ฟังคำแนะนำ</button><button class="action" data-go="pause">${icon('pause')}พักเสียง</button></div><span id="voice-status" class="notice" role="status"></span></div></div>`;
@@ -202,14 +202,14 @@ document.addEventListener('submit',event=>{
 const nextSteps={
  low:{title:'อ่านวิธีดูแลตัวเอง',description:'เปิดเรื่องที่สนใจและดูคำแนะนำที่นำไปใช้ได้',route:'learn',symbol:'book'},
  medium:{title:'เริ่มจากบทเรียนสั้น ๆ',description:'อ่านหรือฟังบทแรกก่อน แล้วค่อยเลือกว่าจะทำอะไรต่อ',route:'learn',symbol:'book'},
- high:{title:'ดูว่าจะไปตรวจที่ไหน',description:'ดูหน่วยบริการและวิธีเข้ารับการตรวจ',route:'facilities',symbol:'hospital'},
+ high:{title:'เลือกสถานที่ตรวจ',description:'ดูหน่วยบริการและวิธีเข้ารับการตรวจ',route:'facilities',symbol:'hospital'},
  unknown:{title:'อ่านคำแนะนำได้เลย',description:'ดูขั้นตอนที่เลือกทำได้ แม้ยังจำข้อมูลได้ไม่ครบ',route:'learn',symbol:'book'}
 };
 function result(showWarning=false){
  const flagged=['medium','high'].includes(level);
  const needsReview=flagged&&!reviewed;
  const [title,message,symbol]=levels[level];
- const next=nextSteps[level];
+ const next=level==='medium'&&needsReview?{title:'ลองตอบอีกมุม',description:'ทบทวนคำตอบที่มีผลต่อการคัดกรอง',route:'review-risk',symbol:'refresh'}:nextSteps[level];
  const hasMissing=missingAnswerIndex()!==-1;
  const reviewAction=hasMissing?button('เติมเฉพาะเรื่องที่ไม่แน่ใจ','review-missing','refresh'):button('ทบทวนคำตอบเรื่องรอบเดือน','review','refresh');
  set(panel(`<div class="result-view">${backRow()}
@@ -220,12 +220,12 @@ function result(showWarning=false){
  ${audioUI(level)}
  <div class="actions"><a class="action" href="participant-account.php">${icon('person')}เก็บแต้มและความคืบหน้าในบัญชี</a></div>
  <section class="card result-review"><div class="result-section-title">${box('refresh')}<h2>ทบทวนหรือเริ่มใหม่</h2></div><p>แก้เฉพาะเรื่องที่จำได้ หรือเริ่มตอบตั้งแต่เรื่องแรก</p>
- <div class="actions">${needsReview?button('ลองตอบอีกมุม','review-risk','refresh'):reviewAction}${button('ประเมินใหม่ทั้งชุด','restart','refresh')}</div></section>
+ <div class="actions">${needsReview&&level==='high'?button('ลองตอบอีกมุม','review-risk','refresh'):reviewAction}${button('ประเมินใหม่ทั้งชุด','restart','refresh')}</div></section>
  <p class="notice">${note}</p>
  ${showWarning&&flagged?`<dialog class="signal-dialog" id="risk-warning" aria-labelledby="risk-warning-title">
-  ${box('alert')}<h2 id="risk-warning-title">${level==='high'?'แนะนำให้ตรวจเพิ่มเติม':'มีคำแนะนำสำหรับคุณ'}</h2>
-  <p>${level==='high'?'คุณเลือกที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้เลย หากยังไม่แน่ใจในคำตอบ สามารถทบทวนก่อนก็ได้':'เริ่มอ่านคำแนะนำได้เลย หรือทบทวนคำตอบหากมีเรื่องที่ยังไม่แน่ใจ'}</p>
-  <div class="actions">${button(next.title,next.route,next.symbol,true)}${level==='high'?button('ให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone'):''}${needsReview?button('ทบทวนคำตอบ','review-risk','refresh'):''}
+  ${box(symbol)}<h2 id="risk-warning-title">${title}</h2>
+  <p>${message}</p>
+  <div class="actions">${button(next.title,next.route,next.symbol,true)}${level==='high'?button('ให้เจ้าหน้าที่ติดต่อกลับ','callback-directory','phone'):''}${needsReview&&level==='high'?button('ทบทวนคำตอบ','review-risk','refresh'):''}
   <form method="dialog"><button class="action">${icon('close')}ปิด</button></form></div>
  </dialog>`:''}</div>`));
  if(showWarning&&flagged)document.querySelector('#risk-warning').showModal();

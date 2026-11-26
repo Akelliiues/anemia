@@ -12,7 +12,8 @@ session_set_cookie_params(['secure'=>$secure,'httponly'=>true,'samesite'=>'Stric
 session_start();
 function loginRequired(): never
 {
-    header('Location: login'.(($_GET['view'] ?? '')==='scan-request'?'?next=scan':''), true, 303);
+    $next = match ($_GET['view'] ?? '') {'scan-request'=>'?next=scan','mobile'=>'?next=mobile',default=>''};
+    header('Location: login'.$next, true, 303);
     exit;
 }
 if (!isset($_SESSION['username'], $_SESSION['until']) || (int)$_SESSION['until'] <= time()) {
@@ -27,7 +28,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile'], true)) $view = 'overview';
 date_default_timezone_set('Asia/Bangkok');
 $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
@@ -367,6 +368,7 @@ try {
     exit('ไม่สามารถโหลดข้อมูลหลังบ้านได้ กรุณาลองใหม่อีกครั้ง');
 }
 $tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจังหวัด','evaluation'=>'ประเมินโครงการ','activity'=>'สถิติการทดลองแบบประเมิน','team'=>'ทีมวิจัยและพัฒนา','guide'=>'คู่มือการใช้งาน','about'=>'เกี่ยวกับระบบ'];
+$tabs['mobile'] = 'Anemia Staff';
 if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
 $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','contact-queue'=>'phone','scan-request'=>'scan'];
@@ -436,7 +438,9 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=callback-slots-v44">
+<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><link rel="stylesheet" href="style.css?v=staff-pwa-v45">
+<link rel="manifest" href="staff.webmanifest"><link rel="apple-touch-icon" href="staff-icon-192.png"><meta name="theme-color" content="#392656">
+<script defer src="staff-install.js?v=1"></script>
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -454,6 +458,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="admin-top-main">
    <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
    <div class="workspace-account">
+    <a class="action staff-install-action" href="staff-install.html" data-staff-install aria-label="ติดตั้ง Anemia Staff" title="ติดตั้ง Anemia Staff"><?= workspaceIcon('download') ?><span>ติดตั้งแอป</span></a>
     <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="เปลี่ยนรหัสผ่าน"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
     <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
    </div>
@@ -736,6 +741,20 @@ function workspaceInfo(string $page, ?array $release = null): void
   </section>
   <?php elseif ($view === 'about'): ?>
   <section class="card admin-report"><?php workspaceInfo($view, $localRelease); ?></section>
+  <?php elseif ($view === 'mobile'): ?>
+  <section class="card staff-mobile-home">
+   <h2>งานของฉัน</h2>
+   <?php if ($isAdmin): ?>
+    <div class="staff-mobile-links">
+     <a class="action primary" href="dashboard.php?view=scan-request"><?= workspaceIcon('scan') ?>สแกน QR</a>
+     <a class="action" href="dashboard.php?view=contact-queue"><?= workspaceIcon('calendar') ?>นัดหมาย</a>
+     <a class="action" href="dashboard.php?view=contact-queue&amp;attention=1"><?= workspaceIcon('history') ?>งานที่ต้องติดตาม</a>
+    </div>
+   <?php else: ?>
+    <p>ดูรายงานตามขอบเขตพื้นที่ของบัญชีคุณ</p>
+    <a class="action primary" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?>เปิดภาพรวม</a>
+   <?php endif; ?>
+  </section>
   <?php elseif ($view === 'scan-request'): ?>
   <div class="request-scanner-layout">
    <?php if ($scannedRequest):

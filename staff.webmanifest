@@ -1,0 +1,16 @@
+{
+  "id": "./staff-app",
+  "name": "Anemia Staff",
+  "short_name": "Anemia Staff",
+  "description": "นัดหมายและสแกน QR สำหรับเจ้าหน้าที่",
+  "lang": "th",
+  "start_url": "./dashboard.php?view=mobile",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf9fe",
+  "theme_color": "#392656",
+  "icons": [
+    {"src":"staff-icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"staff-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}

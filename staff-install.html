@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="th">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="theme-color" content="#392656">
+ <title>ติดตั้ง Anemia Staff</title>
+ <link rel="manifest" href="staff.webmanifest">
+ <link rel="apple-touch-icon" href="staff-icon-192.png">
+ <script src="theme.js?v=1"></script>
+ <link rel="stylesheet" href="style.css?v=staff-pwa-v45">
+ <script defer src="staff-install.js?v=1"></script>
+</head>
+<body>
+ <main class="staff-install-page">
+  <section class="panel" aria-labelledby="install-title">
+   <img src="staff-icon-192.png" width="64" height="64" alt="">
+   <h1 class="title" id="install-title">Anemia Staff</h1>
+   <p>เปิดคิวนัดหมาย ดูงานที่ต้องติดตาม และสแกน QR จากหน้าจอหลักของมือถือ</p>
+   <div class="actions">
+    <button class="action primary" type="button" data-staff-install hidden>ติดตั้ง Anemia Staff</button>
+    <a class="action" href="dashboard.php?view=mobile">เปิดหน้าเจ้าหน้าที่</a>
+   </div>
+   <p data-install-result role="status" hidden></p>
+   <div data-install-help>
+    <h2 class="title">เพิ่มไว้ที่หน้าจอหลัก</h2>
+    <p><strong>iPhone และ iPad</strong> เปิดใน Safari กดแชร์ แล้วเลือก “เพิ่มไปยังหน้าจอโฮม”</p>
+    <p><strong>Android</strong> เปิดใน Chrome แล้วเลือก “ติดตั้งแอป” หรือ “เพิ่มลงในหน้าจอหลัก” จากเมนู ⋮</p>
+   </div>
+  </section>
+ </main>
+</body>
+</html>

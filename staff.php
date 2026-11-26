@@ -10,7 +10,11 @@ require __DIR__ . '/_private/icons.php';
 
 $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' && $_SERVER['HTTPS'] !== '';
 $staff = null;
-$afterLogin = ($_GET['next'] ?? '') === 'scan' ? 'dashboard.php?view=scan-request' : 'dashboard.php';
+$afterLogin = match ($_GET['next'] ?? '') {
+    'scan'=>'dashboard.php?view=scan-request',
+    'mobile'=>'dashboard.php?view=mobile',
+    default=>'dashboard.php',
+};
 $fault = '';
 $message = '';
 $token = '';

@@ -46,8 +46,7 @@ function anemiaParticipantPassword(PDO $db,bool $register,array $input,?string $
 {
     $username=is_string($input['username']??null)?strtolower(trim($input['username'])):'';
     $password=$input['password']??null;
-    if (!preg_match('/^[a-z0-9][a-z0-9._-]{2,39}$/D',$username) || !is_string($password) ||
-        $password==='' || strlen($password)>72 || str_contains($password,"\0")) {
+    if (!preg_match('/^[a-z0-9][a-z0-9._-]{2,39}$/D',$username) || !is_string($password) || $password==='') {
         throw new DomainException($register?'ตรวจชื่อบัญชีและความยาวรหัสผ่าน':'ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง');
     }
     if (!$register) {
@@ -55,13 +54,19 @@ function anemiaParticipantPassword(PDO $db,bool $register,array $input,?string $
         $query->execute([$username]);
         $row=$query->fetch(PDO::FETCH_ASSOC);
         $hash=$row['password_hash']??'$2y$12$CkxVzYqDSRWD7wAxUXU4ou5jz8lPTZuoSJb1ZGzAz3Rgi7PDgtCL2';
-        if (!password_verify($password,$hash) || !$row) throw new DomainException('ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง');
+        $prehashed=str_starts_with($hash,'sha384:');
+        $material=$prehashed?base64_encode(hash('sha384',$password,true)):$password;
+        if ((!$prehashed && (strlen($material)>72 || str_contains($material,"\0"))) ||
+            !password_verify($material,$prehashed?substr($hash,7):$hash) || !$row) {
+            throw new DomainException('ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง');
+        }
         return $row['account_id'];
     }
     if (anemiaReservedParticipantUsername($username)) throw new DomainException('ชื่อนี้สงวนไว้สำหรับระบบ กรุณาเลือกชื่อบัญชีอื่น');
-    if (preg_match('/^.{12,}$/usD',$password)!==1) throw new DomainException('ตั้งรหัสผ่านอย่างน้อย 12 ตัวอักษร');
+    if (preg_match('/^.{6,}$/usD',$password)!==1) throw new DomainException('ตั้งรหัสผ่านอย่างน้อย 6 ตัวอักษร');
     if ($password!==($input['confirm_password']??null)) throw new DomainException('รหัสผ่านทั้งสองช่องไม่ตรงกัน');
-    $hash=password_hash($password,PASSWORD_BCRYPT,['cost'=>12]);
+    // Fixed-length input prevents bcrypt from truncating longer passwords.
+    $hash='sha384:'.password_hash(base64_encode(hash('sha384',$password,true)),PASSWORD_BCRYPT,['cost'=>12]);
     $account=bin2hex(random_bytes(16));
     $db->beginTransaction();
     try {

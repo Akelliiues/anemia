@@ -154,13 +154,13 @@ if ($account) {
    <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
    <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
    <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
-   <label>ชื่อบัญชี<?php if ($register): ?> <small>3–40 ตัว ใช้อักษรอังกฤษ ตัวเลข จุด ขีดกลาง หรือขีดล่าง ชื่อระบบ เช่น admin และ staff เป็นชื่อสงวน</small><?php endif; ?>
+   <label>ชื่อบัญชี
     <input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false">
    </label>
-   <label>รหัสผ่าน<?php if ($register): ?> <small>อย่างน้อย 12 ตัวอักษร</small><?php endif; ?>
-    <input type="password" name="password" autocomplete="<?= $register?'new-password':'current-password' ?>" maxlength="72" <?= $register?'minlength="12"':'' ?> required>
+   <label>รหัสผ่าน<?php if ($register): ?> <small>อย่างน้อย 6 ตัวอักษร</small><?php endif; ?>
+    <input type="password" name="password" autocomplete="<?= $register?'new-password':'current-password' ?>" <?= $register?'minlength="6"':'' ?> required>
    </label>
-   <?php if ($register): ?><label>ยืนยันรหัสผ่าน<input type="password" name="confirm_password" autocomplete="new-password" minlength="12" maxlength="72" required></label><?php endif; ?>
+   <?php if ($register): ?><label>ยืนยันรหัสผ่าน<input type="password" name="confirm_password" autocomplete="new-password" minlength="6" required></label><?php endif; ?>
    <button class="action primary" name="provider" value="<?= $mode ?>"><?= $register?'สมัครบัญชี':'เข้าสู่ระบบ' ?></button>
   </form>
  </details>

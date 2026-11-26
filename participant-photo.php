@@ -19,6 +19,10 @@ try {
     $config=require __DIR__.'/_private/config.php';
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
+    if (($_GET['session']??'')==='1') {
+        http_response_code(anemiaParticipantEpoch($db,$account)===$epoch ? 204 : 404);
+        exit;
+    }
     $query=$db->prepare('SELECT p.photo FROM anemia_participant_photo p JOIN anemia_participant_account a ON a.id=p.account_id
         WHERE a.id=? AND a.suspended_at IS NULL AND a.session_epoch=?');
     $query->execute([$account,$epoch]);

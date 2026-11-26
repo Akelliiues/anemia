@@ -982,6 +982,7 @@ main:has(.floating-next) { padding-right:max(52px,env(safe-area-inset-right)); }
 .public-header nav > .public-assessment-link:is(:hover,:focus-visible) {background:#47308f;}
 .public-header nav > .public-assessment-link svg {color:inherit;}
 .public-header nav .public-account-link {border-color:var(--line);color:var(--violet);font-weight:700;}
+.public-header nav [data-public-account-guest][hidden] {display:none;}
 .public-header nav [data-icon] {flex:none;}
 .public-nav-group {position:relative;flex:none;}
 .public-nav-group>summary {list-style:none;white-space:nowrap;}

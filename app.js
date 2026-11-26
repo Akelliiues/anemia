@@ -1216,11 +1216,44 @@ function playVoice(key){
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 const publicProfilePhoto=document.querySelector('[data-public-profile-photo]');
 if(publicProfilePhoto){
+ const accountMenu=publicProfilePhoto.closest('.public-nav-account');
+ const guestLink=document.querySelector('[data-public-account-guest]');
  publicProfilePhoto.addEventListener('load',()=>{
   publicProfilePhoto.hidden=false;
   publicProfilePhoto.previousElementSibling.hidden=true;
  });
- publicProfilePhoto.src='participant-photo.php';
+ let sessionCheck=0;
+ const refreshAccountMenu=async()=>{
+  const check=++sessionCheck;
+  let signedIn=false;
+  try{
+   const response=await fetch('participant-photo.php?session=1',{cache:'no-store'});
+   signedIn=response.status===204;
+  }catch{}
+  if(check!==sessionCheck)return;
+  guestLink.hidden=signedIn;
+  accountMenu.hidden=!signedIn;
+  if(signedIn){
+   if(!publicProfilePhoto.hasAttribute('src'))publicProfilePhoto.src='participant-photo.php';
+  }else{
+   accountMenu.open=false;
+   publicProfilePhoto.removeAttribute('src');
+   publicProfilePhoto.hidden=true;
+   publicProfilePhoto.previousElementSibling.hidden=false;
+  }
+ };
+ const resetAccountMenu=()=>{
+  ++sessionCheck;
+  accountMenu.open=false;
+  accountMenu.hidden=true;
+  guestLink.hidden=false;
+ };
+ window.addEventListener('pagehide',resetAccountMenu);
+ window.addEventListener('pageshow',event=>{if(event.persisted)refreshAccountMenu();});
+ document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)resetAccountMenu();else refreshAccountMenu();
+ });
+ refreshAccountMenu();
 }
 const publicMenuToggle=document.querySelector('.public-menu-toggle');
 const publicNavigation=document.querySelector('#public-navigation');

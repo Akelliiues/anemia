@@ -93,7 +93,7 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
 </head>
 <body class="staff-access">
 <main class="staff-access-main">
-  <?php workspaceBack('index.html'); ?>
+  <a class="back floating-back" href="index.html" aria-label="กลับหน้าหลัก" title="กลับหน้าหลัก"><?= workspaceIcon('back') ?></a>
   <div class="staff-access-shell">
     <aside class="staff-access-cover" aria-label="Anemia Portal">
       <div class="staff-cover-copy">

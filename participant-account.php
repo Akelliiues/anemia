@@ -166,8 +166,11 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-profile-v54">
-<main><section class="panel participant-account">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-profile-v55">
+<main class="participant-account-main"><section class="panel participant-account">
+<nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
+ <a href="index.html"><?= workspaceIcon('back') ?>กลับหน้าหลัก</a>
+</nav>
 <?php if ($account): ?>
 <header class="participant-profile-hero">
  <span class="participant-avatar" data-avatar="<?= participantEscape($profile['avatar']) ?>"><?= workspaceIcon($profile['avatar']) ?></span>
@@ -176,8 +179,8 @@ if ($account) {
  <button class="action" type="button" data-open-profile><?= workspaceIcon('edit') ?>แก้ไขโปรไฟล์</button>
 </header>
 <div class="participant-profile-points">
- <span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><strong><?= number_format($teamPoints) ?> แต้ม</strong>
- <a class="action" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><?= workspaceIcon('next') ?><?= $teamJoined?'ดูทีมของฉัน':'ไปที่ทีมของฉัน' ?></a>
+ <div class="participant-profile-tile"><span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><span><small>แต้มสะสม</small><strong><?= number_format($teamPoints) ?> แต้ม</strong></span></div>
+ <a class="participant-profile-tile participant-team-link" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><span class="participant-team-mark"><?= workspaceIcon('users') ?></span><span><strong>ทีมของฉัน</strong><small><?= $teamJoined?'ดูความคืบหน้าทีม':'สร้างทีมหรือชวนเพื่อน' ?></small></span><?= workspaceIcon('next') ?></a>
 </div>
 <?php else: ?>
 <h1 class="title"><span class="iconbox"><?= workspaceIcon('person') ?></span>บัญชีของฉัน</h1>
@@ -226,7 +229,7 @@ if ($account) {
  <?php if ($mode==='password-login'): ?><a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a><?php endif; ?>
 </section>
 <?php endif; ?>
-<?php if ($account): ?><details class="participant-settings"><summary><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</summary><?php endif; ?>
+<?php if ($account): ?><details class="participant-settings"><summary><span><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</span><?= workspaceIcon('next') ?></summary><?php endif; ?>
 <form method="post" action="participant-account.php" class="participant-provider-form">
  <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบด้วยบัญชีอื่น' ?></h2>
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
@@ -249,10 +252,8 @@ if ($account) {
  <?php if ($account): ?><div class="actions"><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากบัญชี</button></div><?php endif; ?>
 </form>
 <?php if ($account): ?></details><?php endif; ?>
-<?php if ($returnToPortal): ?>
- <a class="action" href="index.html">กลับหน้าบ้าน</a>
-<?php else: ?>
- <a class="action" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>">กลับไปที่ทีมและแต้ม</a>
+<?php if (!$returnToPortal && !$account): ?>
+ <a class="action participant-team-return" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><?= workspaceIcon('back') ?>กลับไปที่ทีมและแต้ม</a>
 <?php endif; ?>
 </section></main>
 <?php if ($account): ?>

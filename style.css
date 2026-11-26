@@ -1971,4 +1971,10 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-mobile-overview svg {width:1rem;height:1rem;}
 .staff-install-card .staff-mobile-hero {margin-bottom:1rem;}
 .staff-install-card .staff-mobile-hero img {flex:none;}
+.staff-scanner-page main {width:min(100%,48rem);}
+.staff-scanner-page .hosted-workspace .admin-top-main {margin-bottom:0;}
+.staff-scanner-page .request-scanner-layout {grid-template-columns:minmax(0,1fr);}
+.staff-scanner-page #request-scan-start:not([hidden]) {min-height:48px;background:#56389c;color:#fff;}
+.staff-scanner-install h1 {margin-top:0;}
+.staff-scanner-install [data-install-help] {margin-top:1rem;}
 @media(max-width:420px){.staff-mobile-home .staff-mobile-metric {align-items:flex-start;flex-direction:column;}.staff-mobile-metric .iconbox {width:2rem;height:2rem;}}

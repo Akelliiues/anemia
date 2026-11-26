@@ -9,7 +9,7 @@
   if(help)help.hidden=true;
   if(status){status.textContent='เปิด '+(status.dataset.appName||'Anemia Staff')+' จากหน้าจอหลักได้แล้ว';status.hidden=false;}
  }
- if(standalone){installed();return;}
+ if(standalone&&!document.querySelector('[data-install-other-app]')){installed();return;}
  window.addEventListener('beforeinstallprompt',event=>{
   event.preventDefault();
   promptEvent=event;

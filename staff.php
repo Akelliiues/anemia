@@ -13,6 +13,8 @@ $staff = null;
 $inlineLogin = ($_GET['entry'] ?? '') === 'inline';
 $afterLogin = match ($_GET['next'] ?? '') {
     'scan'=>'dashboard.php?view=scan-request',
+    'unit-scan'=>'dashboard.php?view=scan-request&app=unit',
+    'unit-install'=>'dashboard.php?view=scanner-install',
     'mobile'=>'dashboard.php?view=mobile',
     default=>'dashboard.php',
 };
@@ -52,7 +54,7 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
             } elseif (($_POST['action'] ?? '') === 'logout') {
                 $_SESSION = [];
                 session_regenerate_id(true);
-                header('Location: login', true, 303);
+                header('Location: '.(($_GET['next']??'')==='unit-scan'?'login?next=unit-scan':'login'), true, 303);
                 exit;
             } elseif (($_POST['action'] ?? '') === 'login') {
                 $user = is_string($_POST['username'] ?? null) ? strtolower(trim($_POST['username'])) : '';

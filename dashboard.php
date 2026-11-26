@@ -12,7 +12,10 @@ session_set_cookie_params(['secure'=>$secure,'httponly'=>true,'samesite'=>'Stric
 session_start();
 function loginRequired(): never
 {
-    $next = match ($_GET['view'] ?? '') {'scan-request'=>'?next=scan','mobile'=>'?next=mobile',default=>''};
+    $next = match ($_GET['view'] ?? '') {
+        'scan-request'=>($_GET['app'] ?? '')==='unit'?'?next=unit-scan':'?next=scan',
+        'scanner-install'=>'?next=unit-install','mobile'=>'?next=mobile',default=>'',
+    };
     header('Location: login'.$next, true, 303);
     exit;
 }
@@ -28,7 +31,9 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'mobile', 'network', 'members', 'programme-report'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report'], true)) $view = 'overview';
+$unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
+$scannerApp = $unitScanner || $view==='scanner-install';
 date_default_timezone_set('Asia/Bangkok');
 $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00'];
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
@@ -57,8 +62,14 @@ try {
     $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district'],true);
     [$queueScope,$queueParams]=anemiaQueueNetworkScope($isAdmin,$grant);
     if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','members','programme-report'],true) && !$isAdmin) ||
-        (in_array($view,['contact-queue','scan-request'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
+        (in_array($view,['contact-queue','scan-request','scanner-install'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
+    }
+    $scanUnit = $isAdmin ? 'ตามสิทธิ์ผู้ดูแลระบบ' : '';
+    if (!$isAdmin && $canQueue && ($scannerApp || $view==='mobile')) {
+        $unitQuery=$db->prepare('SELECT name FROM anemia_network_facility WHERE code=?');
+        $unitQuery->execute([$grant['scope_code']]);
+        $scanUnit=$unitQuery->fetchColumn() ?: 'หน่วยบริการตามสิทธิ์บัญชี';
     }
     $sampleSetting = $db->query("SELECT enabled,changed_by,changed_at FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetch(PDO::FETCH_ASSOC);
     $sampleEnabled = (int)($sampleSetting['enabled'] ?? 0) === 1;
@@ -486,6 +497,7 @@ try {
 }
 $tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจังหวัด','evaluation'=>'ประเมินโครงการ','activity'=>'สถิติการทดลองแบบประเมิน','team'=>'ทีมวิจัยและพัฒนา','guide'=>'คู่มือการใช้งาน','about'=>'เกี่ยวกับระบบ'];
 $tabs['mobile'] = 'Anemia Staff';
+$tabs['scanner-install'] = 'ติดตั้งแอปสแกน QR';
 if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 if ($canQueue) $tabs += ['contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 if ($isAdmin) $tabs['programme-report']='ผลการเรียนรู้';
@@ -562,9 +574,9 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= esc($tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-pwa-v72">
-<link rel="manifest" href="staff.webmanifest"><link rel="apple-touch-icon" href="staff-icon-192.png"><meta name="theme-color" content="#392656">
-<script defer src="staff-install.js?v=1"></script>
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=staff-pwa-v73">
+<link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
+<script defer src="staff-install.js?v=3"></script>
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -572,22 +584,22 @@ function workspaceInfo(string $page, ?array $release = null): void
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
-</head><body class="staff-dashboard-page">
+</head><body class="staff-dashboard-page<?= $scannerApp?' staff-scanner-page':'' ?>">
 <main style="max-width:1220px">
-<?php workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>
+<?php if (!$scannerApp) workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>
 <section class="panel wide" style="padding:0;overflow:hidden">
 <div class="admin-shell hosted-workspace">
  <header class="admin-top no-print">
   <div class="workspace-header-art" aria-hidden="true"></div>
   <div class="admin-top-main">
-   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
+   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon($scannerApp?'scan':'drop') ?></span><div><strong><?= $scannerApp?'สแกน QR ประจำหน่วย':'Anemia Portal' ?></strong><span class="workspace-brand-caption"><?= $scannerApp?esc($scanUnit):'ศูนย์จัดการสำหรับเจ้าหน้าที่' ?></span></div></div>
    <div class="workspace-account">
-    <a class="action staff-install-action" href="staff-install.html" data-staff-install aria-label="ติดตั้ง Anemia Staff" title="ติดตั้ง Anemia Staff"><?= workspaceIcon('download') ?><span>ติดตั้งแอป</span></a>
+    <?php if (!$scannerApp): ?><a class="action staff-install-action" href="staff-install.html" data-staff-install aria-label="ติดตั้ง Anemia Staff" title="ติดตั้ง Anemia Staff"><?= workspaceIcon('download') ?><span>ติดตั้งแอป</span></a><?php endif; ?>
     <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="เปลี่ยนรหัสผ่าน"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
-    <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
+    <form class="hosted-logout" method="post" action="<?= $scannerApp?'login?next=unit-scan':'login' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
    </div>
   </div>
-  <nav class="admin-top-tabs" aria-label="เมนูหลังบ้าน">
+  <?php if (!$scannerApp): ?><nav class="admin-top-tabs" aria-label="เมนูหลังบ้าน">
    <?php
     $groups = [
         ['ภาพรวม','chart',['overview']],
@@ -621,10 +633,10 @@ function workspaceInfo(string $page, ?array $release = null): void
      </div>
     </details>
    <?php endif; endforeach; ?>
-  </nav>
+  </nav><?php endif; ?>
  </header>
  <div class="admin-content">
-  <?php if ($view!=='mobile'): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
+  <?php if ($view!=='mobile' && !$scannerApp): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
    <p><?= esc($scopeName) ?></p>
    <?php if (in_array($view,['contact-queue','scan-request'],true)): ?><a class="action no-print" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a><?php endif; ?>
   </div>
@@ -885,6 +897,17 @@ function workspaceInfo(string $page, ?array $release = null): void
   <?php elseif ($view === 'members'): require __DIR__.'/_private/members-view.php'; ?>
   <?php elseif ($view === 'network'): require __DIR__.'/_private/network-view.php'; ?>
   <?php elseif ($view === 'mobile'): require __DIR__.'/_private/staff-mobile-view.php'; ?>
+  <?php elseif ($view === 'scanner-install'): ?>
+  <section class="card admin-report staff-scanner-install" data-install-other-app>
+   <h1>ติดตั้งแอปสแกน QR</h1><p>เปิดจากหน้าจอหลักเพื่อสแกนใบรับคำขอของผู้มารับบริการ ระบบใช้หน่วยบริการตามสิทธิ์บัญชีของคุณ</p>
+   <div class="actions">
+    <button class="action primary" type="button" data-staff-install hidden><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR</button>
+    <a class="action" href="dashboard.php?view=scan-request&amp;app=unit"><?= workspaceIcon('scan') ?>เปิดหน้าสแกน</a>
+    <a class="action" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a>
+   </div>
+   <p data-install-result data-app-name="สแกน QR ประจำหน่วย" role="status" hidden></p>
+   <div data-install-help><p><strong>iPhone / iPad</strong> เปิดใน Safari แล้วเลือก แชร์ → เพิ่มไปยังหน้าจอโฮม</p><p><strong>Android</strong> เปิดใน Chrome แล้วเลือก ติดตั้งแอป หรือ เพิ่มลงในหน้าจอหลัก</p></div>
+  </section>
   <?php elseif ($view === 'scan-request'): ?>
   <div class="request-scanner-layout">
    <?php if ($scannedRequest):

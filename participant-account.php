@@ -246,7 +246,7 @@ if ($account) {
 <?php endif; ?>
 <?php else: ?>
 <h1>เข้าสู่ระบบ</h1>
-<p class="staff-access-description" data-login-description>ใช้ PIN สมาชิกเพื่อดูแต้มและกลับมาเรียนต่อ</p>
+<p class="staff-access-description">เลือกวิธีเข้าสู่ระบบตามบัญชีของคุณ</p>
 <?php endif; ?>
 <?php if ($notice!==''): ?><p class="status" role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
 <?php if (!$account): ?>
@@ -263,6 +263,7 @@ if ($account) {
   <a data-pin-mode href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
   <a data-staff-mode href="login.php?entry=portal"><?= workspaceIcon('lock') ?> รหัสผ่านเจ้าหน้าที่</a>
  </nav>
+ <div class="participant-login-fields">
  <div data-member-login>
  <div class="participant-entry-card">
   <?php if ($migrate): ?><h2 class="title"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</h2><?php endif; ?>
@@ -289,33 +290,36 @@ if ($account) {
    <button class="action primary" name="provider" value="<?= $mode ?>"><?= workspaceIcon($register?'users':'login') ?><?= $register?'สมัครบัญชี':($migrate?'บันทึก PIN':'เข้าสู่ระบบ') ?></button>
   </form>
  </div>
- <?php if ($mode==='password-login'): ?>
-  <div class="actions">
-   <a class="action" href="<?= participantEscape($accountModeUrl('password-register')) ?>"><?= workspaceIcon('users') ?> สมัครบัญชี</a>
-   <a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a>
-  </div>
- <?php endif; ?>
  </div>
  <div data-staff-login hidden>
   <div class="participant-entry-card">
    <form method="post" action="login.php?entry=inline" aria-label="เข้าสู่ระบบเจ้าหน้าที่">
     <input type="hidden" name="action" value="login">
     <label><span><?= workspaceIcon('person') ?> ชื่อผู้ใช้</span><input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false"></label>
-    <label for="inline-staff-password"><?= workspaceIcon('lock') ?> รหัสผ่าน</label>
+    <div class="participant-password-field">
+    <label for="inline-staff-password"><span><?= workspaceIcon('lock') ?> รหัสผ่าน</span></label>
     <div class="participant-password-control">
      <input id="inline-staff-password" type="password" name="password" autocomplete="current-password" maxlength="128" required>
      <button type="button" data-password-visibility aria-controls="inline-staff-password" aria-label="แสดงรหัสผ่าน" aria-pressed="false" hidden><span data-password-show><?= workspaceIcon('eye') ?></span><span data-password-hide hidden><?= workspaceIcon('eye-off') ?></span></button>
     </div>
+    </div>
     <button class="action primary" type="submit"><?= workspaceIcon('login') ?> เข้าสู่ระบบ</button>
-    <p role="status" data-staff-status hidden></p>
    </form>
   </div>
  </div>
+ </div>
+ <p role="status" data-staff-status hidden></p>
+ <?php if ($mode==='password-login'): ?>
+  <div class="actions">
+   <a class="action" href="<?= participantEscape($accountModeUrl('password-register')) ?>"><?= workspaceIcon('users') ?> สมัครบัญชีสมาชิก</a>
+   <a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a>
+  </div>
+ <?php endif; ?>
 </section>
 <?php endif; ?>
 <?php if ($account): ?><details class="participant-settings" id="participant-settings"><summary><span><?= workspaceIcon('lock') ?> ตั้งค่าบัญชี</span><?= workspaceIcon('next') ?></summary><?php endif; ?>
 <form method="post" action="participant-account.php" class="participant-provider-form">
- <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบด้วยบัญชีอื่น' ?></h2>
+ <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบสมาชิกด้วยบัญชีอื่น' ?></h2>
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="<?= participantEscape($returnContext) ?>"><?php endif; ?>
@@ -378,19 +382,16 @@ const pinMode=document.querySelector('[data-pin-mode]');
 if(staffMode&&pinMode){
  const staffPanel=document.querySelector('[data-staff-login]');
  const memberPanel=document.querySelector('[data-member-login]');
- const providers=document.querySelector('.participant-provider-form');
- const description=document.querySelector('[data-login-description]');
  const form=staffPanel.querySelector('form');
  const endpoint=form.getAttribute('action');
- const status=form.querySelector('[data-staff-status]');
+ const status=document.querySelector('[data-staff-status]');
  const submit=form.querySelector('[type=submit]');
- const message=text=>{status.textContent=text;status.hidden=!text;};
+ const message=text=>{status.textContent=text;status.hidden=!text||staffPanel.hidden;};
  const normalPin=pinMode.hasAttribute('aria-current');
  const selectMode=staff=>{
   staffPanel.hidden=!staff;
   memberPanel.hidden=staff;
-  providers.hidden=staff;
-  description.textContent=staff?'ใช้ชื่อผู้ใช้และรหัสผ่านเจ้าหน้าที่เพื่อเปิดแดชบอร์ด':'ใช้ PIN สมาชิกเพื่อดูแต้มและกลับมาเรียนต่อ';
+  if(!staff)message('');
   staffMode.toggleAttribute('aria-current',staff);
   pinMode.toggleAttribute('aria-current',!staff&&normalPin);
   if(staff)staffMode.setAttribute('aria-current','page');

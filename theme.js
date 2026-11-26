@@ -18,6 +18,23 @@
   apply();
  });
  document.addEventListener('DOMContentLoaded', () => {
+  const addSignalLines=(container,placement)=>{
+   if(!container||container.querySelector(':scope > .portal-neural'))return;
+   const art=document.createElement('span');
+   art.className='portal-neural portal-neural-'+placement;
+   art.setAttribute('aria-hidden','true');
+   for(let i=0;i<6;i++)art.append(document.createElement('i'));
+   container.append(art);
+  };
+  addSignalLines(document.body,'page');
+  const headings='.hero,.page-heading,.result-summary,.question-scene,.feedback-hero,.programme-heading,.admin-heading,.staff-access-cover,.staff-app-bar,.participant-profile-hero,.staff-mobile-hero';
+  const decorateHeadings=container=>container.querySelectorAll(headings).forEach(heading=>{
+   heading.classList.add('portal-neural-surface');
+   addSignalLines(heading,'heading');
+  });
+  decorateHeadings(document);
+  const publicMain=document.querySelector('.public-site #main');
+  if(publicMain)new MutationObserver(()=>decorateHeadings(publicMain)).observe(publicMain,{childList:true});
   control = document.createElement('button');
   control.type = 'button';
   control.className = 'theme-float';

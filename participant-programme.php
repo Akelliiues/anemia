@@ -85,20 +85,18 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรม 12 สัปดาห์ · Anemia Portal</title>
-<script src="theme.js?v=1"></script>
-<link rel="stylesheet" href="style.css?v=public-subpage-v93">
+<script src="theme.js?v=2"></script>
+<link rel="stylesheet" href="style.css?v=portal-neural-v94">
 <script defer src="installed-update.js"></script>
-<link rel="stylesheet" href="participant-programme.css?v=6">
+<link rel="stylesheet" href="participant-programme.css?v=7">
 <script defer src="participant-programme.js?v=2"></script>
 </head>
 <body class="participant-profile-page programme-page">
-<div class="programme-neural programme-neural-page" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <?php $publicNavPage='programme'; require __DIR__.'/_private/public-subpage-header.php'; ?>
 <main class="participant-account-main">
 <article class="panel participant-account participant-programme">
   <header class="programme-heading">
     <div class="programme-orbits" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="programme-neural programme-neural-heading" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <h1 class="title">กิจกรรมเรียนรู้ 12 สัปดาห์</h1>
     <p>ทำแบบประเมินก่อนเริ่ม บันทึกกิจกรรมตามลำดับ และตอบแบบประเมินหลังทำครบ คุณเลือกเวลาทำกิจกรรมแต่ละสัปดาห์ได้เอง</p>
     <p class="programme-draft"><strong>ฉบับทดลอง</strong> กิจกรรมและแบบประเมินนี้จัดทำเพื่อทดลองระบบ อยู่ระหว่างรอเครื่องมือที่โครงการอนุมัติ คะแนนใช้ทบทวนความรู้และไม่ใช้วินิจฉัยภาวะโลหิตจาง</p>

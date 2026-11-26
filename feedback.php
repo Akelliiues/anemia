@@ -90,7 +90,7 @@ function feedbackOld(string $key): string {
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ประเมินการใช้งาน · Anemia Portal</title>
 
-<script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=public-subpage-v93"></head>
+<script src="theme.js?v=2"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-neural-v94"></head>
 <body class="feedback-page"><?php $publicNavPage='feedback'; require __DIR__.'/_private/public-subpage-header.php'; ?><main><section class="panel">
 
 <header class="knowledge-hero feedback-hero">

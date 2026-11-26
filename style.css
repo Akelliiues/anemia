@@ -2138,3 +2138,25 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
  .public-subpage-header nav :is(summary,a) {font-size:.82rem;}
  .public-subpage-header .public-nav-group>summary {white-space:normal;}
 }
+
+/* Decorative background shared by public, account and staff screens. */
+:root {--portal-signal-colour:#8353b6;}
+[data-anemia-theme=dark] {--portal-signal-colour:#d1a3f8;}
+body:has(> .portal-neural-page) {isolation:isolate;}
+.portal-neural-surface {position:relative;isolation:isolate;}
+@media print {.portal-neural {display:none;}}
+.portal-neural {pointer-events:none;overflow:hidden;}
+.portal-neural-page {position:fixed;inset:0;z-index:-1;opacity:.28;}
+.portal-neural-heading {position:absolute;inset:0;z-index:-1;opacity:.23;}
+.portal-neural i {position:absolute;top:var(--top);left:var(--left);width:var(--length);height:1px;transform:rotate(var(--angle));transform-origin:left center;background:color-mix(in srgb,var(--portal-signal-colour) 63%,transparent);}
+.portal-neural i::before,.portal-neural i::after {content:"";position:absolute;border-radius:50%;}
+.portal-neural i::before {width:5px;height:5px;inset:-2px auto auto 0;background:var(--portal-signal-colour);}
+.portal-neural i::after {width:8px;height:3px;inset:-1px auto auto 0;background:#fff0f8;box-shadow:0 0 8px 2px var(--portal-signal-colour);}
+.portal-neural i:nth-child(1){--top:18%;--left:58%;--length:34%;--angle:15deg;--delay:-1s;}
+.portal-neural i:nth-child(2){--top:18%;--left:58%;--length:28%;--angle:39deg;--delay:-4s;}
+.portal-neural i:nth-child(3){--top:62%;--left:75%;--length:24%;--angle:-28deg;--delay:-2s;}
+.portal-neural i:nth-child(4){--top:58%;--left:2%;--length:32%;--angle:-22deg;--delay:-5s;}
+.portal-neural i:nth-child(5){--top:58%;--left:2%;--length:37%;--angle:25deg;--delay:-3s;}
+.portal-neural i:nth-child(6){--top:78%;--left:66%;--length:29%;--angle:-13deg;--delay:0s;}
+@media(prefers-reduced-motion:no-preference){.portal-neural i::after {animation:portal-signal 5s linear var(--delay) infinite;}}
+@keyframes portal-signal {0%{left:0;opacity:0;} 16%,70%{opacity:1;} 100%{left:calc(100% - 8px);opacity:0;}}

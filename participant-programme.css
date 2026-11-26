@@ -116,3 +116,28 @@
  .programme-lesson [data-lesson-question]:not([hidden]),.programme-answer:not([hidden]) {animation:programme-cell-in .25s ease-out both;}
 }
 @keyframes programme-cell-in {from {opacity:0;translate:0 .65rem;} to {opacity:1;translate:0 0;}}
+
+.participant-profile-page.programme-page {
+  --programme-glow:#f8d8e9;
+  --programme-glow-alt:#ddd2f7;
+  --programme-orbit:#8353b6;
+  background:radial-gradient(ellipse at 95% 9%,var(--programme-glow),transparent 32rem),radial-gradient(ellipse at 2% 43%,var(--programme-glow-alt),transparent 36rem),var(--soft-canvas);
+}
+[data-anemia-theme=dark] .participant-profile-page.programme-page {
+  --programme-glow:#51324d;
+  --programme-glow-alt:#382957;
+  --programme-orbit:#d1a3f8;
+}
+.programme-heading {
+  position:relative;isolation:isolate;overflow:hidden;padding:clamp(.85rem,3vw,1.45rem);border:1px solid var(--line);border-radius:1rem;
+  background:radial-gradient(ellipse at 96% 0%,var(--programme-glow),transparent 65%),linear-gradient(120deg,var(--soft-surface),var(--programme-glow-alt));
+}
+.programme-heading .title {margin-top:0;}
+.programme-heading .programme-draft {margin-bottom:0;}
+.programme-orbits {position:absolute;z-index:-1;inset:-40% -4% auto auto;width:clamp(11rem,48vw,23rem);aspect-ratio:1;opacity:.35;pointer-events:none;}
+.programme-orbits i {position:absolute;inset:14%;border:1px solid var(--programme-orbit);border-radius:50%;transform:rotate(-28deg) scaleY(.64);}
+.programme-orbits i:nth-child(2) {inset:21%;transform:rotate(34deg) scaleY(.7);}
+.programme-orbits i:nth-child(3) {inset:8%;transform:rotate(63deg) scaleY(.62);}
+.programme-orbits i::after {content:"";position:absolute;top:2%;left:35%;width:.5rem;height:.5rem;border-radius:50%;background:var(--programme-orbit);box-shadow:0 0 10px var(--programme-orbit);}
+@media(prefers-reduced-motion:no-preference){.programme-orbits {animation:programme-orbit-turn 15s ease-in-out 3 alternate both;}}
+@keyframes programme-orbit-turn {from {rotate:-15deg;translate:0 -.25rem;} to {rotate:60deg;translate:-.9rem .7rem;}}

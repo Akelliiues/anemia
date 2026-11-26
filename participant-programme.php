@@ -88,17 +88,18 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <script src="theme.js?v=1"></script>
 <link rel="stylesheet" href="style.css?v=portal-neumorphism-v71">
 <script defer src="installed-update.js"></script>
-<link rel="stylesheet" href="participant-programme.css?v=3">
+<link rel="stylesheet" href="participant-programme.css?v=4">
 <script defer src="participant-programme.js?v=2"></script>
 </head>
-<body class="participant-profile-page">
+<body class="participant-profile-page programme-page">
 <main class="participant-account-main">
 <article class="panel participant-account participant-programme">
   <nav class="programme-nav" aria-label="เมนู Anemia Portal">
     <a href="index.html"><?= workspaceIcon('back') ?> กลับหน้าหลัก</a>
     <?php if ($account!==null): ?><a href="participant-account.php?return=programme"><?= workspaceIcon('person') ?> บัญชีของฉัน</a><?php endif; ?>
   </nav>
-  <header>
+  <header class="programme-heading">
+    <div class="programme-orbits" aria-hidden="true"><i></i><i></i><i></i></div>
     <h1 class="title">กิจกรรมเรียนรู้ 12 สัปดาห์</h1>
     <p>ทำแบบประเมินก่อนเริ่ม บันทึกกิจกรรมตามลำดับ และตอบแบบประเมินหลังทำครบ คุณเลือกเวลาทำกิจกรรมแต่ละสัปดาห์ได้เอง</p>
     <p class="programme-draft"><strong>ฉบับทดลอง</strong> กิจกรรมและแบบประเมินนี้จัดทำเพื่อทดลองระบบ อยู่ระหว่างรอเครื่องมือที่โครงการอนุมัติ คะแนนใช้ทบทวนความรู้และไม่ใช้วินิจฉัยภาวะโลหิตจาง</p>

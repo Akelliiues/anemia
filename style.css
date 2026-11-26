@@ -2156,30 +2156,16 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 }
 @media(prefers-reduced-motion:no-preference) {
  :is(.public-nav-group,.hosted-menu-group)[open] > :is(.public-nav-links,.hosted-menu-links) {
-  overflow:clip;
-  animation:navigation-menu-surface .21s ease-out both;
+  animation:navigation-menu-unfold .24s cubic-bezier(.2,.75,.25,1);
  }
- :is(.public-nav-group,.hosted-menu-group)[open] > :is(.public-nav-links,.hosted-menu-links) > :is(a,button) {
-  animation:navigation-menu-row .29s cubic-bezier(.21,.72,.26,1) var(--menu-delay,0ms) both;
- }
- :is(.public-nav-links,.hosted-menu-links) > :nth-child(2) {--menu-delay:44ms;}
- :is(.public-nav-links,.hosted-menu-links) > :nth-child(3) {--menu-delay:88ms;}
- :is(.public-nav-links,.hosted-menu-links) > :nth-child(4) {--menu-delay:132ms;}
- :is(.public-nav-links,.hosted-menu-links) > :nth-child(n+5) {--menu-delay:176ms;}
- :is(.public-nav-group,.hosted-menu-group)[open] > :is(.public-nav-links,.hosted-menu-links):focus-within,
- :is(.public-nav-group,.hosted-menu-group)[open] > :is(.public-nav-links,.hosted-menu-links):focus-within > :is(a,button) {animation:none;}
+ :is(.public-nav-group,.hosted-menu-group)[open] > :is(.public-nav-links,.hosted-menu-links):focus-within {animation:none;}
  :is(.public-nav-links,.hosted-menu-links) :is(a,button) {
   transition:background-color .14s,color .14s,box-shadow .14s;
  }
  :is(.public-nav-links,.hosted-menu-links) :is(a,button) svg {transition:transform .14s;}
  :is(.public-nav-links,.hosted-menu-links) :is(a,button):is(:hover,:focus-visible) svg {transform:translateX(2px);}
 }
-@keyframes navigation-menu-surface {
- from {opacity:0;}
- to {opacity:1;}
-}
-@keyframes navigation-menu-row {
- 0% {opacity:0;translate:-22px -18px;}
- 52% {opacity:1;translate:-22px 0;}
- 100% {opacity:1;translate:0 0;}
+@keyframes navigation-menu-unfold {
+ from {clip-path:inset(0 0 100% 0 round .7rem);opacity:.65;}
+ to {clip-path:inset(0 0 0 0 round .7rem);opacity:1;}
 }

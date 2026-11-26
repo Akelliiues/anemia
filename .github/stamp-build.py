@@ -16,6 +16,16 @@ source, replacements = re.subn(
 if replacements != 1:
     raise ValueError("Installed app build marker is missing or duplicated")
 update_script.write_text(source, encoding="utf-8")
+for pattern in ("*.html", "*.php"):
+    for page in manifest.parent.glob(pattern):
+        contents = page.read_bytes()
+        updated = re.sub(
+            rb'src="installed-update\.js(?:\?v=[^"\r\n]+)?"',
+            f'src="installed-update.js?v={release["build"]}"'.encode(),
+            contents,
+        )
+        if contents != updated:
+            page.write_bytes(updated)
 manifest.write_text(json.dumps(release, indent=2) + "\n", encoding="utf-8")
 print(f"version={release['version']}")
 print(f"build={release['build']}")

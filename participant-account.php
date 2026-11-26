@@ -53,7 +53,7 @@ function participantDb(): PDO
 function participantEscape(string $text): string {return htmlspecialchars($text,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
 
 $notice='';
-$passwordMode='';
+$passwordMode=in_array($_GET['mode']??'',['password-register','password-migrate'],true)?$_GET['mode']:'password-login';
 try {
     if ($_SERVER['REQUEST_METHOD']==='POST') {
         if (!is_string($_POST['csrf']??null)||!hash_equals($_SESSION['csrf'],$_POST['csrf'])) { http_response_code(403); exit('กรุณาเปิดหน้าใหม่'); }
@@ -139,7 +139,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-password-toggle-v51">
+<title>บัญชีของฉัน · Anemia Portal</title><script src="theme.js?v=1"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=participant-account-layout-v52">
 <main><section class="panel participant-account">
 <h1 class="title"><span class="iconbox"><?= workspaceIcon('person') ?></span>บัญชีของฉัน</h1>
 <p>เก็บแต้มและกลับมาเรียนต่อบนเครื่องอื่น รับ 5 แต้มเมื่อเชื่อม LINE, Google หรือช่องทางภายนอกครั้งแรก</p>
@@ -148,10 +148,20 @@ if ($account) {
 <?php if ($notice!==''): ?><p class="status" role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
 <?php if (!$account): ?>
 <section class="participant-signup">
- <?php foreach (['password-login'=>'เข้าสู่ระบบด้วย PIN','password-register'=>'สมัครบัญชีใหม่','password-migrate'=>'เปลี่ยนรหัสผ่านเดิมเป็น PIN'] as $mode=>$title):
-    $register=$mode==='password-register'; $migrate=$mode==='password-migrate'; ?>
- <details <?= $passwordMode===$mode || ($passwordMode==='' && $mode==='password-login')?'open':'' ?>>
-  <summary><?= workspaceIcon($register?'users':'login') ?> <?= participantEscape($title) ?></summary>
+ <?php
+ $mode=$passwordMode;
+ $register=$mode==='password-register';
+ $migrate=$mode==='password-migrate';
+ $accountModeUrl=static fn(string $mode): string => 'participant-account.php?'.http_build_query(array_filter([
+     'mode'=>$mode,'invite'=>$invite,'return'=>$returnToPortal?'portal':''
+ ]));
+ ?>
+ <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าใช้บัญชี">
+  <a href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> เข้าสู่ระบบ</a>
+  <a href="<?= participantEscape($accountModeUrl('password-register')) ?>" <?= $register?'aria-current="page"':'' ?>><?= workspaceIcon('users') ?> สมัครบัญชี</a>
+ </nav>
+ <div class="participant-entry-card">
+  <?php if ($migrate): ?><h2 class="title"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</h2><?php endif; ?>
   <form method="post" action="participant-account.php">
    <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
    <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
@@ -174,11 +184,12 @@ if ($account) {
    <?php endforeach; ?>
    <button class="action primary" name="provider" value="<?= $mode ?>"><?= workspaceIcon($register?'users':'login') ?><?= $register?'สมัครบัญชี':($migrate?'บันทึก PIN':'เข้าสู่ระบบ') ?></button>
   </form>
- </details>
- <?php endforeach; ?>
+ </div>
+ <?php if ($mode==='password-login'): ?><a class="participant-pin-migration" href="<?= participantEscape($accountModeUrl('password-migrate')) ?>"><?= workspaceIcon('lock') ?> เปลี่ยนรหัสผ่านเดิมเป็น PIN</a><?php endif; ?>
 </section>
 <?php endif; ?>
-<form method="post" action="participant-account.php">
+<form method="post" action="participant-account.php" class="participant-provider-form">
+ <h2 class="title"><?= $account?'ช่องทางที่เชื่อมกับบัญชี':'เข้าสู่ระบบด้วยบัญชีอื่น' ?></h2>
  <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>

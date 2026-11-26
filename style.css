@@ -1658,8 +1658,13 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .team-challenge-stats progress,#team-share-link {width:100%;}
 #team-share-link {display:block;margin:.35rem 0 .7rem;padding:.6rem;border:1px solid var(--line);border-radius:.55rem;background:transparent;color:var(--ink);}
 .participant-signup {display:grid;gap:.6rem;margin-block:1rem;}
-.participant-signup details {border:1px solid var(--line);border-radius:.75rem;padding:.6rem .8rem;}
-.participant-signup summary {cursor:pointer;font-weight:700;}
+.participant-account-tabs {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.3rem;padding:.25rem;border:1px solid var(--line);border-radius:.75rem;}
+.participant-account-tabs a {display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:44px;padding:.3rem;border-radius:.5rem;color:var(--ink);text-decoration:none;font-weight:650;text-align:center;}
+.participant-account-tabs a[aria-current=page] {background:var(--violet);color:#fff;}
+.participant-entry-card {border:1px solid var(--line);border-radius:.8rem;padding:.65rem .9rem .9rem;}
+.participant-pin-migration {justify-self:start;font-size:.875rem;}
+.participant-provider-form {border-top:1px solid var(--line);margin-top:1rem;padding-top:.45rem;}
+.participant-provider-form h2.title {font-size:1rem;margin:.5rem 0;}
 .participant-signup label {display:grid;gap:.2rem;margin-block:.6rem;}
 .participant-signup input {font:inherit;padding:.55rem .65rem;border:1px solid var(--line);border-radius:.55rem;background:transparent;color:var(--ink);}
 .participant-password-field label {margin-bottom:.2rem;}
@@ -1668,7 +1673,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .participant-password-control button {position:absolute;inset-block:0;inset-inline-end:0;width:44px;padding:0;color:var(--violet);}
 .participant-password-control button svg {width:1.15rem;height:1.15rem;}
 .participant-account h1 {display:flex;align-items:center;gap:.65rem;}
-.participant-account :is(summary,label,.action) svg {width:1rem;height:1rem;flex:none;}
+.participant-account :is(summary,label,.action,.participant-account-tabs,.participant-pin-migration) svg {width:1rem;height:1rem;flex:none;}
 .participant-signup :is(summary,label) svg {color:var(--violet);}
 .participant-provider-mark {display:inline-grid;place-items:center;width:1.4rem;height:1.4rem;border-radius:.4rem;background:#e9f1ff;color:#2956a1;font-size:.8rem;font-weight:800;}
 .participant-provider-mark[data-provider=line] {background:#dbf6e8;color:#096637;}

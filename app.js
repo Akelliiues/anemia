@@ -345,12 +345,12 @@ document.addEventListener('input',event=>{
  knowledgeQuery=event.target.value;
  document.querySelector('#knowledge-list').innerHTML=knowledgeCards();
 });
-function lesson(){set(panel(`${backRow()}<div class="eyebrow">บทแรก · ลองใช้ข้อมูล</div><h1 class="title">ถ้าเห็นผลว่าแนะนำให้ตรวจเพิ่มเติม จะหาหน่วยบริการจากปุ่มไหน?</h1><p>ในหน้าผลประเมิน คุณเปิดรายชื่อหน่วยบริการเพื่อดูสถานที่และเลือกว่าจะไปตรวจอย่างไรได้</p><button class="choice" data-go="correct">${icon('hospital')}ดูสถานที่ตรวจ</button><button class="choice" data-go="tryagain">${icon('refresh')}ทบทวนคำตอบ</button><p id="feedback" role="status"></p>${button('ดูทีมและแต้มของฉัน','team-challenge','share')}`));}
+function lesson(){set(panel(`${backRow()}${pageHeading('book','จากผลประเมิน ไปตรวจต่ออย่างไร','บทแรก · บทอ่านและกิจกรรมทบทวน')}<section class="card"><p>เมื่อหน้าผลแนะนำให้ตรวจเพิ่มเติม คุณเปิดรายชื่อหน่วยบริการเพื่อดูสถานที่และช่องทางติดต่อได้ หากส่งคำขอนัดผ่านเว็บ ให้ตรวจสถานะจนหน่วยบริการยืนยันวันและรอบนัด</p></section><h2 class="title">ถ้าต้องการเปิดรายชื่อหน่วยบริการ ควรเลือกปุ่มไหน?</h2><button class="choice" data-go="correct">${icon('hospital')}ดูสถานที่ตรวจ</button><button class="choice" data-go="tryagain">${icon('refresh')}ทบทวนคำตอบ</button><p id="feedback" role="status"></p>${button('ดูทีมและแต้มของฉัน','team-challenge','share')}`));}
 const teamInvite=new URLSearchParams(location.search).get('invite')??'';
 function teamAccountLink(connected){
  const url=new URL('participant-account.php',location.href);
  if(/^[a-f0-9]{32}$/.test(teamInvite))url.searchParams.set('invite',teamInvite);
- return `<a class="action" href="${escapeDirectoryText(url.href)}">${icon('person')}${connected?'บัญชีของฉัน':'เชื่อมบัญชี · รับ 5 แต้มครั้งแรก'}</a>`;
+ return `<a class="action ${connected?'':'primary'}" href="${escapeDirectoryText(url.href)}">${icon('person')}${connected?'บัญชีของฉัน':'เข้าสู่ระบบหรือสมัครบัญชี'}</a>`;
 }
 async function teamChallengeApi(input){
  const response=await fetch('team-challenge.php',input?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input),cache:'no-store'}:{cache:'no-store'});
@@ -366,7 +366,7 @@ async function showTeamChallenge(join=false){
   if(!content.isConnected)return;
   if(!team.enabled){content.innerHTML=`<p>กิจกรรมชวนเพื่อนยังไม่เปิด</p>${teamAccountLink(team.connected)}`;return;}
   if(!team.joined){
-   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><p>${team.connected?(team.connectionPoints?'เชื่อมบัญชีแล้ว · ได้รับ 5 แต้ม':'เข้าสู่ระบบแล้ว'):'เชื่อมบัญชีเพื่อเก็บแต้มข้ามเครื่อง หรือเข้าร่วมบนเบราว์เซอร์นี้ได้เลย'}</p><div class="actions">${button('เข้าร่วมกิจกรรม','team-join','check',true)}${teamAccountLink(team.connected)}</div>`;
+   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><div class="actions">${team.connected?button(teamInvite?'เข้าทีมเพื่อน':'สร้างทีมของฉัน','team-join','check',true):''}${teamAccountLink(team.connected)}</div>`;
    return;
   }
   const goal=team.completed<5?5:10;
@@ -377,7 +377,19 @@ async function showTeamChallenge(join=false){
   const url=new URL('index.html',location.href);
   url.searchParams.set('invite',team.invite);
   content.querySelector('#team-share-link').value=url.href;
- }catch(error){if(content.isConnected)content.textContent=error.message;}
+ }catch(error){
+  if(!content.isConnected)return;
+  const message=document.createElement('p');
+  message.textContent=error.message;
+  content.replaceChildren(message);
+  if(teamInvite){
+   const start=document.createElement('a');
+   start.className='action';
+   start.href='index.html?team=1';
+   start.textContent='ไปที่ทีมของฉัน';
+   content.append(start);
+  }
+ }
 }
 async function shareTeamChallenge(){
  const input=main.querySelector('#team-share-link');
@@ -397,7 +409,7 @@ async function completeTeamLesson(){
  feedback.textContent='ถูกต้อง ปุ่มนี้พาไปดูหน่วยบริการและวิธีเข้ารับการตรวจ';
  try{
   const team=await teamChallengeApi({action:'complete',answer:'facilities'});
-  if(feedback.isConnected&&team.joined&&team.finished)feedback.textContent+=' · บันทึกแต้มบทแรกแล้ว';
+  if(feedback.isConnected)feedback.textContent+=team.joined&&team.finished?' · บันทึกแต้มบทแรกแล้ว':' · เข้าทีมก่อนทำบทนี้เพื่อสะสมแต้ม';
  }catch {
   if(feedback.isConnected)feedback.textContent+=' · หากกำลังสะสมแต้ม ให้กดตอบอีกครั้งเพื่อบันทึก';
  }

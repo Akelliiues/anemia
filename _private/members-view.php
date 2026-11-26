@@ -34,9 +34,9 @@ $audit=[];
 if (is_string($member)&&preg_match('/^[a-f0-9]{32}$/D',$member)) {
     $query=$db->prepare('SELECT a.id,a.connected_at,a.suspended_at,p.username,m.completed_at,
         (SELECT GROUP_CONCAT(i.provider ORDER BY i.provider) FROM anemia_participant_identity i WHERE i.account_id=a.id) AS providers,
-        (SELECT COUNT(*) FROM anemia_demo_team_bonus b WHERE b.inviter=a.team_member_id) AS invited_completions
+        (SELECT COUNT(*) FROM anemia_team_bonus b WHERE b.inviter=m.id) AS invited_completions
         FROM anemia_participant_account a LEFT JOIN anemia_participant_password p ON p.account_id=a.id
-        LEFT JOIN anemia_demo_team_member m ON m.id=a.team_member_id WHERE a.id=?');
+        LEFT JOIN anemia_team_member m ON m.account_id=a.id WHERE a.id=?');
     $query->execute([$member]);
     $detail=$query->fetch(PDO::FETCH_ASSOC)?:null;
     if ($detail) {

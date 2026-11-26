@@ -19,7 +19,7 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
   <a class="card staff-mobile-tool" href="dashboard.php?view=contact-queue"><span class="iconbox"><?= workspaceIcon('calendar') ?></span><span><strong>คิวนัดหมาย</strong><small>เปิดและจัดการคำขอ</small></span><?= workspaceIcon('next') ?></a>
   <a class="card staff-mobile-tool" href="dashboard.php?view=contact-queue&amp;attention=1"><span class="iconbox"><?= workspaceIcon('history') ?></span><span><strong>ติดตามงาน</strong><small>ดูรายการที่ต้องดำเนินการ</small></span><?= workspaceIcon('next') ?></a>
  </nav>
- <a class="action staff-mobile-overview" href="dashboard.php?view=scanner-install"><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR ประจำหน่วย</a>
+ <a class="action staff-mobile-overview" data-scanner-install-link href="dashboard.php?view=scanner-install"><?= workspaceIcon('download') ?>ติดตั้งแอปสแกน QR ประจำหน่วย</a>
  <?php endif; ?>
  <nav class="staff-app-dock" aria-label="เมนูแอปเจ้าหน้าที่">
   <a href="dashboard.php?view=mobile" aria-current="page"><?= workspaceIcon('ready') ?>งานของฉัน</a>

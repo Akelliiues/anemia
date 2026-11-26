@@ -4,7 +4,7 @@
   "short_name": "สแกน QR ประจำหน่วย",
   "description": "สแกนใบรับคำขอผู้มารับบริการตามสิทธิ์ของหน่วยบริการ",
   "lang": "th",
-  "start_url": "./dashboard.php?view=scan-request&app=unit",
+  "start_url": "./dashboard.php?view=scan-request&app=unit&launch=scanner",
   "scope": "./",
   "display": "standalone",
   "background_color": "#eeebf5",

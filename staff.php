@@ -14,6 +14,7 @@ $inlineLogin = ($_GET['entry'] ?? '') === 'inline';
 $afterLogin = match ($_GET['next'] ?? '') {
     'scan'=>'dashboard.php?view=scan-request',
     'unit-scan'=>'dashboard.php?view=scan-request&app=unit',
+    'unit-launch'=>'dashboard.php?view=scan-request&app=unit&launch=scanner',
     'unit-install'=>'dashboard.php?view=scanner-install',
     'mobile'=>'dashboard.php?view=mobile',
     default=>'dashboard.php',

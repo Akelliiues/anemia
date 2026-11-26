@@ -1970,6 +1970,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-mobile-home a:focus-visible {outline:2px solid var(--violet);outline-offset:2px;}
 .staff-mobile-overview {justify-self:start;min-height:44px;}
 .staff-mobile-overview svg {width:1rem;height:1rem;}
+.hosted-workspace a[data-scanner-install-link][hidden] {display:none;}
 .staff-install-card .staff-mobile-hero {margin-bottom:1rem;}
 .staff-install-card .staff-mobile-hero img {flex:none;}
 .staff-install-invite .workspace-dialog-heading {background:transparent;}

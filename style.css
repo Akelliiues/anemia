@@ -1742,7 +1742,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .participant-avatar-picker input:focus-visible + span {outline:2px solid var(--violet);outline-offset:2px;}
 .participant-profile-dialog select {margin:0;}
 [data-anemia-theme=dark] .participant-profile-hero {background:radial-gradient(ellipse at 95% 0%,#4b2f50,transparent 60%),#2d2140;}
-@media(max-width:540px){.participant-profile-hero {grid-template-columns:auto minmax(0,1fr);}.participant-profile-hero button {grid-column:1/-1;justify-self:start;}}
+@media(max-width:540px){.participant-profile-hero {grid-template-columns:auto minmax(0,1fr);}.participant-profile-hero [data-open-profile] {grid-column:1/-1;justify-self:start;}}
 @media(max-width:390px){.participant-profile-points {grid-template-columns:1fr;}}
 .participant-activity-card {padding:.8rem;border:1px solid var(--line);border-radius:.85rem;background:var(--dark-surface,#fff);}
 .participant-activity-card h2 {display:flex;align-items:center;gap:.45rem;margin:0 0 .35rem;font-size:1.05rem;}

@@ -154,7 +154,7 @@ if ($account) {
    <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
    <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
    <?php if ($returnToPortal): ?><input type="hidden" name="return" value="portal"><?php endif; ?>
-   <label>ชื่อบัญชี<?php if ($register): ?> <small>3–40 ตัว ใช้อักษรอังกฤษ ตัวเลข จุด ขีดกลาง หรือขีดล่าง</small><?php endif; ?>
+   <label>ชื่อบัญชี<?php if ($register): ?> <small>3–40 ตัว ใช้อักษรอังกฤษ ตัวเลข จุด ขีดกลาง หรือขีดล่าง ชื่อระบบ เช่น admin และ staff เป็นชื่อสงวน</small><?php endif; ?>
     <input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false">
    </label>
    <label>รหัสผ่าน<?php if ($register): ?> <small>อย่างน้อย 12 ตัวอักษร</small><?php endif; ?>

@@ -26,6 +26,22 @@ function anemiaAttachTeam(PDO $db,string $account,?string $teamCookieHash): void
         WHERE a.id=? AND a.team_member_id IS NULL AND owner.id IS NULL')->execute([$teamCookieHash,$account]);
 }
 
+function anemiaReservedParticipantUsername(string $username): bool
+{
+    $reserved=['admin','administrator','admins','administrators','sysadmin','superadmin','system','root','staff','support',
+        'moderator','webmaster','owner','official','anemia','anemiaportal','anemiastaff','anemiaadmin','portaladmin',
+        'security','postmaster','noreply'];
+    $extra=preg_split('/[\s,]+/',getenv('ANEMIA_RESERVED_PARTICIPANT_USERNAMES')?:'',-1,PREG_SPLIT_NO_EMPTY);
+    $normalize=static fn(string $name): string => preg_replace('/[._-]/','',strtolower($name));
+    $name=$normalize($username);
+    $withoutSuffix=preg_replace('/\d+$/D','',$name);
+    foreach (array_merge($reserved,$extra) as $entry) {
+        $key=$normalize($entry);
+        if ($key!=='' && ($name===$key || $withoutSuffix===$key)) return true;
+    }
+    return false;
+}
+
 function anemiaParticipantPassword(PDO $db,bool $register,array $input,?string $teamCookieHash): string
 {
     $username=is_string($input['username']??null)?strtolower(trim($input['username'])):'';
@@ -42,6 +58,7 @@ function anemiaParticipantPassword(PDO $db,bool $register,array $input,?string $
         if (!password_verify($password,$hash) || !$row) throw new DomainException('ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง');
         return $row['account_id'];
     }
+    if (anemiaReservedParticipantUsername($username)) throw new DomainException('ชื่อนี้สงวนไว้สำหรับระบบ กรุณาเลือกชื่อบัญชีอื่น');
     if (preg_match('/^.{12,}$/usD',$password)!==1) throw new DomainException('ตั้งรหัสผ่านอย่างน้อย 12 ตัวอักษร');
     if ($password!==($input['confirm_password']??null)) throw new DomainException('รหัสผ่านทั้งสองช่องไม่ตรงกัน');
     $hash=password_hash($password,PASSWORD_BCRYPT,['cost'=>12]);

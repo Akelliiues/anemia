@@ -1642,3 +1642,6 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-data-bar meter {width:100%;accent-color:#8a5ad3;}
 .staff-data-bar strong {text-align:end;white-space:nowrap;}
 .staff-data-risk h3 {margin:.45rem 0 .2rem;font-size:.95rem;}
+.team-challenge-stats {grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr));}
+.team-challenge-stats progress,#team-share-link {width:100%;}
+#team-share-link {display:block;margin:.35rem 0 .7rem;padding:.6rem;border:1px solid var(--line);border-radius:.55rem;background:transparent;color:var(--ink);}

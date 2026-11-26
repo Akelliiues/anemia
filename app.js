@@ -1,6 +1,7 @@
 const icons={drop:'<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/><path d="M9 16a3 3 0 0 0 3 3"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',book:'<path d="M12 6v15M3 4c4-1 7 0 9 2 2-2 5-3 9-2v15c-4-1-7 0-9 2-2-2-5-3-9-2z"/>',sound:'<path d="M3 9v6h4l5 4V5L7 9H3m13 0a4 4 0 0 1 0 6m3-9a8 8 0 0 1 0 12"/>',hospital:'<path d="M4 21V4h16v17M2 21h20M9 21v-5h6v5m-3-14v6M9 10h6"/>',refresh:'<path d="M20 7v5h-5M4 17v-5h5m-4-1a7 7 0 0 1 12-5l3 6M4 12l3 6a7 7 0 0 0 12-5"/>',alert:'<path d="M12 3 2 21h20L12 3Zm0 6v5m0 3v1"/>',phone:'<path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a14 14 0 0 1-7-7l2-2z"/>',arrow:'<path d="M19 12H5m6 6-6-6 6-6"/>'};
 Object.assign(icons,{
  person:'<circle cx="12" cy="7" r="3"/><path d="M5 21v-3a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v3"/>',
+ share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-4m-6 8 6 4"/>',
  student:'<path d="m2 9 10-5 10 5-10 5zM6 11v5c4 3 8 3 12 0v-5m4-2v7"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/>',
@@ -319,7 +320,7 @@ function learn(){
   </div>
  <div class="knowledge-filters" aria-label="หมวดความรู้">${categories.map((category,i)=>`<button class="action" data-category="${i}" aria-pressed="${knowledgeCategory===category}">${icon(i?'book':'chart')}${category||'ทุกเรื่อง'}</button>`).join('')}</div></div>
  <div id="knowledge-list" class="knowledge-grid">${knowledgeCards()}</div>
- <section class="card knowledge-program"><h2>พิชิตโลหิตจาง 12 สัปดาห์</h2><p>ลองบทเรียนตัวอย่าง · ความคืบหน้า ${lessonProgress} จาก 12 บท</p>${button(lessonProgress?'ทบทวนบทแรก':'ลองบทแรก','lesson','book',true)}</section>`,true));
+ <section class="card knowledge-program"><h2>พิชิตโลหิตจาง 12 สัปดาห์</h2><p>ลองบทเรียนตัวอย่าง · ความคืบหน้า ${lessonProgress} จาก 12 บท</p><div class="actions">${button(lessonProgress?'ทบทวนบทแรก':'ลองบทแรก','lesson','book',true)}${button('ทีมของฉัน · ชวนเพื่อน','team-challenge','share')}</div></section>`,true));
  document.querySelector('#knowledge-search').value=knowledgeQuery;
 }
 function openArticle(id){
@@ -343,7 +344,58 @@ document.addEventListener('input',event=>{
  knowledgeQuery=event.target.value;
  document.querySelector('#knowledge-list').innerHTML=knowledgeCards();
 });
-function lesson(){set(panel(`${backRow()}<div class="eyebrow">บทแรก · ลองใช้ข้อมูล</div><h1 class="title">ถ้าเห็นผลว่าแนะนำให้ตรวจเพิ่มเติม จะหาหน่วยบริการจากปุ่มไหน?</h1><button class="choice" data-go="correct">${icon('hospital')}ดูสถานที่ตรวจ</button><button class="choice" data-go="tryagain">${icon('refresh')}ทบทวนคำตอบ</button><p id="feedback" role="status"></p>`));}
+function lesson(){set(panel(`${backRow()}<div class="eyebrow">บทแรก · ลองใช้ข้อมูล</div><h1 class="title">ถ้าเห็นผลว่าแนะนำให้ตรวจเพิ่มเติม จะหาหน่วยบริการจากปุ่มไหน?</h1><p>ในหน้าผลประเมิน คุณเปิดรายชื่อหน่วยบริการเพื่อดูสถานที่และเลือกว่าจะไปตรวจอย่างไรได้</p><button class="choice" data-go="correct">${icon('hospital')}ดูสถานที่ตรวจ</button><button class="choice" data-go="tryagain">${icon('refresh')}ทบทวนคำตอบ</button><p id="feedback" role="status"></p>${button('ดูทีมและแต้มของฉัน','team-challenge','share')}`));}
+const teamInvite=new URLSearchParams(location.search).get('invite')??'';
+async function teamChallengeApi(input){
+ const response=await fetch('team-challenge.php',input?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input),cache:'no-store'}:{cache:'no-store'});
+ const data=await response.json();
+ if(!response.ok)throw new Error(data.error??'โหลดกิจกรรมไม่ได้ กรุณาลองอีกครั้ง');
+ return data;
+}
+async function showTeamChallenge(join=false){
+ set(panel(`${backRow()}${pageHeading('share','ทีมของฉัน','ชวนเพื่อนมาเรียนรู้ด้วยกัน')}<div id="team-challenge-content" aria-live="polite">กำลังเปิดกิจกรรม</div>`),'team-challenge');
+ const content=document.querySelector('#team-challenge-content');
+ try{
+  const team=await teamChallengeApi(join?{action:'join',invite:teamInvite}:undefined);
+  if(!content.isConnected)return;
+  if(!team.enabled){content.textContent='กิจกรรมชวนเพื่อนยังไม่เปิด';return;}
+  if(!team.joined){
+   content.innerHTML=`<p>${teamInvite?'มีเพื่อนชวนคุณเข้าทีม':'เริ่มทีมของคุณแล้วแชร์ลิงก์ให้เพื่อน'}</p><p>กิจกรรมทดลองนี้เก็บความคืบหน้าบนเบราว์เซอร์ที่คุณใช้อยู่</p>${button('เข้าร่วมกิจกรรม','team-join','check',true)}`;
+   return;
+  }
+  const goal=team.completed<5?5:10;
+  content.innerHTML=`<div class="grid team-challenge-stats"><div class="card"><strong>${team.points} แต้ม</strong><p>โบนัสจากชวนเพื่อน ${team.bonus} แต้ม</p></div><div class="card"><strong>เรียนจบแล้ว ${team.completed} คน</strong><progress value="${Math.min(team.completed,goal)}" max="${goal}" aria-label="ความคืบหน้าทีม"></progress><p>เป้าหมาย ${goal} คน</p></div></div>
+   <p>${team.completed>=10?'🏅 เหรียญส่งต่อความรู้ · ทีมเรียนครบเป้าหมาย 10 คนแล้ว':team.completed>=5?'🏅 ปลดล็อกเหรียญส่งต่อความรู้แล้ว':'ครบ 5 คนรับเหรียญส่งต่อความรู้'}</p>
+   <label>ลิงก์ชวนเพื่อน<input id="team-share-link" type="url" readonly></label>
+   <div class="actions">${button('ส่งต่อให้เพื่อน','team-share','share',true)}${button(team.finished?'ทบทวนบทแรก':'เริ่มบทแรก','lesson','book')}</div><p id="team-share-status" role="status"></p>`;
+  const url=new URL('index.html',location.href);
+  url.searchParams.set('invite',team.invite);
+  content.querySelector('#team-share-link').value=url.href;
+ }catch(error){if(content.isConnected)content.textContent=error.message;}
+}
+async function shareTeamChallenge(){
+ const input=main.querySelector('#team-share-link');
+ const status=main.querySelector('#team-share-status');
+ try{
+  if(navigator.share)await navigator.share({title:'ชวนเรียนรู้ไปด้วยกัน',url:input.value});
+  else {await navigator.clipboard.writeText(input.value);status.textContent='คัดลอกลิงก์แล้ว';}
+ }catch(error){
+  if(error.name==='AbortError')return;
+  input.select();
+  status.textContent='เลือกลิงก์ไว้ให้แล้ว กดคัดลอกเพื่อส่งให้เพื่อน';
+ }
+}
+async function completeTeamLesson(){
+ const feedback=main.querySelector('#feedback');
+ lessonProgress=1;
+ feedback.textContent='ถูกต้อง ปุ่มนี้พาไปดูหน่วยบริการและวิธีเข้ารับการตรวจ';
+ try{
+  const team=await teamChallengeApi({action:'complete',answer:'facilities'});
+  if(feedback.isConnected&&team.joined&&team.finished)feedback.textContent+=' · บันทึกแต้มบทแรกแล้ว';
+ }catch {
+  if(feedback.isConnected)feedback.textContent+=' · หากกำลังสะสมแต้ม ให้กดตอบอีกครั้งเพื่อบันทึก';
+ }
+}
 const facilityDirectory=[
  {id:'DEMO-H01',name:adminFacilities[0],province:'อุบลราชธานี',district:'วารินชำราบ',lat:15.1839,lon:104.8548,onsite:false},
  {id:'DEMO-H02',name:adminFacilities[1],province:'อุบลราชธานี',district:'วารินชำราบ',lat:15.2061,lon:104.8617,onsite:true}
@@ -1167,7 +1219,10 @@ document.addEventListener('click',event=>{
  case 'next-multi':if(questions[step].multi&&multipleSymptoms&&answers[step]?.length)nextQuestion();break;
  case 'result':reviewingMissing=false;originalAnswers.length?result():home();break;case 'restart':restart();break;case 'review':review();break;case 'review-missing':reviewMissing();break;
  case 'learn':learn();break;case 'lesson':lesson();break;
- case 'correct':lessonProgress=1;document.querySelector('#feedback').textContent='ถูกต้อง ปุ่มนี้พาไปดูหน่วยบริการและวิธีเข้ารับการตรวจ';break;
+ case 'correct':completeTeamLesson();break;
+ case 'team-challenge':showTeamChallenge();break;
+ case 'team-join':showTeamChallenge(true);break;
+ case 'team-share':shareTeamChallenge();break;
  case 'tryagain':document.querySelector('#feedback').textContent='ลองมองหาปุ่มที่เปิดรายชื่อหน่วยบริการ';break;
  case 'facilities':logActivity('directory');facilities(false);break;case 'callback-directory':logActivity('directory');facilities(true);break;
  case 'edit-request-phone':{const form=document.querySelector('#facility-request-form');if(form.dataset.busy!=='1'){delete form.dataset.token;delete form.dataset.otpMode;setRequestVerification(form,false);}break;}
@@ -1177,5 +1232,6 @@ document.addEventListener('click',event=>{
 });
 home();
 if(testAppointmentOtp)facilities(false);
+else if(teamInvite)showTeamChallenge();
 else openRequestFromHash();
 window.addEventListener('hashchange',openRequestFromHash);

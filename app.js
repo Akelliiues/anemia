@@ -2,6 +2,7 @@ const icons={drop:'<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/><path
 Object.assign(icons,{
  person:'<circle cx="12" cy="7" r="3"/><path d="M5 21v-3a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v3"/>',
  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-4m-6 8 6 4"/>',
+ qr:'<path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM13 13h4v4h4v4h-4m-4 0v-4m8-4v2"/>',
  student:'<path d="m2 9 10-5 10 5-10 5zM6 11v5c4 3 8 3 12 0v-5m4-2v7"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/>',
@@ -385,7 +386,12 @@ async function showTeamChallenge(join=false){
    ${teamNetworkCard(team.network)}
    <p>${team.completed>=10?'🏅 เหรียญส่งต่อความรู้ · ทีมเรียนครบเป้าหมาย 10 คนแล้ว':team.completed>=5?'🏅 ปลดล็อกเหรียญส่งต่อความรู้แล้ว':'ครบ 5 คนรับเหรียญส่งต่อความรู้'}</p>
    <label>ลิงก์ชวนเพื่อน<input id="team-share-link" type="url" readonly></label>
-   <div class="actions">${button('ส่งต่อให้เพื่อน','team-share','share',true)}${button(team.finished?'ทบทวนบทแรก':'เริ่มบทแรก','lesson','book')}${teamAccountLink(team.connected)}</div><p id="team-share-status" role="status"></p>`;
+   <div class="actions">${button('ส่งต่อให้เพื่อน','team-share','share',true)}${button('แสดง QR ชวนเพื่อน','team-qr','qr')}${button(team.finished?'ทบทวนบทแรก':'เริ่มบทแรก','lesson','book')}${teamAccountLink(team.connected)}</div><p id="team-share-status" role="status"></p>
+   <dialog class="signal-dialog team-invite-qr" id="team-invite-qr" aria-labelledby="team-invite-qr-title">
+    <h2 id="team-invite-qr-title">QR ชวนเพื่อน</h2><p>ให้เพื่อนใช้กล้องมือถือสแกนเพื่อเปิดลิงก์เข้าร่วมทีม</p>
+    <img width="232" height="232" alt="คิวอาร์โค้ดสำหรับเปิดลิงก์ชวนเพื่อน">
+    <form method="dialog"><button class="action">${icon('close')}ปิด</button></form>
+   </dialog>`;
   const url=new URL('index.html',location.href);
   url.searchParams.set('invite',team.invite);
   content.querySelector('#team-share-link').value=url.href;
@@ -413,6 +419,21 @@ async function shareTeamChallenge(){
   if(error.name==='AbortError')return;
   input.select();
   status.textContent='เลือกลิงก์ไว้ให้แล้ว กดคัดลอกเพื่อส่งให้เพื่อน';
+ }
+}
+function showTeamInviteQr(){
+ const dialog=main.querySelector('#team-invite-qr');
+ const image=dialog.querySelector('img');
+ try{
+  if(!image.hasAttribute('src')){
+   const qr=qrcode(0,'M');
+   qr.addData(main.querySelector('#team-share-link').value);
+   qr.make();
+   image.src=qr.createDataURL(6,24);
+  }
+  dialog.showModal();
+ }catch{
+  main.querySelector('#team-share-status').textContent='สร้าง QR ไม่สำเร็จ ใช้ปุ่มส่งต่อให้เพื่อนเพื่อแชร์ลิงก์ได้';
  }
 }
 async function completeTeamLesson(){
@@ -1261,6 +1282,7 @@ document.addEventListener('click',event=>{
  case 'team-challenge':showTeamChallenge();break;
  case 'team-join':showTeamChallenge(true);break;
  case 'team-share':shareTeamChallenge();break;
+ case 'team-qr':showTeamInviteQr();break;
  case 'tryagain':document.querySelector('#feedback').textContent='ลองมองหาปุ่มที่เปิดรายชื่อหน่วยบริการ';break;
  case 'facilities':logActivity('directory');facilities(false);break;case 'callback-directory':logActivity('directory');facilities(true);break;
  case 'edit-request-phone':{const form=document.querySelector('#facility-request-form');if(form.dataset.busy!=='1'){delete form.dataset.token;delete form.dataset.otpMode;setRequestVerification(form,false);}break;}

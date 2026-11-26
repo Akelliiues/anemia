@@ -1767,3 +1767,5 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
  .team-network-branches li:not(.team-network-pending)::after {height:2px;border:0;background:linear-gradient(90deg,var(--network-line) 30%,var(--network-light) 50%,var(--network-line) 70%);background-size:260% 100%;animation:team-network-flow 2.5s linear 2;}
  @keyframes team-network-flow {from {background-position:100% 0;}to {background-position:0 0;}}
 }
+.team-invite-qr {text-align:center;}
+.team-invite-qr img {display:block;width:min(232px,100%);height:auto;image-rendering:pixelated;margin:0 auto .85rem;border:1px solid #e6daef;border-radius:.7rem;background:#fff;}

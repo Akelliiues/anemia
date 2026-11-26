@@ -388,8 +388,9 @@ async function showTeamChallenge(join=false){
    <label>ลิงก์ชวนเพื่อน<input id="team-share-link" type="url" readonly></label>
    <div class="actions">${button('ส่งต่อให้เพื่อน','team-share','share',true)}${button('แสดง QR ชวนเพื่อน','team-qr','qr')}${button(team.finished?'ทบทวนบทแรก':'เริ่มบทแรก','lesson','book')}${teamAccountLink(team.connected)}</div><p id="team-share-status" role="status"></p>
    <dialog class="signal-dialog team-invite-qr" id="team-invite-qr" aria-labelledby="team-invite-qr-title">
-    <h2 id="team-invite-qr-title">QR ชวนเพื่อน</h2><p>ให้เพื่อนใช้กล้องมือถือสแกนเพื่อเปิดลิงก์เข้าร่วมทีม</p>
-    <img width="232" height="232" alt="คิวอาร์โค้ดสำหรับเปิดลิงก์ชวนเพื่อน">
+    <span class="team-invite-qr-mark" aria-hidden="true">${icon('share')}</span>
+    <h2 id="team-invite-qr-title">QR ชวนเพื่อน</h2><p>ให้เพื่อนใช้กล้องมือถือสแกนเพื่อเข้าร่วมทีม</p>
+    <div class="team-invite-qr-frame"><canvas role="img" aria-label="คิวอาร์โค้ดสำหรับเปิดลิงก์ชวนเพื่อน"></canvas></div>
     <form method="dialog"><button class="action">${icon('close')}ปิด</button></form>
    </dialog>`;
   const url=new URL('index.html',location.href);
@@ -421,15 +422,31 @@ async function shareTeamChallenge(){
   status.textContent='เลือกลิงก์ไว้ให้แล้ว กดคัดลอกเพื่อส่งให้เพื่อน';
  }
 }
+function drawTeamInviteQr(canvas,link){
+ const qr=qrcode(0,'M');
+ qr.addData(link);
+ qr.make();
+ const count=qr.getModuleCount(), cell=8, margin=4;
+ canvas.width=canvas.height=(count+margin*2)*cell;
+ const context=canvas.getContext('2d');
+ context.fillStyle='#ffffff';
+ context.fillRect(0,0,canvas.width,canvas.height);
+ for(let row=0;row<count;row++){
+  for(let column=0;column<count;column++){
+   if(!qr.isDark(row,column))continue;
+   const finder=(row<7&&(column<7||column>=count-7))||(row>=count-7&&column<7);
+   context.fillStyle=finder?'#60378d':'#291c43';
+   context.fillRect((column+margin)*cell,(row+margin)*cell,cell,cell);
+  }
+ }
+}
 function showTeamInviteQr(){
  const dialog=main.querySelector('#team-invite-qr');
- const image=dialog.querySelector('img');
+ const canvas=dialog.querySelector('canvas');
  try{
-  if(!image.hasAttribute('src')){
-   const qr=qrcode(0,'M');
-   qr.addData(main.querySelector('#team-share-link').value);
-   qr.make();
-   image.src=qr.createDataURL(6,24);
+  if(!canvas.dataset.drawn){
+   drawTeamInviteQr(canvas,main.querySelector('#team-share-link').value);
+   canvas.dataset.drawn='true';
   }
   dialog.showModal();
  }catch{

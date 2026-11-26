@@ -155,7 +155,11 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
           <a class="programme-resource" href="index.html?view=learn" target="_blank" rel="noopener">อ่านต่อในคลังความรู้</a>
           <button class="action" type="button" data-lesson-read hidden>อ่านสรุปแล้ว</button>
          </details>
-        <?php elseif ($weeks[$next][2]!==''): ?><a class="programme-resource" href="<?= programmeEscape($weeks[$next][2]) ?>" target="_blank" rel="noopener">เปิดหน้าที่ใช้ทำกิจกรรม (แท็บใหม่)</a><?php endif; ?>
+        <?php else: [$reading,$prompt,$right,$wrong,$explanation]=anemiaReadingLessons()[$next]; ?>
+         <h3>อ่านแล้วลองนึกตาม</h3><p><?= programmeEscape($reading) ?></p>
+         <?php if (in_array($next,[2,5,8,11],true)): ?><a class="programme-resource" href="https://www.who.int/news-room/fact-sheets/detail/anaemia">อ่านเพิ่มเติมเรื่องโลหิตจางจาก WHO (ภาษาอังกฤษ)</a>
+         <?php elseif (in_array($next,[4,9,10],true)): ?><a class="programme-resource" href="https://ods.od.nih.gov/factsheets/Iron-Consumer/">อ่านเพิ่มเติมเรื่องธาตุเหล็กจาก NIH (ภาษาอังกฤษ)</a><?php endif; ?>
+         <?php if ($weeks[$next][2]!==''): ?><a class="programme-resource" href="<?= programmeEscape($weeks[$next][2]) ?>" target="_blank" rel="noopener">เปิดหน้าที่ใช้ทำกิจกรรม (แท็บใหม่)</a><?php endif; endif; ?>
         <form method="post" action="participant-programme.php#programme-next">
           <?php programmeFormFields($csrf,'week'); ?>
           <input type="hidden" name="week" value="<?= $next ?>">
@@ -171,6 +175,12 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
             </fieldset>
            <?php endforeach; ?>
            <button class="action programme-next-question" type="button" data-lesson-next hidden>ข้อถัดไป</button>
+          <?php else: ?>
+           <fieldset class="programme-question"><legend><?= programmeEscape($prompt) ?></legend>
+           <?php $choices=['week-'.$next.'-apply'=>$right,'week-'.$next.'-other'=>$wrong];
+           foreach (($next%2 ? array_reverse($choices,true) : $choices) as $value=>$label): ?>
+             <label><input required type="radio" name="reading_answer" value="<?= programmeEscape($value) ?>"> <?= programmeEscape($label) ?></label>
+           <?php endforeach; ?></fieldset>
           <?php endif; ?>
           <button class="action primary" type="submit"><?= $next===1?'บันทึกและไปสัปดาห์ถัดไป':'บันทึกว่าทำกิจกรรมแล้ว' ?></button>
         </form>

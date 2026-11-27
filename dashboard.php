@@ -1382,7 +1382,7 @@ function workspaceInfo(string $page, ?array $release = null): void
       <p>45 หมู่ 4 ถนนสถลมาร์ค ตำบลธาตุ อำเภอวารินชำราบ จังหวัดอุบลราชธานี 34190</p>
       <div class="footer-links">
         <a href="tel:+6645288586"><span><?= workspaceIcon('phone') ?></span>045-288-586 ถึง 588</a>
-        <a href="https://hpc10.anamai.moph.go.th/"><span><?= workspaceIcon('next') ?></span>เว็บไซต์ศูนย์อนามัยที่ ๑๐</a>
+        <a href="https://hpc10.anamai.moph.go.th/" target="_blank" rel="noopener"><span><?= workspaceIcon('next') ?></span>เว็บไซต์ศูนย์อนามัยที่ ๑๐</a>
       </div>
     </address>
   </div>

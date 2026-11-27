@@ -1057,7 +1057,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="tablewrap"><table class="admin-table contact-queue-table"><thead><tr><th>เลขคำขอ / เวลาส่ง</th><th>หน่วยบริการ / ความประสงค์</th><th>ข้อมูลติดต่อ</th><th>สถานะ</th></tr></thead><tbody>
   <?php foreach ($contactQueue as $item): ?><tr>
    <th scope="row"><?= esc($item['receipt']) ?><br><small><time datetime="<?= esc(str_replace(' ','T',$item['submitted_at']).'+07:00') ?>" title="<?= esc('ส่งเวลา '.substr($item['submitted_at'],11,5).' น.') ?>"><?= esc(workspaceThaiShortDate($item['submitted_at'])) ?></time></small></th>
-   <td><?= esc($item['facility']) ?><br><small><?= $item['request_kind']==='appointment'?'ขอนัดเข้าตรวจ':'ให้ติดต่อกลับ' ?><?= $item['preferred_date']?' · '.esc($item['preferred_date']):'' ?></small></td>
+   <td><?= esc($item['facility']) ?><br><small><?= $item['request_kind']==='appointment'?'ขอนัดเข้าตรวจ':'ให้ติดต่อกลับ' ?><?= $item['preferred_date']?' · '.esc(workspaceThaiShortDate($item['preferred_date'])):'' ?></small></td>
    <td><?= esc($item['contact_name']) ?><br><a href="tel:<?= esc($item['phone']) ?>"><?= esc($item['phone']) ?></a></td>
    <td><button type="button" class="action queue-timeline-trigger" data-queue-timeline="<?= esc($item['receipt']) ?>" <?= $focusReceipt!==''?'data-queue-open':'' ?> aria-haspopup="dialog"><?= workspaceIcon('history') ?><span><?= $item['overdue']?'เลยวันนัด · รอตรวจสอบ':esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span><?= workspaceIcon('next') ?></button></td>
   </tr><?php endforeach; ?></tbody></table></div>

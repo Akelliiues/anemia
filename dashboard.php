@@ -1023,7 +1023,8 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php endif; ?>
   </div>
   <?php elseif ($view === 'contact-queue'): ?>
-  <section class="card admin-report">
+  <p id="queue-navigation-status" role="status" hidden></p>
+  <section class="card admin-report" id="queue-content">
   <?php if ($mobileQueue): ?>
   <?php $mobileQueueUrl='dashboard.php?view=contact-queue&app=staff'.($demoQueue?'&demo=1':''); ?>
   <h1 class="staff-queue-title"><?= $focusReceipt!==''?'รายละเอียดคำขอ':($queueTab==='history'?'ประวัติ':'งานของฉัน') ?></h1>
@@ -1146,17 +1147,17 @@ function workspaceInfo(string $page, ?array $release = null): void
     <p role="status" data-round-message></p>
    </section>
   </dialog>
-  <script defer src="queue-timeline.js?v=15"></script>
   <?php endif; ?>
   <?php if ($focusReceipt==='' && ($queuePage>1 || $queueNext)): ?>
    <?php $pageUrl=($mobileQueue?$mobileQueueUrl.'&tab='.$queueTab:$desktopQueueUrl.($queueState!==''?'&status='.rawurlencode($queueState):'')).'&page='; ?>
-   <nav class="<?= $mobileQueue?'staff-queue-pager':'actions queue-status-filters' ?>" aria-label="เปลี่ยนหน้าคำขอ">
+   <nav data-queue-pager class="<?= $mobileQueue?'staff-queue-pager':'actions queue-status-filters' ?>" aria-label="เปลี่ยนหน้าคำขอ">
     <?php if ($queuePage>1): ?><a class="action" href="<?= esc($pageUrl.($queuePage-1)) ?>">ก่อนหน้า</a><?php endif; ?>
     <span>หน้า <?= number_format($queuePage) ?></span>
     <?php if ($queueNext): ?><a class="action" href="<?= esc($pageUrl.($queuePage+1)) ?>">ถัดไป</a><?php endif; ?>
    </nav>
   <?php endif; ?>
   </section>
+  <script defer src="queue-timeline.js?v=16"></script>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">
@@ -1362,8 +1363,7 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
 <?php if ($canQueue): ?>
 <script>
 (() => {
- const counters=[...document.querySelectorAll('[data-pending-count]')];
- if(!counters.length)return;
+ if(!document.querySelector('[data-pending-count]'))return;
  let running=false;
  let queued=false;
  async function refreshPendingContacts(force=false){
@@ -1376,7 +1376,7 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
    const response=await fetch('dashboard.php?view=contact-queue&counts=1',{cache:'no-store',signal:controller.signal});
    if(!response.ok||!response.headers.get('Content-Type')?.includes('application/json'))return;
    const counts=await response.json();
-   counters.forEach(node=>{
+   document.querySelectorAll('[data-pending-count]').forEach(node=>{
     const [scope,kind]=node.dataset.pendingCount.split('.');
     const value=kind==='total' ? counts[scope]?.appointment+counts[scope]?.callback : counts[scope]?.[kind];
     if(!Number.isInteger(value)||value<0)return;

@@ -1,4 +1,4 @@
-(() => {
+function initializeQueueTimeline() {
  const dialog=document.querySelector('#queue-timeline');
  if(!dialog)return;
  const form=dialog.querySelector('.contact-queue-state');
@@ -297,4 +297,54 @@
   trigger?.focus({preventScroll:true});
  });
  document.querySelector('[data-queue-open]')?.click();
+}
+
+(() => {
+ const status=document.querySelector('#queue-navigation-status');
+ if(!status)return;
+ const tabLinks='.queue-tabs a, .queue-attention, .staff-queue-tabs a, [data-queue-pager] a';
+ let queue=document.querySelector('#queue-content');
+ let pending;
+ initializeQueueTimeline();
+
+ async function loadQueue(url,addHistory,link){
+  pending?.abort();
+  const controller=new AbortController();
+  pending=controller;
+  queue.setAttribute('aria-busy','true');
+  status.hidden=true;
+  try{
+   const response=await fetch(url,{cache:'no-store',signal:controller.signal});
+   if(response.redirected){location.assign(response.url);return;}
+   if(!response.ok)throw new Error('Queue request failed');
+   const html=await response.text();
+   if(controller.signal.aborted)return;
+   const replacement=new DOMParser().parseFromString(html,'text/html').querySelector('#queue-content');
+   if(!replacement)throw new Error('Queue content missing');
+   const hadFocus=link===document.activeElement;
+   queue.replaceWith(replacement);
+   queue=document.querySelector('#queue-content');
+   if(addHistory&&url.href!==location.href)history.pushState(null,'',url);
+   initializeQueueTimeline();
+   if(hadFocus){
+    const target=[...queue.querySelectorAll(tabLinks)].find(item=>item.href===url.href)
+     ?? queue.querySelector('.queue-status-tabs [aria-current], .staff-queue-tabs [aria-current]');
+    target?.focus({preventScroll:true});
+   }
+  }catch{
+   if(controller.signal.aborted)return;
+   if(!addHistory){location.reload();return;}
+   status.textContent='โหลดคิวไม่ได้ กรุณากดแท็บอีกครั้ง';
+   status.hidden=false;
+  }finally{
+   if(pending===controller){queue.removeAttribute('aria-busy');pending=undefined;}
+  }
+ }
+ document.addEventListener('click',event=>{
+  const link=event.target.closest(tabLinks);
+  if(!link||!queue.contains(link)||event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();
+  loadQueue(new URL(link.href),true,link);
+ },true);
+ window.addEventListener('popstate',()=>loadQueue(new URL(location.href),false));
 })();

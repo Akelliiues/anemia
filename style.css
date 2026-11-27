@@ -2272,7 +2272,19 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 @media(max-width:600px) {
  .queue-status-tabs a {flex-direction:column;gap:.25rem;padding:.35rem .16rem;font-size:.75rem;}
 }
+.queue-heading .queue-status-tabs {--queue-hover:#ebe3fb;--queue-active-hover:#684bc4;}
+[data-anemia-theme=dark] .queue-heading .queue-status-tabs {--queue-hover:#423157;--queue-active-hover:#7055b5;}
+.queue-heading .queue-status-tabs a:is(:hover,:focus-visible) {background-color:var(--queue-hover);}
+.queue-heading .queue-status-tabs a[aria-current=page]:is(:hover,:focus-visible) {background-color:var(--queue-active-hover);}
 @media(prefers-reduced-motion:no-preference) {
- .queue-status-tabs a {transition:transform .16s ease,background-color .16s ease;}
- .queue-status-tabs a:is(:hover,:focus-visible) {position:relative;z-index:1;transform:translateY(-2px) scale(1.025);}
+ .queue-status-tabs a {
+  transition:transform .18s ease 90ms,background-color .18s ease 90ms;
+ }
+ .queue-status-tabs a:is(:hover,:focus-visible) {
+  position:relative;
+  z-index:1;
+  transform:translateY(-2px) scale(1.025);
+  transition-delay:110ms;
+ }
+ .queue-status-tabs a:focus-visible {transition-delay:0ms;}
 }

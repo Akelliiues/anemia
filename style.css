@@ -2236,14 +2236,15 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 }
 
 @media (prefers-reduced-motion:no-preference) {
- .hero-art .halo::before {
+ .public-header .brand > .mark:has(> .portal-heart-mark) {position:relative;}
+ .public-header .brand > .mark:has(> .portal-heart-mark)::before {
   content:"";
   position:absolute;
   inset:-2%;
   z-index:1;
   border-radius:50%;
   background:conic-gradient(from 0deg,transparent 0deg,#bf6aa4 38deg,#fff2fb 146deg,transparent 147deg 180deg,#7f79c5 218deg,#efe6ff 326deg,transparent 327deg);
-  mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1px));
   pointer-events:none;
   animation:hero-heart-orbit 2.2s linear infinite;
  }

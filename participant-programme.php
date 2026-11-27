@@ -90,7 +90,7 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรม 12 สัปดาห์ · Anemia Portal</title>
 <script src="theme.js?v=5"></script>
-<link rel="stylesheet" href="style.css?v=portal-ui-v105">
+<link rel="stylesheet" href="style.css?v=portal-ui-v106">
 <script defer src="installed-update.js"></script>
 <link rel="stylesheet" href="participant-programme.css?v=7">
 <script defer src="participant-programme.js?v=2"></script>

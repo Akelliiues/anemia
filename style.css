@@ -2437,3 +2437,10 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  .staff-dashboard-page .province-report-toolbar select {width:100%;}
  .province-report-toolbar > .actions {margin-inline-start:0;}
 }
+
+.province-performance {margin-bottom:.85rem;}
+.province-performance .admin-table :is(td,th):not(:first-child) {text-align:right;white-space:nowrap;}
+.province-performance .admin-table th[scope=colgroup] {text-align:center;}
+.province-report-toolbar input[type=month] {min-height:44px;margin:0;}
+#province-register summary {cursor:pointer;font-weight:700;}
+#province-register[open] summary {margin-bottom:.75rem;}

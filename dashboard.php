@@ -689,7 +689,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v135">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v136">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -827,9 +827,13 @@ function workspaceInfo(string $page, ?array $release = null): void
    <div class="hosted-registry-heading"><span class="iconbox"><?= workspaceIcon('report') ?></span><div><h2>ทะเบียนพื้นที่</h2><p>ดูรายชื่อจังหวัด เขตสุขภาพ และสถานะการเตรียมเปิดบริการ</p></div></div>
    <a class="action primary staff-detail-link" href="dashboard.php?view=reports&amp;region=<?= $region ?>#province-register"><?= workspaceIcon('map') ?>ดูรายงานจังหวัด</a>
   </section>
-  <section class="card admin-report hosted-region-progress" aria-labelledby="region-progress-title">
-   <h2 id="region-progress-title">สถานะทะเบียนรายเขต</h2>
-   <p>จังหวัดที่เปิดใช้งาน / จังหวัดทั้งหมด</p>
+  <details class="card admin-report hosted-region-progress">
+   <summary class="region-progress-summary">
+    <span class="iconbox" aria-hidden="true"><?= workspaceIcon('map') ?></span>
+    <strong>สถานะทะเบียนรายเขต</strong>
+    <span class="region-progress-summary-count">เปิด <?= array_sum(array_column($regionTotals,'enabled')) ?> / <?= array_sum(array_column($regionTotals,'all')) ?> จังหวัด</span>
+    <span class="region-progress-chevron" aria-hidden="true"></span>
+   </summary>
    <div class="region-progress-grid">
    <?php foreach ($regionTotals as $zone=>$totals): ?>
     <a href="dashboard.php?view=reports&amp;region=<?= $zone ?>"<?= $totals['enabled']===$totals['all'] ? ' data-complete' : '' ?>>
@@ -841,7 +845,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     </a>
    <?php endforeach; ?>
    </div>
-  </section></section>
+  </details></section>
   <?php elseif ($view === 'activity'): ?>
   <form class="admin-filters hosted-scope-filter hosted-filter-row" method="get"><input type="hidden" name="view" value="activity">
    <?php if ($canChooseRegion): ?><label>เขตสุขภาพ<select name="region"><option value="0">ทุกเขต</option>

@@ -904,8 +904,23 @@ main:has(.floating-next) { padding-right:max(52px,env(safe-area-inset-right)); }
 .hosted-live-summary dl{display:flex;flex-wrap:wrap;gap:.75rem 1.5rem;margin:0}
 .hosted-live-summary dd{margin:0;font-size:1.65rem;font-weight:700;color:#5638a7}
 .hosted-region-progress {margin-top:1rem;container-type:inline-size;}
-.hosted-region-progress h2 {margin:0;}
-.hosted-region-progress > p {margin:.25rem 0 .85rem;}
+details.hosted-region-progress {padding:.75rem 1rem;}
+.region-progress-summary {
+ display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:.55rem;
+ cursor:pointer;list-style:none;
+}
+.region-progress-summary::-webkit-details-marker {display:none;}
+.region-progress-summary .iconbox {inline-size:2rem;block-size:2rem;border-radius:.55rem;}
+.region-progress-summary .iconbox svg {inline-size:1rem;block-size:1rem;}
+.region-progress-summary-count {color:var(--muted);font-size:.85rem;white-space:nowrap;}
+.region-progress-chevron {width:.45rem;height:.45rem;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+.hosted-region-progress[open] .region-progress-chevron {transform:rotate(225deg);}
+.hosted-region-progress[open] .region-progress-summary {margin-bottom:.75rem;padding-bottom:.65rem;border-bottom:1px solid var(--line);}
+@container (width < 23rem) {
+ .region-progress-summary {grid-template-columns:auto minmax(0,1fr) auto;}
+ .region-progress-summary-count {grid-column:2;grid-row:2;}
+ .region-progress-chevron {grid-column:3;grid-row:1;}
+}
 .region-progress-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;}
 .region-progress-grid > a {
  --region-accent:var(--violet);
@@ -922,7 +937,7 @@ main:has(.floating-next) { padding-right:max(52px,env(safe-area-inset-right)); }
 }
 .region-progress-icon {display:grid;place-items:center;width:1.65rem;height:1.65rem;}
 .region-progress-icon svg,.region-progress-arrow svg {width:.92rem;height:.92rem;}
-.region-progress-label {font-weight:650;line-height:1.35;}
+.region-progress-label {font-weight:650;line-height:1.35;min-block-size:2.7em;display:flex;align-items:center;}
 .region-progress-total {padding:.12rem .42rem;font-size:.8rem;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .region-progress-arrow {color:var(--muted);}
 .region-progress-grid meter {grid-column:1/-1;width:100%;height:.48rem;accent-color:var(--region-accent);}

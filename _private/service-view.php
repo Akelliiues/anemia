@@ -9,16 +9,18 @@ $settings=anemiaServiceSettings($serviceTab);
 $ready=anemiaServiceReady($serviceTab,$settings);
 $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
 ?>
-<section class="card admin-report network-panel">
- <nav class="queue-tabs" aria-label="บริการภายนอก">
+<section class="card admin-report service-panel">
+ <nav class="service-tabs" aria-label="บริการภายนอก">
  <?php foreach ($services as $id=>[$label,$icon]): ?>
-  <a class="action<?= $serviceTab===$id?' primary':'' ?>" href="dashboard.php?view=services&amp;service=<?= esc($id) ?>" <?= $serviceTab===$id?'aria-current="page"':'' ?>><?= workspaceIcon($icon) ?><?= esc($label) ?></a>
+  <a class="service-tab service-tab--<?= esc($id) ?>" href="dashboard.php?view=services&amp;service=<?= esc($id) ?>" <?= $serviceTab===$id?'aria-current="page"':'' ?>><span class="service-tab-icon" aria-hidden="true"><?php if ($id==='google'): ?><strong>G</strong><?php else: ?><?= workspaceIcon($id==='otp'?'message':$icon) ?><?php endif; ?></span>
+   <span><?= esc($label) ?></span></a>
  <?php endforeach; ?>
  </nav>
- <h2><?= workspaceIcon($serviceIcon) ?> <?= esc($serviceName) ?></h2>
+ <div class="service-heading"><h2><?= esc($serviceName) ?></h2>
+ <span class="service-status"><?= $ready?'ตั้งค่าครบ':'รอตั้งค่า' ?></span></div>
  <?php if ($serviceNotice!==''): ?><p class="notice" role="status"><?= esc($serviceNotice) ?></p><?php endif; ?>
- <p><?= $ready?'ข้อมูลตั้งค่าครบ':'ข้อมูลตั้งค่ายังไม่ครบ' ?><?= isset($settings['updated_at'])?' · อัปเดตล่าสุด '.esc(workspaceThaiShortDate($settings['updated_at'])).' โดย '.esc($settings['updated_by']):'' ?></p>
- <?php if (anemiaServiceKey()===null): ?><p class="notice">ต้องตั้งค่าคีย์เข้ารหัส ANEMIA_SERVICE_SETTINGS_KEY บนโฮสต์ก่อนบันทึก</p><?php endif; ?>
+ <?php if (isset($settings['updated_at'])): ?><p class="service-meta">อัปเดตล่าสุด <?= esc(workspaceThaiShortDate($settings['updated_at'])) ?> โดย <?= esc($settings['updated_by']) ?></p><?php endif; ?>
+ <?php if (anemiaServiceKey()===null): ?><p class="notice">ตั้งค่า ANEMIA_SERVICE_SETTINGS_KEY บนโฮสต์เพื่อเปิดการบันทึก</p><?php endif; ?>
  <?php if ($serviceTab==='thaid'): ?>
   <p>บันทึกสถานะการขอเชื่อมต่อและเลขอ้างอิงได้ การเข้าสู่ระบบผ่าน ThaID จะพร้อมเมื่อมีข้อมูลและสิทธิ์เชื่อมต่อจากกรมการปกครอง</p>
   <p><a href="https://digitalid.bora.dopa.go.th/pr">เอกสารและช่องทางลงทะเบียน ThaID</a></p>
@@ -28,7 +30,7 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
   <p>คัดลอก URL นี้ไปตั้งค่าที่ผู้ให้บริการ โหมดทดสอบใช้ตรวจความครบถ้วนของค่า หน้าเข้าสู่ระบบจะแสดงช่องทางนี้เมื่อเปิดใช้จริง</p>
   <?php if ($mode==='live' && $ready): ?><p><a href="participant-account.php?return=portal" target="_blank" rel="noopener">เปิดหน้าเข้าสู่ระบบเพื่อทดสอบ</a></p><?php endif; ?>
  <?php endif; ?>
- <form class="network-form" method="post">
+ <form class="network-form service-form" method="post">
   <input type="hidden" name="csrf" value="<?= esc($token) ?>">
   <input type="hidden" name="service" value="<?= esc($serviceTab) ?>">
   <?php foreach ($serviceFields as $field=>[$label,$secret]): ?>
@@ -50,7 +52,7 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
  <?php if ($serviceTab==='otp' && $ready && in_array($mode,['test','live'],true)): ?>
   <h3>ทดสอบส่งและตรวจรหัส SMS</h3>
   <?php if (isset($_SESSION['service_otp_verified_at'])): ?><p>ยืนยันรหัสทดสอบล่าสุด <?= esc(workspaceThaiShortDate(date('c',$_SESSION['service_otp_verified_at']))) ?> เวลา <?= esc(date('H:i',$_SESSION['service_otp_verified_at'])) ?> น.</p><?php endif; ?>
-  <form class="network-form" method="post">
+  <form class="network-form service-test-form" method="post">
    <input type="hidden" name="csrf" value="<?= esc($token) ?>">
    <input type="hidden" name="service" value="otp">
    <?php if (!empty($_SESSION['service_otp_test']['until']) && $_SESSION['service_otp_test']['until']>=time()): ?>

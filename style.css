@@ -2358,3 +2358,25 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .network-actions .action {padding:.5rem .7rem;text-decoration:none;}
 .network-empty {padding:.85rem 1rem;}
 @media(max-width:850px) {.network-tools {grid-template-columns:minmax(0,1fr);}}
+
+.service-panel {padding:clamp(.9rem,2vw,1.4rem);}
+.service-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.3rem;padding:.3rem;border:1px solid var(--line);background:color-mix(in srgb,var(--violet) 8%,transparent);border-radius:.85rem;}
+.service-panel .service-tabs .service-tab {display:flex;align-items:center;justify-content:center;gap:.5rem;min-height:2.65rem;padding:.25rem;border-radius:.65rem;background:transparent;color:var(--ink);font-weight:700;text-decoration:none;box-shadow:none;}
+.service-panel .service-tabs .service-tab:is(:hover,:focus-visible) {background:color-mix(in srgb,var(--violet) 18%,transparent);}
+.service-panel .service-tabs .service-tab[aria-current=page] {background:#5638a7;color:#fff;}
+.service-tab-icon {display:grid;place-items:center;inline-size:1.45rem;block-size:1.45rem;border-radius:.4rem;background:color-mix(in srgb,currentColor 13%,transparent);}
+.service-tab-icon svg {width:1rem;height:1rem;}
+.service-tab--line:not([aria-current]) .service-tab-icon {color:#168457;}
+[data-anemia-theme=dark] .service-tab--line:not([aria-current]) .service-tab-icon {color:#75deb0;}
+.service-heading {display:flex;align-items:center;gap:.7rem;margin-block:.85rem .3rem;}
+.service-heading h2,.service-panel p,.service-panel h3 {margin-block:.4rem;}
+.service-status {font-size:.8rem;font-weight:700;border:1px solid var(--line);border-radius:1rem;padding:.1rem .55rem;}
+.service-form {grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem .9rem;margin-top:.7rem;}
+.service-form .network-actions {grid-column:1/-1;}
+.service-panel .network-form :is(input:not([type=hidden]),select) {min-height:2.45rem;padding:.36rem .65rem;}
+.service-test-form {grid-template-columns:minmax(0,23rem) max-content;align-items:end;}
+.service-test-form button {min-height:2.45rem;}
+@media(max-width:550px) {
+ .service-tabs {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .service-form,.service-test-form {grid-template-columns:minmax(0,1fr);}
+}

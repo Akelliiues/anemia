@@ -4,6 +4,7 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 
 function workspaceIcon(string $name): string
 {
+    if ($name === 'drop') return '<img class="portal-heart-mark" src="portal-heart-192.png" width="40" height="40" alt="">';
     $mouths = ['rating-1'=>'M7.5 16q4.5-5 9 0','rating-2'=>'M8.5 15.5q3.5-3 7 0',
         'rating-3'=>'M8.5 15h7','rating-4'=>'M8.5 14q3.5 4 7 0','rating-5'=>'M7.5 13.5h9q-4.5 7-9 0Z'];
     $path = isset($mouths[$name])
@@ -18,7 +19,6 @@ function workspaceIcon(string $name): string
         'calendar' => '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18m-13 5h2m4 0h2"/>',
         'scan' => '<path d="M3 8V3h5m8 0h5v5m0 8v5h-5m-8 0H3v-5M7 7h3v3H7zM14 7h3v3h-3zM7 14h3v3H7zm7 0h3v3h-3z"/>',
         'back' => '<path d="M19 12H5m6 6-6-6 6-6"/>',
-        'drop' => '<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/><path d="M9 16a3 3 0 0 0 3 3"/>',
         'filter' => '<path d="M3 5h18l-7 8v5l-4 2v-7z"/>',
         'print' => '<path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7z"/>',
         'download' => '<path d="M12 3v12m-4-4 4 4 4-4M5 17v4h14v-4"/>',

@@ -106,7 +106,7 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>เจ้าหน้าที่ · Anemia Portal</title>
-<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v99">
+<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v100">
 </head>
 <body class="staff-access">
 <main class="staff-access-main">
@@ -114,7 +114,7 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
   <div class="staff-access-shell">
     <aside class="staff-access-cover" aria-label="Anemia Portal">
       <div class="staff-cover-copy">
-        <span class="staff-cover-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/><path d="M9 16a3 3 0 0 0 3 3"/></svg></span>
+        <span class="staff-cover-mark" aria-hidden="true"><img class="portal-heart-mark" src="portal-heart-192.png" width="40" height="40" alt=""></span>
         <strong>Anemia Portal</strong>
         <p>ระบบประเมินและติดตามภาวะโลหิตจาง</p>
       </div>

@@ -2169,3 +2169,27 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  from {clip-path:inset(0 0 100% 0 round .7rem);opacity:.65;}
  to {clip-path:inset(0 0 0 0 round .7rem);opacity:1;}
 }
+
+.portal-heart-mark {
+ display:block;
+ max-inline-size:100%;
+ object-fit:contain;
+ border-radius:28%;
+}
+:is(.mark,.workspace-brand-icon,.staff-mobile-mark,.staff-cover-mark) > .portal-heart-mark {
+ inline-size:100%;
+ block-size:100%;
+}
+@media (prefers-reduced-motion:no-preference) {
+ :is(.brand,.admin-brand,.staff-cover-mark,.staff-mobile-mark):is(:hover,:focus-visible) .portal-heart-mark {
+  animation:portal-heartbeat .85s ease-in-out;
+ }
+ .public-install-card .portal-heart-mark {
+  animation:portal-heartbeat .85s ease-in-out;
+ }
+}
+@keyframes portal-heartbeat {
+ 0%,45%,100% {transform:scale(1);}
+ 22% {transform:scale(1.09);}
+ 65% {transform:scale(1.05);}
+}

@@ -666,7 +666,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v123">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v124">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -697,7 +697,6 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="admin-top-main">
    <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
    <div class="workspace-account">
-    <a class="action staff-install-action" href="staff-install.html" data-staff-install aria-label="ติดตั้ง Anemia Staff" title="ติดตั้ง Anemia Staff"><?= workspaceIcon('download') ?><span>ติดตั้ง Anemia Staff</span></a>
     <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="เปลี่ยนรหัสผ่าน"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
     <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
    </div>
@@ -733,6 +732,9 @@ function workspaceInfo(string $page, ?array $release = null): void
       <?php foreach ($keys as $key): ?>
        <a href="dashboard.php?view=<?= esc($key) ?>" <?= $view === $key ? 'aria-current="page"' : '' ?> <?php if (in_array($key,['about','team'],true)): ?>data-workspace-dialog="<?= esc($key) ?>" aria-haspopup="dialog"<?php endif; ?>><?= workspaceIcon($tabIcons[$key]) ?><?= esc($tabs[$key]) ?></a>
       <?php endforeach; ?>
+      <?php if ($keys[0]==='guide'): ?>
+       <a class="staff-install-action" href="staff-install.html" data-staff-install><?= workspaceIcon('download') ?>ติดตั้ง Anemia Staff</a>
+      <?php endif; ?>
      </div>
     </details>
    <?php endif; endforeach; ?>
@@ -1334,7 +1336,6 @@ function workspaceInfo(string $page, ?array $release = null): void
  <p>บัญชี <?= esc($staff) ?> · <?= esc($roleLabel) ?></p>
  <?php if ($staffWorkDock): ?>
  <div class="actions staff-app-account-actions">
-  <?php if ($mobileQueue): ?><a class="action staff-install-action" href="staff-install.html" data-staff-install><?= workspaceIcon('download') ?>ติดตั้ง Anemia Staff</a><?php endif; ?>
   <a class="action" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?>เปิดแดชบอร์ด</a>
   <form method="post" action="<?= $unitScanner?'login?next=unit-scan':'login?next=mobile' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action" name="action" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></form>
  </div>

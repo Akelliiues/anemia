@@ -4,7 +4,7 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 
 function workspaceIcon(string $name): string
 {
-    if ($name === 'drop') return '<img class="portal-heart-mark" src="portal-heart-192.png" width="40" height="40" alt="">';
+    if ($name === 'drop') return '<img class="portal-heart-mark" src="portal-heart-clear.png" width="40" height="40" alt="">';
     $mouths = ['rating-1'=>'M7.5 16q4.5-5 9 0','rating-2'=>'M8.5 15.5q3.5-3 7 0',
         'rating-3'=>'M8.5 15h7','rating-4'=>'M8.5 14q3.5 4 7 0','rating-5'=>'M7.5 13.5h9q-4.5 7-9 0Z'];
     $path = isset($mouths[$name])

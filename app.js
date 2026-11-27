@@ -29,7 +29,7 @@ const illustrations={
  cup:`<ellipse cx="36" cy="55" rx="27" ry="8" fill="#d0ab9d"/><ellipse cx="36" cy="52" rx="27" ry="7" fill="#fff5ed"/><path d="M49 29h7a8 8 0 1 1 0 16h-7" fill="none" stroke="#a76756" stroke-width="5"/><path d="M15 27h37v12a14 14 0 0 1-14 14h-9a14 14 0 0 1-14-14z" fill="#dc917c"/><ellipse cx="33.5" cy="27" rx="18.5" ry="5.5" fill="#f2b49f"/><ellipse cx="33.5" cy="27" rx="14" ry="3.5" fill="#93564b"/><path d="M28 16c-4-4 4-5 0-10m11 10c-4-4 4-5 0-10" fill="none" stroke="#b8776b" stroke-width="2" stroke-linecap="round"/>`
 };
 const illustration=name=>`<svg viewBox="0 0 72 72" aria-hidden="true">${illustrations[name]}</svg>`;
-const icon=name=>name==='drop'?`<img class="portal-heart-mark" src="portal-heart-192.png" width="40" height="40" alt="">`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
+const icon=name=>name==='drop'?`<img class="portal-heart-mark" src="portal-heart-clear.png" width="40" height="40" alt="">`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
 const button=(label,go,symbol,primary=false)=>`<button class="action ${primary?'primary':''}" data-go="${go}">${icon(symbol)}${label}</button>`;
 const box=name=>`<span class="iconbox">${icon(name)}</span>`;
 const main=document.querySelector('#main');

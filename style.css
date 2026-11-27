@@ -2174,8 +2174,7 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  display:block;
  max-inline-size:100%;
  object-fit:contain;
- clip-path:circle(35.5% at 49.8% 48%);
- scale:1.38;
+ scale:1.29;
 }
 :is(.mark,.workspace-brand-icon,.staff-mobile-mark,.staff-cover-mark) > .portal-heart-mark {
  inline-size:100%;
@@ -2228,4 +2227,10 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  0% {transform:scale(1);opacity:0;}
  8% {transform:scale(1.06);opacity:.85;}
  55%,100% {transform:scale(2);opacity:0;}
+}
+
+.public-site .hero-art .halo:has(> .portal-heart-mark),
+[data-anemia-theme=dark] .public-site .hero-art .halo:has(> .portal-heart-mark) {
+ background:transparent;
+ box-shadow:none;
 }

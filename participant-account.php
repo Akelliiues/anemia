@@ -194,7 +194,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v104">
+<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v105">
 <?php if ($account): ?><link rel="manifest" href="portal.webmanifest"><link rel="apple-touch-icon" href="portal-heart-192.png"><script defer src="staff-install.js?v=9"></script><?php endif; ?>
 <body class="<?= $account?'participant-profile-page':'staff-access participant-login-page' ?>"<?= $account?' data-public-install-invite="member"':'' ?>>
 <main class="<?= $account?'participant-account-main':'staff-access-main' ?>">

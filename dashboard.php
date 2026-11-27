@@ -666,7 +666,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v122">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v123">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -985,17 +985,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <td><?= (int)$row['enabled'] ? 'เปิดใช้งาน' : 'ปิดใช้งาน' ?></td>
    </tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
   </section>
-  <?php elseif ($view === 'guide'): ?>
-  <section class="card admin-report">
-   <h2>การใช้งานสำหรับเจ้าหน้าที่</h2>
-   <ol>
-    <li>เปิด <a href="dashboard.php?view=overview">ภาพรวม</a> เพื่อดูทะเบียนพื้นที่และผลประเมินการใช้งานของเดือนปัจจุบัน</li>
-    <li>เปิด <a href="dashboard.php?view=reports">รายงานจังหวัด</a> เพื่อดูพื้นที่ตามสิทธิ์ ดาวน์โหลด CSV หรือพิมพ์รายงาน</li>
-    <li>เปิด <a href="dashboard.php?view=evaluation">ผลประเมินโครงการ</a> เพื่อกรองตามเดือนและกลุ่มผู้ตอบ</li>
-    <?php if ($isAdmin): ?><li>เปิด <a href="dashboard.php?view=access">จัดการสิทธิ์</a> เพื่อสร้างบัญชี กำหนดพื้นที่ และเปิดหรือปิดการใช้งาน</li><?php endif; ?>
-   </ol>
-   <p>ประชาชนเข้าทำ <a href="feedback.php">แบบประเมินความพึงพอใจ</a> ได้โดยไม่ต้องเข้าสู่ระบบ</p>
-  </section>
+  <?php elseif ($view === 'guide'): require __DIR__.'/_private/guide-view.php'; ?>
   <?php elseif ($view === 'about'): ?>
   <section class="card admin-report"><?php workspaceInfo($view, $localRelease); ?></section>
   <?php elseif ($view === 'members'): require __DIR__.'/_private/members-view.php'; ?>

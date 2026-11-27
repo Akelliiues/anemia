@@ -196,7 +196,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v137">
+<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v138">
 <?php if ($account): ?><link rel="manifest" href="portal.webmanifest"><link rel="apple-touch-icon" href="portal-heart-192.png"><script defer src="staff-install.js?v=9"></script><?php endif; ?>
 <body class="<?= $account?'participant-profile-page':'staff-access participant-login-page' ?>"<?= $account?' data-public-install-invite="member"':'' ?>>
 <main class="<?= $account?'participant-account-main':'staff-access-main' ?>">
@@ -216,6 +216,7 @@ if ($account) {
 <nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
  <?php if ($returnContext==='programme'): ?><a href="participant-programme.php"><?= workspaceIcon('back') ?>กลับไปที่กิจกรรม 12 สัปดาห์</a>
  <?php else: ?><a href="index.html"><?= workspaceIcon('back') ?>กลับหน้าหลัก</a><?php endif; ?>
+ <?php if ($account): ?><div class="actions participant-install-actions"><a class="action" href="portal-install.html" data-public-install><?= workspaceIcon('download') ?>ติดตั้ง Anemia Portal</a></div><?php endif; ?>
 </nav>
 <?php if ($account): ?>
 <header class="participant-profile-hero">
@@ -226,7 +227,7 @@ if ($account) {
  <?php if ($profile['profile_status']!==''): ?><span class="participant-profile-status"><?= workspaceIcon(['learning'=>'book','mission'=>'star','invite'=>'spark'][$profile['profile_status']]??'ready') ?> <?= participantEscape(ANEMIA_PROFILE_STATUSES[$profile['profile_status']]??'') ?></span><?php endif; ?></div>
  <button class="action" type="button" data-open-profile><?= workspaceIcon('edit') ?>แก้ไขโปรไฟล์</button>
 </header>
-<div class="actions participant-install-actions"><a class="action" href="portal-install.html" data-public-install><?= workspaceIcon('download') ?>ติดตั้ง Anemia Portal</a></div>
+
 <div class="participant-profile-points">
  <div class="participant-profile-tile"><span class="participant-reward-mark"><?= workspaceIcon('star') ?></span><span><small>แต้มสะสม</small><strong><?= number_format($activity['points']) ?> แต้ม</strong></span></div>
  <a class="participant-profile-tile participant-team-link" href="index.html?team=1<?= $invite!==''?'&amp;invite='.participantEscape($invite):'' ?>"><span class="participant-team-mark"><?= workspaceIcon('users') ?></span><span><strong>ทีมของฉัน</strong><small><?= $activity['joined']?'ดูความคืบหน้าทีม':'สร้างทีมหรือชวนเพื่อน' ?></small></span><?= workspaceIcon('next') ?></a>

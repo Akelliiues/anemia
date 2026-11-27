@@ -2419,3 +2419,21 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  color:#fff;
  font-weight:800;
 }
+
+.province-report-source {justify-content:space-between;gap:.6rem;flex-wrap:wrap;}
+.province-report-source .action {
+ padding:.35rem .65rem;border:1px solid var(--line);border-radius:.65rem;
+ text-decoration:none;color:var(--ink);box-shadow:none;
+}
+.staff-dashboard-page .province-report-toolbar {align-items:flex-end;padding:.8rem 1rem;gap:.75rem 1rem;}
+.staff-dashboard-page .province-report-toolbar .hosted-filter-row {margin:0;width:auto;}
+.staff-dashboard-page .province-report-toolbar .hosted-filter-row label {flex:0 1 auto;}
+.staff-dashboard-page .province-report-toolbar select {width:clamp(10rem,23vw,17rem);}
+.province-report-toolbar > .actions {margin-inline-start:auto;}
+.province-report-toolbar > .actions .action {min-height:44px;padding:.45rem .75rem;text-decoration:none;}
+@media(max-width:540px) {
+ .staff-dashboard-page .province-report-toolbar .hosted-filter-row {width:100%;}
+ .staff-dashboard-page .province-report-toolbar .hosted-filter-row label {flex:1 1 8rem;}
+ .staff-dashboard-page .province-report-toolbar select {width:100%;}
+ .province-report-toolbar > .actions {margin-inline-start:0;}
+}

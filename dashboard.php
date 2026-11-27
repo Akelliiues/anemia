@@ -666,7 +666,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v126">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v127">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -748,7 +748,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   </div>
   <?php endif; ?>
   <?php if ($sampleEnabled && in_array($view,$sampleViews,true)): ?>
-   <div class="hosted-sample-caption"><strong><?= $sampleMode ? 'ข้อมูลจำลอง' : 'ข้อมูลจากระบบ' ?></strong>
+   <div class="hosted-sample-caption<?= $view==='reports'?' province-report-source':'' ?>"><strong><?= $sampleMode ? 'ข้อมูลจำลอง' : 'ข้อมูลจากระบบ' ?></strong>
     <a class="action no-print" href="dashboard.php?<?= esc(http_build_query(['view'=>$view,'region'=>$region,'month'=>$evaluationMonth,'audience'=>$evaluationAudience,'preview'=>$sampleMode?'live':'sample'])) ?>"><?= workspaceIcon($sampleMode ? 'history' : 'chart') ?><?= $sampleMode ? 'กลับไปดูข้อมูลจริง' : 'ดูข้อมูลจำลอง' ?></a>
    </div>
   <?php endif; ?>
@@ -864,7 +864,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    </tbody></table></div>
   </section>
   <?php elseif ($view === 'reports'): ?>
-  <div class="admin-report-toolbar no-print">
+  <div class="admin-report-toolbar province-report-toolbar no-print">
    <?php if ($canChooseRegion): ?>
    <form class="admin-filters hosted-filter-row" method="get"><input type="hidden" name="view" value="reports">
     <label>เขตสุขภาพ<select name="region"><option value="0">ทุกเขต</option>

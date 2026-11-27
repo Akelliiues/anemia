@@ -2448,7 +2448,6 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .province-performance .admin-table thead th[rowspan] {text-align:start;}
 .province-report-notes {margin-top:.75rem;}
 .province-report-notes summary {cursor:pointer;color:var(--muted);font-size:.85rem;}
-.province-report-toolbar input[type=month] {min-height:44px;margin:0;}
 #province-register summary {cursor:pointer;font-weight:700;}
 #province-register[open] summary {margin-bottom:.75rem;}
 

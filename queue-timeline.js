@@ -280,6 +280,7 @@ function initializeQueueTimeline() {
  if(deleteButton){
   const confirmDialog=dialog.querySelector('[data-delete-dialog]');
   const title=confirmDialog.querySelector('[data-delete-title]');
+  const receiptLabel=confirmDialog.querySelector('[data-delete-receipt]');
   const details=confirmDialog.querySelector('[data-delete-message]');
   const confirmButton=confirmDialog.querySelector('[data-delete-confirm]');
   const closeButton=confirmDialog.querySelector('[data-delete-close]');
@@ -289,7 +290,8 @@ function initializeQueueTimeline() {
    if(!receipt||submit.disabled)return;
    deleted=false;
    title.textContent='ยืนยันการลบคำขอ';
-   details.textContent=`คำขอ ${receipt} รวมถึงประวัติและผลตรวจของรายการนี้ จะถูกลบถาวร`;
+   receiptLabel.textContent=receipt;
+   details.textContent='ระบบจะลบคำขอ ประวัติ และผลตรวจอย่างถาวร';
    closeButton.textContent='ยกเลิก';
    confirmButton.hidden=false;
    confirmDialog.showModal();
@@ -317,7 +319,7 @@ function initializeQueueTimeline() {
     if(response.status!==204)throw new Error('Queue deletion failed');
     deleted=true;
     title.textContent='ลบคำขอแล้ว';
-    details.textContent=`ลบรายการ ${form.elements.receipt.value} เรียบร้อยแล้ว`;
+    details.textContent='ลบรายการออกจากคิวเรียบร้อยแล้ว';
     confirmButton.hidden=true;
     closeButton.textContent='เสร็จสิ้น';
    }catch{

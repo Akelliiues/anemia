@@ -276,6 +276,30 @@ function initializeQueueTimeline() {
  });
  calendar.addEventListener('toggle',()=>{if(calendar.open)historyPanel.open=false;});
  historyPanel.addEventListener('toggle',()=>{if(historyPanel.open)calendar.open=false;});
+ const deleteButton=dialog.querySelector('[data-delete-queue]');
+ deleteButton?.addEventListener('click',async()=>{
+  const receipt=form.elements.receipt.value;
+  if(!receipt||submit.disabled||!window.confirm(`ลบคำขอ ${receipt} พร้อมประวัติและผลตรวจของรายการนี้ถาวรหรือไม่?`))return;
+  deleteButton.disabled=true;
+  submit.disabled=true;
+  message.textContent='กำลังลบคำขอ…';
+  try{
+   const body=new FormData();
+   body.set('csrf',form.elements.csrf.value);
+   body.set('receipt',receipt);
+   body.set('queue_action','delete');
+   const response=await fetch(location.href,{method:'POST',body,cache:'no-store'});
+   if(response.status!==204)throw new Error('Queue deletion failed');
+   dialog.close();
+   document.dispatchEvent(new Event('anemia:queue-changed'));
+   document.dispatchEvent(new Event('anemia:queue-deleted'));
+  }catch{
+   message.textContent='ลบคำขอไม่สำเร็จ กรุณาเปิดรายการใหม่แล้วลองอีกครั้ง';
+  }finally{
+   deleteButton.disabled=false;
+   submit.disabled=false;
+  }
+ });
  form.addEventListener('submit',event=>{
   event.preventDefault();
   if(!roundField.hidden&&!dayInput.value){roundMessage.textContent='กรุณาเลือกวันที่';calendar.open=true;calendar.querySelector('summary').focus();return;}
@@ -348,5 +372,11 @@ function initializeQueueTimeline() {
   event.preventDefault();
   loadQueue(new URL(link.href),true,link);
  },true);
+ document.addEventListener('anemia:queue-deleted',()=>{
+  const url=new URL(location.href);
+  url.searchParams.delete('request');
+  if(url.href!==location.href)history.replaceState(null,'',url);
+  loadQueue(url,false);
+ });
  window.addEventListener('popstate',()=>loadQueue(new URL(location.href),false));
 })();

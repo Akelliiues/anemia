@@ -234,6 +234,8 @@ try {
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($view === 'contact-queue') {
             if (!$canQueue || !is_string($_POST['csrf'] ?? null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
+            $deleteRequest = ($_POST['queue_action'] ?? '') === 'delete';
+            if ($deleteRequest && !$isAdmin) { http_response_code(403); exit('เฉพาะผู้ดูแลระบบ'); }
             $receipt = $_POST['receipt'] ?? null;
             $state = $_POST['state'] ?? null;
             if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || ($state !== null && (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])))) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
@@ -243,6 +245,16 @@ try {
             $lookup->execute([$receipt,...$queueParams]);
             $request = $lookup->fetch(PDO::FETCH_ASSOC);
             if (!$request) { $db->rollBack(); http_response_code(404); exit('ไม่พบคำขอ'); }
+            if ($deleteRequest) {
+                foreach (['anemia_request_confirmation','anemia_request_history',$contactTable] as $table) {
+                    $delete=$db->prepare("DELETE FROM $table WHERE receipt=?");
+                    $delete->execute([$receipt]);
+                }
+                $db->commit();
+                error_log(sprintf('Anemia queue deleted receipt=%s actor=%s',$receipt,$staff));
+                http_response_code(204);
+                exit;
+            }
             if ($state === null && isset($_POST['round_day'])) {
                 $day = $_POST['round_day'];
                 if (!is_string($day) || !preg_match('/^\d{4}-\d\d-\d\d$/D',$day) || !checkdate((int)substr($day,5,2),(int)substr($day,8,2),(int)substr($day,0,4))) {
@@ -544,6 +556,7 @@ try {
         exit;
     }
 } catch (Throwable $error) {
+    if (isset($db) && $db->inTransaction()) $db->rollBack();
     http_response_code(503);
     error_log('Anemia dashboard failed (' . get_class($error) . ')');
     exit('ไม่สามารถโหลดข้อมูลหลังบ้านได้ กรุณาลองใหม่อีกครั้ง');
@@ -1133,6 +1146,9 @@ function workspaceInfo(string $page, ?array $release = null): void
     <ol class="queue-timeline-events"></ol>
    </details>
    <p data-timeline-message role="status"></p>
+   <?php if ($isAdmin): ?>
+    <button type="button" class="action" data-delete-queue><?= workspaceIcon('close') ?>ลบคำขอ</button>
+   <?php endif; ?>
    <form method="post" id="queue-workflow-form" class="contact-queue-state" hidden>
     <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="receipt"><input type="hidden" name="previous">
     <select name="state" aria-label="เปลี่ยนสถานะคำขอ">
@@ -1181,7 +1197,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    </nav>
   <?php endif; ?>
   </section>
-  <script defer src="queue-timeline.js?v=18"></script>
+  <script defer src="queue-timeline.js?v=19"></script>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">

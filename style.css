@@ -2443,7 +2443,7 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .province-performance > p {margin-block:0 .75rem;}
 .province-performance .admin-table {width:100%;font-size:.86rem;}
 .province-performance .admin-table :is(td,th) {padding:.48rem .55rem;white-space:nowrap;}
-.province-performance .admin-table tbody td {text-align:right;font-variant-numeric:tabular-nums;}
+.province-performance .admin-table tbody td {text-align:center;font-variant-numeric:tabular-nums;}
 .province-performance .admin-table thead th {text-align:center;}
 .province-performance .admin-table thead th[rowspan] {text-align:start;}
 .province-report-notes {margin-top:.75rem;}

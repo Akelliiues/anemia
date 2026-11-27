@@ -196,7 +196,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v106">
+<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v137">
 <?php if ($account): ?><link rel="manifest" href="portal.webmanifest"><link rel="apple-touch-icon" href="portal-heart-192.png"><script defer src="staff-install.js?v=9"></script><?php endif; ?>
 <body class="<?= $account?'participant-profile-page':'staff-access participant-login-page' ?>"<?= $account?' data-public-install-invite="member"':'' ?>>
 <main class="<?= $account?'participant-account-main':'staff-access-main' ?>">
@@ -364,21 +364,27 @@ if ($account) {
   <input type="hidden" name="csrf" value="<?= participantEscape($_SESSION['csrf']) ?>">
   <?php if ($returnToPortal): ?><input type="hidden" name="return" value="<?= participantEscape($returnContext) ?>"><?php endif; ?>
   <?php if ($profileEditing&&$notice!==''): ?><p role="status"><?= participantEscape($notice) ?></p><?php endif; ?>
+  <div class="participant-profile-upload">
   <div class="participant-avatar-preview" aria-label="ตัวอย่างไอคอน">
    <?php foreach (ANEMIA_PROFILE_AVATARS as $key=>$label): ?>
     <span class="participant-avatar" data-avatar="<?= $key ?>" data-preview-avatar <?= !$hasPhoto&&$profile['avatar']===$key?'':'hidden' ?>><?= workspaceIcon($key) ?></span>
    <?php endforeach; ?>
    <span class="participant-avatar" data-photo-preview <?= $hasPhoto?'':'hidden' ?>><img<?= $hasPhoto?' src="participant-photo.php"':'' ?> width="72" height="72" alt="ตัวอย่างรูปโปรไฟล์"></span>
   </div>
+  <div class="participant-profile-file">
   <label><span><?= workspaceIcon('person') ?> อัปโหลดรูปโปรไฟล์</span><input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG หรือ WebP ขนาดไม่เกิน 5 MB · ตัดกลางเป็นรูปสี่เหลี่ยม</small></label>
   <?php if ($hasPhoto): ?><label class="participant-remove-photo"><input type="checkbox" name="remove_photo" value="1"> ใช้ไอคอนแทนรูป</label><?php endif; ?>
+  </div>
+  </div>
   <fieldset class="participant-avatar-picker"><legend>เลือกไอคอนโปรไฟล์</legend>
    <?php foreach (ANEMIA_PROFILE_AVATARS as $key=>$label): ?>
     <label><input type="radio" name="avatar" value="<?= $key ?>" <?= $profile['avatar']===$key?'checked':'' ?> required><span><?= workspaceIcon($key) ?> <?= participantEscape($label) ?></span></label>
    <?php endforeach; ?>
   </fieldset>
+  <div class="participant-profile-fields">
   <label>ชื่อที่แสดง<input name="display_name" maxlength="40" value="<?= participantEscape($profile['display_name']) ?>"></label>
   <label>สถานะ<select name="profile_status"><?php foreach (ANEMIA_PROFILE_STATUSES as $key=>$label): ?><option value="<?= $key ?>" <?= $profile['profile_status']===$key?'selected':'' ?>><?= participantEscape($label) ?></option><?php endforeach; ?></select></label>
+  </div>
   <button class="action primary" name="provider" value="profile-save"><?= workspaceIcon('save') ?>บันทึกโปรไฟล์</button>
  </form>
 </dialog>

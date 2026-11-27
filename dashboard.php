@@ -405,6 +405,11 @@ try {
             FROM $contactTable q LEFT JOIN anemia_request_confirmation c ON c.receipt=q.receipt WHERE $queueScope");
         $report->execute($queueParams);
         $referralStats=$report->fetch(PDO::FETCH_ASSOC);
+        $stateCounts=$db->prepare("SELECT q.state,COUNT(*) FROM $contactTable q WHERE $queueScope".
+            ($attentionOnly?' AND '.$attention:'').' GROUP BY q.state');
+        $stateCounts->execute($queueParams);
+        $queueStateTotals=$stateCounts->fetchAll(PDO::FETCH_KEY_PAIR);
+
         }
         $focusReceipt=$_GET['request'] ?? '';
         if (!is_string($focusReceipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$focusReceipt)) $focusReceipt='';
@@ -622,7 +627,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v115">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v116">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1067,7 +1072,9 @@ function workspaceInfo(string $page, ?array $release = null): void
   <nav class="queue-tabs queue-status-tabs" aria-label="กรองคำขอตามสถานะ">
    <?php foreach ([''=>'ทุกสถานะ'] + ANEMIA_REQUEST_STATES as $state=>$label): ?>
     <a href="<?= esc($desktopQueueUrl.($state!==''?'&status='.rawurlencode($state):'')) ?>"
-       <?= $queueState===$state && $queueKind===''?'aria-current="page"':'' ?>><?= workspaceIcon($stateIcons[$state] ?? 'info') ?><?= esc($label) ?></a>
+       <?= $queueState===$state && $queueKind===''?'aria-current="page"':'' ?>><?= workspaceIcon($stateIcons[$state] ?? 'info') ?><?= esc($label) ?>
+      <span class="queue-status-count"><?= number_format((int)($state===''?array_sum($queueStateTotals):($queueStateTotals[$state]??0))) ?></span>
+    </a>
    <?php endforeach; ?>
   </nav>
   </div>

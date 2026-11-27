@@ -302,7 +302,7 @@ function initializeQueueTimeline() {
 (() => {
  const status=document.querySelector('#queue-navigation-status');
  if(!status)return;
- const tabLinks='.queue-tabs a, .queue-attention, .staff-queue-tabs a, [data-queue-pager] a';
+ const tabLinks='.queue-tabs a, .contact-pending-summary a, .queue-attention, .staff-queue-tabs a, [data-queue-pager] a';
  let queue=document.querySelector('#queue-content');
  let pending;
  initializeQueueTimeline();

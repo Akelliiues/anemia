@@ -411,6 +411,8 @@ try {
         $queuePage = filter_input(INPUT_GET,'page',FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>1000000]]) ?: 1;
         $queueState = $_GET['status'] ?? '';
         if (!is_string($queueState) || !isset(ANEMIA_REQUEST_STATES[$queueState]) || $mobileQueue) $queueState='';
+        $queueKind = $_GET['kind'] ?? '';
+        if ($queueState!=='pending' || !in_array($queueKind,['appointment','callback'],true)) $queueKind='';
         $pageSize = $mobileQueue ? 3 : 15;
         $offset = $focusReceipt!=='' ? 0 : ($queuePage-1)*$pageSize;
         $queueLimit = ($pageSize+1).' OFFSET '.$offset;
@@ -421,6 +423,10 @@ try {
         } elseif ($queueState!=='') {
             $queueCondition.=' AND q.state=?';
             $listParams[]=$queueState;
+            if ($queueKind!=='') {
+                $queueCondition.=' AND q.request_kind=?';
+                $listParams[]=$queueKind;
+            }
         }
         $queue=$db->prepare("SELECT receipt,facility,request_kind,contact_name,phone,preferred_date,submitted_at,state,appointment_slot,$overdue AS overdue FROM $contactTable q WHERE $queueScope".$queueCondition.' ORDER BY submitted_at DESC,receipt DESC LIMIT '.$queueLimit);
         $queue->execute($listParams);
@@ -616,7 +622,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v113">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v114">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1061,14 +1067,18 @@ function workspaceInfo(string $page, ?array $release = null): void
   <nav class="queue-tabs queue-status-tabs" aria-label="กรองคำขอตามสถานะ">
    <?php foreach ([''=>'ทุกสถานะ'] + ANEMIA_REQUEST_STATES as $state=>$label): ?>
     <a href="<?= esc($desktopQueueUrl.($state!==''?'&status='.rawurlencode($state):'')) ?>"
-       <?= $queueState===$state?'aria-current="page"':'' ?>><?= workspaceIcon($stateIcons[$state] ?? 'info') ?><?= esc($label) ?></a>
+       <?= $queueState===$state && $queueKind===''?'aria-current="page"':'' ?>><?= workspaceIcon($stateIcons[$state] ?? 'info') ?><?= esc($label) ?></a>
    <?php endforeach; ?>
   </nav>
   </div>
   <?php $pendingInQueue = $demoQueue ? $pendingDemoCounts : $pendingContactCounts; $counterScope = $demoQueue ? 'demo' : 'live'; ?>
   <div class="contact-pending-summary" aria-live="polite" aria-atomic="true">
-   <span><?= workspaceIcon('calendar') ?>ขอนัดรอประสาน <strong data-pending-count="<?= $counterScope ?>.appointment"><?= $pendingInQueue['appointment'] ?></strong></span>
-   <span><?= workspaceIcon('phone') ?>ขอติดต่อกลับรอประสาน <strong data-pending-count="<?= $counterScope ?>.callback"><?= $pendingInQueue['callback'] ?></strong></span>
+   <?php foreach (['appointment'=>['calendar','ขอนัดรอประสาน'],'callback'=>['phone','ขอติดต่อกลับรอประสาน']] as $kind=>[$icon,$label]): ?>
+    <a href="<?= esc('dashboard.php?view=contact-queue'.($demoQueue?'&demo=1':'').'&status=pending&kind='.$kind) ?>"
+       <?= $queueKind===$kind && !$attentionOnly && $focusReceipt===''?'aria-current="page"':'' ?>>
+     <?= workspaceIcon($icon) ?><?= esc($label) ?> <strong data-pending-count="<?= $counterScope ?>.<?= $kind ?>"><?= $pendingInQueue[$kind] ?></strong>
+    </a>
+   <?php endforeach; ?>
   </div>
   <p><?= $demoQueue?'แสดงข้อมูลติดต่อที่กรอกในโหมดทดสอบ คิวนี้แยกจากคิวจริงและไม่มีการส่ง SMS':'ผู้ดูแลประสานกับหน่วยบริการที่ผู้ขอเลือก' ?></p>
   <details data-queue-referral-summary>
@@ -1153,7 +1163,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   </dialog>
   <?php endif; ?>
   <?php if ($focusReceipt==='' && (!$mobileQueue || $queuePage>1 || $queueNext)): ?>
-   <?php $pageUrl=($mobileQueue?$mobileQueueUrl.'&tab='.$queueTab:$desktopQueueUrl.($queueState!==''?'&status='.rawurlencode($queueState):'')).'&page='; ?>
+   <?php $pageUrl=($mobileQueue?$mobileQueueUrl.'&tab='.$queueTab:$desktopQueueUrl.($queueState!==''?'&status='.rawurlencode($queueState):'').($queueKind!==''?'&kind='.$queueKind:'')).'&page='; ?>
    <nav data-queue-pager class="<?= $mobileQueue?'staff-queue-pager':'actions queue-status-filters' ?>" aria-label="เปลี่ยนหน้าคำขอ">
     <?php if ($queuePage>1): ?><a class="action" href="<?= esc($pageUrl.($queuePage-1)) ?>">ก่อนหน้า</a><?php endif; ?>
     <span>หน้า <?= number_format($queuePage) ?></span>
@@ -1161,7 +1171,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    </nav>
   <?php endif; ?>
   </section>
-  <script defer src="queue-timeline.js?v=17"></script>
+  <script defer src="queue-timeline.js?v=18"></script>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">

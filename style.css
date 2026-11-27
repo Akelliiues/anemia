@@ -1672,7 +1672,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 
 .contact-pending-badge:not([hidden]) {display:inline-grid;place-items:center;min-width:1.2rem;height:1.2rem;padding-inline:.18rem;border-radius:999px;background:#f7cbe0;color:#6d204b;font-size:.7rem;font-weight:800;line-height:1;}
 .contact-pending-summary {display:flex;flex-wrap:wrap;gap:.45rem .75rem;margin:.55rem 0;}
-.contact-pending-summary > span {display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .5rem;border:1px solid var(--line);border-radius:.6rem;}
+.contact-pending-summary > a {color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .5rem;border:1px solid var(--line);border-radius:.6rem;}
 .contact-pending-summary svg {width:1rem;height:1rem;color:var(--violet);}
 .contact-pending-summary strong {color:var(--violet);}
 @media(max-width:420px){
@@ -2317,4 +2317,9 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  display:grid;
  place-items:center;
  text-align:center;
+}
+
+.contact-pending-summary > a:is(:hover,:focus-visible,[aria-current=page]) {
+ background:color-mix(in srgb,var(--violet) 18%,transparent);
+ border-color:var(--violet);
 }

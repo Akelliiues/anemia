@@ -689,7 +689,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v134">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v135">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -832,9 +832,11 @@ function workspaceInfo(string $page, ?array $release = null): void
    <p>จังหวัดที่เปิดใช้งาน / จังหวัดทั้งหมด</p>
    <div class="region-progress-grid">
    <?php foreach ($regionTotals as $zone=>$totals): ?>
-    <a href="dashboard.php?view=reports&amp;region=<?= $zone ?>">
+    <a href="dashboard.php?view=reports&amp;region=<?= $zone ?>"<?= $totals['enabled']===$totals['all'] ? ' data-complete' : '' ?>>
+     <span class="region-progress-icon" aria-hidden="true"><?= workspaceIcon('map') ?></span>
      <span class="region-progress-label"><?= esc(zoneLabel($zone)) ?></span>
-     <strong><?= $totals['enabled'] ?> / <?= $totals['all'] ?></strong>
+     <strong class="region-progress-total"><?= $totals['enabled'] ?> / <?= $totals['all'] ?></strong>
+     <span class="region-progress-arrow" aria-hidden="true"><?= workspaceIcon('next') ?></span>
      <meter min="0" max="<?= $totals['all'] ?>" value="<?= $totals['enabled'] ?>" aria-label="จังหวัดที่ตั้งสถานะเปิด"></meter>
     </a>
    <?php endforeach; ?>

@@ -2451,3 +2451,11 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .province-report-toolbar input[type=month] {min-height:44px;margin:0;}
 #province-register summary {cursor:pointer;font-weight:700;}
 #province-register[open] summary {margin-bottom:.75rem;}
+
+.province-performance .admin-table :is(
+ thead th[scope=colgroup],
+ thead tr:nth-child(2) th:is(:first-child,:nth-child(7)),
+ tbody td:is(:nth-child(2),:nth-child(8))
+) {
+ border-inline-start:1px solid color-mix(in srgb,var(--ink) 15%,transparent);
+}

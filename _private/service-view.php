@@ -12,7 +12,11 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
 <section class="card admin-report service-panel">
  <nav class="service-tabs" aria-label="บริการภายนอก">
  <?php foreach ($services as $id=>[$label,$icon]): ?>
-  <a class="service-tab service-tab--<?= esc($id) ?>" href="dashboard.php?view=services&amp;service=<?= esc($id) ?>" <?= $serviceTab===$id?'aria-current="page"':'' ?>><span class="service-tab-icon" aria-hidden="true"><?php if ($id==='google'): ?><strong>G</strong><?php else: ?><?= workspaceIcon($id==='otp'?'message':$icon) ?><?php endif; ?></span>
+  <a class="service-tab service-tab--<?= esc($id) ?>" href="dashboard.php?view=services&amp;service=<?= esc($id) ?>" <?= $serviceTab===$id?'aria-current="page"':'' ?>><span class="service-tab-icon" aria-hidden="true">
+    <?php if ($id==='otp'): ?><?= workspaceIcon('message') ?>
+    <?php else: ?><img src="service-brand-<?= esc($id) ?>.png" alt="">
+    <?php endif; ?>
+   </span>
    <span><?= esc($label) ?></span></a>
  <?php endforeach; ?>
  </nav>

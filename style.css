@@ -2439,8 +2439,15 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 }
 
 .province-performance {margin-bottom:.85rem;}
-.province-performance .admin-table :is(td,th):not(:first-child) {text-align:right;white-space:nowrap;}
-.province-performance .admin-table th[scope=colgroup] {text-align:center;}
+.province-performance h2 {margin-block:0 .15rem;}
+.province-performance > p {margin-block:0 .75rem;}
+.province-performance .admin-table {width:100%;font-size:.86rem;}
+.province-performance .admin-table :is(td,th) {padding:.48rem .55rem;white-space:nowrap;}
+.province-performance .admin-table tbody td {text-align:right;font-variant-numeric:tabular-nums;}
+.province-performance .admin-table thead th {text-align:center;}
+.province-performance .admin-table thead th[rowspan] {text-align:start;}
+.province-report-notes {margin-top:.75rem;}
+.province-report-notes summary {cursor:pointer;color:var(--muted);font-size:.85rem;}
 .province-report-toolbar input[type=month] {min-height:44px;margin:0;}
 #province-register summary {cursor:pointer;font-weight:700;}
 #province-register[open] summary {margin-bottom:.75rem;}

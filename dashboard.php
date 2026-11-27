@@ -674,7 +674,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v128">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v129">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -885,9 +885,12 @@ function workspaceInfo(string $page, ?array $release = null): void
   <section class="card admin-report province-performance" aria-labelledby="province-performance-title">
    <h2 id="province-performance-title">ผลคัดกรองและการส่งต่อรายจังหวัด</h2>
    <p><?= esc(workspaceThaiMonth($reportMonth)) ?> · <?= $sampleMode?'ข้อมูลจำลอง':'ข้อมูลจากระบบ' ?></p>
+   <?php $shortMetrics=['started'=>'เริ่ม','completed'=>'ทำครบ','low'=>'ต่ำ','medium'=>'ปานกลาง',
+       'high'=>'สูง','unknown'=>'ไม่สรุป','requested'=>'ส่งคำขอ','attended'=>'มารับบริการ',
+       'tested'=>'ตรวจแล้ว','confirmed'=>'ผลยืนยัน']; ?>
    <div class="tablewrap"><table class="admin-table">
     <thead><tr><th scope="col" rowspan="2">จังหวัด</th><th scope="colgroup" colspan="6">การคัดกรอง (ครั้ง)</th><th scope="colgroup" colspan="4">การส่งต่อ (คำขอ)</th></tr>
-    <tr><?php foreach (ANEMIA_PROVINCE_METRICS as $label): ?><th scope="col"><?= esc($label) ?></th><?php endforeach; ?></tr></thead>
+    <tr><?php foreach (ANEMIA_PROVINCE_METRICS as $key=>$label): ?><th scope="col" title="<?= esc($label) ?>" aria-label="<?= esc($label) ?>"><?= esc($shortMetrics[$key] ?? $label) ?></th><?php endforeach; ?></tr></thead>
     <tbody>
     <?php foreach ($provinceReport as $row): ?>
      <tr><th scope="row"><?= esc($row['name']) ?></th><?php foreach (ANEMIA_PROVINCE_METRICS as $key=>$_): ?><td><?= number_format($row[$key]) ?></td><?php endforeach; ?></tr>
@@ -895,8 +898,11 @@ function workspaceInfo(string $page, ?array $release = null): void
     <?php if (!$provinceReport): ?><tr><td colspan="11">ไม่มีจังหวัดในขอบเขตที่เลือก</td></tr><?php endif; ?>
     </tbody>
    </table></div>
+   <details class="province-report-notes">
+    <summary>วิธีนับและขอบเขตข้อมูล</summary>
    <p class="notice">ผลคัดกรองนับตามเดือนที่เริ่มและจังหวัดที่ผู้ใช้ระบุ ผลส่งต่อนับตามเดือนที่ส่งคำขอและจังหวัดของหน่วยบริการในทะเบียน โดยแสดงผลติดตามล่าสุดของคำขอในเดือนนั้น</p>
    <p class="notice">ยอดคัดกรองและยอดคำขอมาจากคนละชุดข้อมูล จึงยังคำนวณอัตราจากการคัดกรองไปถึงการตรวจรายคนไม่ได้ ข้อมูลการเรียนยังไม่แยกตามจังหวัด</p>
+   </details>
   </section>
   <details class="card admin-report" id="province-register"><summary>ทะเบียนจังหวัด</summary>
   <div class="tablewrap"><table class="admin-table"><thead><tr><th>รหัส</th><th>จังหวัด</th><th>เขตสุขภาพ</th><th>สถานะจังหวัด</th></tr></thead><tbody>

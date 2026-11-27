@@ -627,7 +627,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v117">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v118">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1065,14 +1065,17 @@ function workspaceInfo(string $page, ?array $release = null): void
   <?php
    $desktopQueueUrl='dashboard.php?'.http_build_query(['view'=>'contact-queue']
        + ($demoQueue?['demo'=>1]:[]) + ($attentionOnly?['attention'=>1]:[]));
+   $stateTabLabels=[''=>'ทั้งหมด','pending'=>'รอรับเรื่อง','accepted'=>'รับเรื่องแล้ว',
+       'contacted'=>'ติดต่อแล้ว','retry_contact'=>'รอติดต่อซ้ำ','scheduled'=>'ยืนยันนัด',
+       'attended'=>'มารับบริการ','test_completed'=>'ตรวจแล้ว','follow_up'=>'ติดตามผล','closed'=>'ปิดคำขอ'];
    $stateIcons=[''=>'filter','pending'=>'bell','accepted'=>'ready','contacted'=>'phone',
        'retry_contact'=>'history','scheduled'=>'calendar','attended'=>'person','test_completed'=>'ready',
        'follow_up'=>'message','closed'=>'lock'];
   ?>
   <nav class="queue-tabs queue-status-tabs" aria-label="กรองคำขอตามสถานะ">
    <?php foreach ([''=>'ทุกสถานะ'] + ANEMIA_REQUEST_STATES as $state=>$label): ?>
-    <a href="<?= esc($desktopQueueUrl.($state!==''?'&status='.rawurlencode($state):'')) ?>"
-       <?= $queueState===$state && $queueKind===''?'aria-current="page"':'' ?>><?= workspaceIcon($stateIcons[$state] ?? 'info') ?><?= esc($label) ?>
+    <a title="<?= esc($label) ?>" href="<?= esc($desktopQueueUrl.($state!==''?'&status='.rawurlencode($state):'')) ?>"
+       <?= $queueState===$state && $queueKind===''?'aria-current="page"':'' ?>><?= workspaceIcon($stateIcons[$state] ?? 'info') ?><?= esc($stateTabLabels[$state] ?? $label) ?>
       <span class="queue-status-count"><?= number_format((int)($state===''?array_sum($queueStateTotals):($queueStateTotals[$state]??0))) ?></span>
     </a>
    <?php endforeach; ?>

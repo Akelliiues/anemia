@@ -2269,10 +2269,6 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .queue-heading :is(.queue-tabs,.queue-heading-bar) a[aria-current=page] {background:#583db1;color:#fff;}
 .queue-status-tabs {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));}
 .queue-status-tabs a {justify-content:center;min-width:0;white-space:nowrap;font-size:.88rem;}
-@container queue-heading (width < 68rem) {
- .queue-status-tabs {grid-template-columns:repeat(3,minmax(0,1fr));}
- .queue-status-tabs a {justify-content:flex-start;}
-}
 @container queue-heading (width < 43rem) {
  .queue-status-tabs {
   display:flex;

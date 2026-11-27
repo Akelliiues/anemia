@@ -3,6 +3,7 @@ const publicProfilePhoto=document.querySelector('[data-public-profile-photo]');
 if(publicProfilePhoto){
  const accountMenu=publicProfilePhoto.closest('.public-nav-account');
  const guestLink=document.querySelector('[data-public-account-guest]');
+ const profileName=accountMenu.querySelector('[data-public-profile-name]');
  publicProfilePhoto.addEventListener('load',()=>{
   publicProfilePhoto.hidden=false;
   publicProfilePhoto.previousElementSibling.hidden=true;
@@ -11,14 +12,22 @@ if(publicProfilePhoto){
  const refreshAccountMenu=async()=>{
   const check=++sessionCheck;
   let signedIn=!accountMenu.hidden;
+  let displayName;
   try{
-   const response=await fetch('participant-photo.php?session=1',{cache:'no-store'});
-   if(response.status===204||response.status===404)signedIn=response.status===204;
+   const response=await fetch('participant-photo.php?profile=1',{cache:'no-store'});
+   if(response.ok){
+    const profile=await response.json();
+    if(typeof profile.displayName==='string'){
+     signedIn=true;
+     displayName=profile.displayName.trim()||'บัญชีของฉัน';
+    }
+   }else if(response.status===404)signedIn=false;
   }catch{}
   if(check!==sessionCheck)return;
   guestLink.hidden=signedIn;
   accountMenu.hidden=!signedIn;
   if(signedIn){
+   if(profileName&&displayName!==undefined)profileName.textContent=displayName;
    if(!publicProfilePhoto.hasAttribute('src'))publicProfilePhoto.src='participant-photo.php';
   }else{
    accountMenu.open=false;
@@ -38,8 +47,7 @@ if(publicProfilePhoto){
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden)resetAccountMenu();else refreshAccountMenu();
  });
- if(accountMenu.hidden)refreshAccountMenu();
- else publicProfilePhoto.src='participant-photo.php';
+ refreshAccountMenu();
 }
 const publicMenuToggle=document.querySelector('.public-menu-toggle');
 const publicNavigation=document.querySelector('#public-navigation');

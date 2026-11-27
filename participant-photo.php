@@ -23,6 +23,14 @@ try {
         http_response_code(anemiaParticipantEpoch($db,$account)===$epoch ? 204 : 404);
         exit;
     }
+    if (($_GET['profile']??'')==='1') {
+        if (anemiaParticipantEpoch($db,$account)!==$epoch) { http_response_code(404); exit; }
+        $profile=$db->prepare('SELECT display_name FROM anemia_participant_profile WHERE account_id=?');
+        $profile->execute([$account]);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode(['displayName'=>(string)$profile->fetchColumn()],JSON_THROW_ON_ERROR);
+        exit;
+    }
     $query=$db->prepare('SELECT p.photo FROM anemia_participant_photo p JOIN anemia_participant_account a ON a.id=p.account_id
         WHERE a.id=? AND a.suspended_at IS NULL AND a.session_epoch=?');
     $query->execute([$account,$epoch]);

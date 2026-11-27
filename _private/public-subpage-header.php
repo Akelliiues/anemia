@@ -16,7 +16,7 @@
    </div></details>
    <a class="public-account-link" data-public-account-guest <?= $publicNavSignedIn?'hidden':'' ?> href="participant-account.php?return=<?= $publicNavPage==='programme'?'programme':'portal' ?>"><?= workspaceIcon('person') ?>เข้าสู่ระบบ / สมัครสมาชิก</a>
    <details class="public-nav-group public-nav-account" name="subpage-navigation" <?= $publicNavSignedIn?'':'hidden' ?>>
-    <summary class="public-account-link"><span><?= workspaceIcon('person') ?></span><img data-public-profile-photo width="24" height="24" alt="" hidden><?= htmlspecialchars(($publicNavDisplayName??'') ?: 'บัญชีของฉัน',ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?><span class="public-nav-chevron" aria-hidden="true"></span></summary>
+    <summary class="public-account-link"><span><?= workspaceIcon('person') ?></span><img data-public-profile-photo width="24" height="24" alt="" hidden><span data-public-profile-name><?= htmlspecialchars(($publicNavDisplayName??'') ?: 'บัญชีของฉัน',ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?></span><span class="public-nav-chevron" aria-hidden="true"></span></summary>
     <div class="public-nav-links">
      <a href="participant-account.php?return=portal"><?= workspaceIcon('person') ?>โปรไฟล์</a>
      <a href="participant-account.php?return=portal#participant-activity-title"><?= workspaceIcon('star') ?>กิจกรรมและแต้ม</a>

@@ -32,12 +32,13 @@ $canConnect=static fn(string $key): bool => isset($providers[$key]) && $provider
 $invite=$_REQUEST['invite']??'';
 $invite=is_string($invite)&&preg_match('/^[a-f0-9]{32}$/D',$invite)?$invite:'';
 $returnContext=$_REQUEST['return']??'';
-$returnContext=in_array($returnContext,['portal','programme'],true)?$returnContext:'';
+$returnContext=in_array($returnContext,['portal','programme','school'],true)?$returnContext:'';
 $returnToPortal=$returnContext!=='';
 $accountReturnUrl=static fn(): string => 'participant-account.php'.($returnContext!==''?'?return='.$returnContext:'');
 $participantDestination=static function(string $context,string $invite): string {
     return match ($context) {
         'programme'=>'participant-programme.php',
+        'school'=>'school-join.php',
         'portal'=>'index.html',
         default=>'index.html?team=1'.($invite!==''?'&invite='.$invite:''),
     };

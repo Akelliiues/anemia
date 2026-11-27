@@ -32,7 +32,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
 $unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
 $scannerApp = $unitScanner || $view==='scanner-install';
 $mobileQueue = $view==='contact-queue' && ($_GET['app']??'')==='staff';
@@ -60,6 +60,10 @@ try {
     require __DIR__ . '/_private/access.php';
     $identity = anemiaStaffIdentity($db, (string)$_SESSION['username']);
     if (!$identity) { $_SESSION = []; loginRequired(); }
+    if ($identity['role']==='school_teacher' || $view==='schools') {
+        header('Location: school-workspace.php',true,303);
+        exit;
+    }
     $staff = $identity['username'];
     $isAdmin = $identity['role'] === 'account_admin';
     $canChooseRegion = $isAdmin || $identity['role'] === 'central_report';
@@ -614,6 +618,8 @@ $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activit
 $tabIcons['network']='hospital';
 $tabIcons['members']='users';
 $tabIcons['programme-report']='book';
+$tabs['schools']='กิจกรรมโรงเรียน';
+$tabIcons['schools']='users';
 $scopeName = $identity['role'] === 'provincial_report' ? ($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? zoneLabel($region) : 'ทุกเขตสุขภาพ');
 function accessFields(array $record, array $provinces): void
 {
@@ -728,7 +734,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php
     $groups = [
         ['ภาพรวม','chart',['overview']],
-        ['รายงาน','map',['reports','activity','evaluation','programme-report']],
+        ['รายงาน','map',['reports','activity','evaluation','programme-report','schools']],
         ['แบบประเมิน','ready',['assessment']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
         ['ระบบ','users',['members','access','audit','sample-settings','network','services']],

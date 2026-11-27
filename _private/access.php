@@ -3,6 +3,7 @@ declare(strict_types=1);
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 
 const ANEMIA_REPORT_ROLES = [
+    'school_teacher' => 'ครูผู้ดูแลกิจกรรม',
     'central_report' => 'ผู้ดูรายงานส่วนกลาง',
     'regional_report' => 'ผู้ดูรายงานระดับเขต',
     'provincial_report' => 'ผู้ดูรายงานระดับจังหวัด',
@@ -17,7 +18,7 @@ function anemiaStaffIdentity(PDO $db, string $username): ?array
     $account = $query->fetch(PDO::FETCH_ASSOC);
     if (!$account) return null;
     return match ($account['role']) {
-        'account_admin', 'central_report' => $account,
+        'account_admin', 'central_report', 'school_teacher' => $account,
         'regional_report' => (int)$account['region'] >= 1 && (int)$account['region'] <= 13 ? $account : null,
         'provincial_report' => $account['province_region'] !== null ? $account : null,
         default => null,

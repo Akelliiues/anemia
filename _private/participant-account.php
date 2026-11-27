@@ -113,8 +113,10 @@ function anemiaStartParticipantSession(PDO $db,string $account): void
 {
     $epoch=anemiaParticipantEpoch($db,$account);
     if ($epoch===null) throw new DomainException('บัญชีนี้ถูกระงับ กรุณาติดต่อผู้ดูแลโครงการ');
+    $schoolInvite=$_SESSION['school_invite']??null;
     session_regenerate_id(true);
     $_SESSION=['account'=>$account,'epoch'=>$epoch,'until'=>time()+28800,'csrf'=>bin2hex(random_bytes(32))];
+    if ($schoolInvite!==null) $_SESSION['school_invite']=$schoolInvite;
 }
 
 function anemiaAttachTeam(PDO $db,string $account,?string $teamCookieHash): void

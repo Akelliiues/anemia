@@ -322,6 +322,8 @@ function initializeQueueTimeline() {
    const replacement=new DOMParser().parseFromString(html,'text/html').querySelector('#queue-content');
    if(!replacement)throw new Error('Queue content missing');
    const hadFocus=link===document.activeElement;
+   const summary=replacement.querySelector('[data-queue-referral-summary]');
+   if(summary)summary.open=queue.querySelector('[data-queue-referral-summary]')?.open ?? false;
    queue.replaceWith(replacement);
    queue=document.querySelector('#queue-content');
    if(addHistory&&url.href!==location.href)history.pushState(null,'',url);

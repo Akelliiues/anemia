@@ -616,7 +616,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v112">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v113">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1071,7 +1071,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <span><?= workspaceIcon('phone') ?>ขอติดต่อกลับรอประสาน <strong data-pending-count="<?= $counterScope ?>.callback"><?= $pendingInQueue['callback'] ?></strong></span>
   </div>
   <p><?= $demoQueue?'แสดงข้อมูลติดต่อที่กรอกในโหมดทดสอบ คิวนี้แยกจากคิวจริงและไม่มีการส่ง SMS':'ผู้ดูแลประสานกับหน่วยบริการที่ผู้ขอเลือก' ?></p>
-  <details>
+  <details data-queue-referral-summary>
    <summary>สรุปการส่งต่อในคิวนี้</summary>
    <p>นับจากคำขอทั้งหมดตามสิทธิ์เข้าถึง ยอดผลตรวจนับเฉพาะรายการที่บันทึกผลแล้ว</p>
    <dl>
@@ -1081,7 +1081,8 @@ function workspaceInfo(string $page, ?array $release = null): void
    </dl>
   </details>
   <?php endif; ?>
-  <?php if (!$contactQueue): ?><p>ไม่พบคำขอในหน้านี้</p><?php else: ?>
+  <?php if (!$mobileQueue): ?><div class="queue-list-viewport"><?php endif; ?>
+  <?php if (!$contactQueue): ?><p class="queue-empty">ไม่พบคำขอในหน้านี้</p><?php else: ?>
   <?php if ($mobileQueue): ?>
   <div class="staff-queue-list">
    <?php foreach ($contactQueue as $item): ?>
@@ -1097,6 +1098,9 @@ function workspaceInfo(string $page, ?array $release = null): void
    <td><button type="button" class="action queue-timeline-trigger" data-queue-timeline="<?= esc($item['receipt']) ?>" <?= $focusReceipt!==''?'data-queue-open':'' ?> aria-haspopup="dialog"><?= workspaceIcon('history') ?><span><?= $item['overdue']?'เลยวันนัด · รอตรวจสอบ':esc(ANEMIA_REQUEST_STATES[$item['state']] ?? 'ดูสถานะ') ?></span><?= workspaceIcon('next') ?></button></td>
   </tr><?php endforeach; ?></tbody></table></div>
   <?php endif; ?>
+  <?php endif; ?>
+  <?php if (!$mobileQueue): ?></div><?php endif; ?>
+  <?php if ($contactQueue): ?>
   <dialog class="signal-dialog workspace-dialog queue-timeline-dialog" id="queue-timeline" aria-labelledby="queue-timeline-title">
    <header class="workspace-dialog-heading queue-timeline-current" data-timeline-current>
     <span class="queue-current-icon" aria-hidden="true"><?= workspaceIcon('history') ?></span>
@@ -1148,7 +1152,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    </section>
   </dialog>
   <?php endif; ?>
-  <?php if ($focusReceipt==='' && ($queuePage>1 || $queueNext)): ?>
+  <?php if ($focusReceipt==='' && (!$mobileQueue || $queuePage>1 || $queueNext)): ?>
    <?php $pageUrl=($mobileQueue?$mobileQueueUrl.'&tab='.$queueTab:$desktopQueueUrl.($queueState!==''?'&status='.rawurlencode($queueState):'')).'&page='; ?>
    <nav data-queue-pager class="<?= $mobileQueue?'staff-queue-pager':'actions queue-status-filters' ?>" aria-label="เปลี่ยนหน้าคำขอ">
     <?php if ($queuePage>1): ?><a class="action" href="<?= esc($pageUrl.($queuePage-1)) ?>">ก่อนหน้า</a><?php endif; ?>
@@ -1157,7 +1161,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    </nav>
   <?php endif; ?>
   </section>
-  <script defer src="queue-timeline.js?v=16"></script>
+  <script defer src="queue-timeline.js?v=17"></script>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">

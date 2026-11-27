@@ -2304,3 +2304,17 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 @keyframes queue-tab-sheen {
  to {transform:translateX(105%);}
 }
+
+.queue-list-viewport {
+ block-size:clamp(17rem,46vh,28rem);
+ overflow:auto;
+ scrollbar-gutter:stable;
+}
+.queue-list-viewport > .tablewrap {overflow:visible;}
+.queue-list-viewport .queue-empty {
+ margin:0;
+ min-block-size:100%;
+ display:grid;
+ place-items:center;
+ text-align:center;
+}

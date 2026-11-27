@@ -6,12 +6,27 @@ header('X-Frame-Options: DENY');
 header('Referrer-Policy: same-origin');
 $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' && $_SERVER['HTTPS'] !== 'off';
 if (!$secure && PHP_SAPI !== 'cli-server') { http_response_code(403); exit('กรุณาเปิดหน้าแบบประเมินผ่าน HTTPS'); }
+define('ANEMIA_STAFF_BOOT',true);
+$publicNavSignedIn=false;
+$publicNavDisplayName='';
+$participantId=null;
+$participantEpoch=0;
+if (isset($_COOKIE['anemia_participant'])) {
+    require_once __DIR__.'/_private/participant-account.php';
+    anemiaParticipantSession($secure);
+    if (($_SESSION['until']??0)>=time() && is_string($_SESSION['account']??null)) {
+        $participantId=$_SESSION['account'];
+        $participantEpoch=(int)($_SESSION['epoch']??0);
+    }
+    session_write_close();
+    session_id('');
+    $_SESSION=[];
+}
 ini_set('session.use_strict_mode','1');
 session_name('anemia_feedback');
 session_set_cookie_params(['secure'=>$secure,'httponly'=>true,'samesite'=>'Strict']);
 session_start();
 date_default_timezone_set('Asia/Bangkok');
-define('ANEMIA_STAFF_BOOT',true);
 require __DIR__ . '/_private/icons.php';
 require __DIR__.'/_private/evaluation.php';
 require __DIR__.'/_private/database.php';
@@ -50,6 +65,12 @@ try {
     $config=require __DIR__.'/_private/config.php';
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
+    if ($participantId!==null && anemiaParticipantEpoch($db,$participantId)===$participantEpoch) {
+        $publicNavSignedIn=true;
+        $profile=$db->prepare('SELECT display_name FROM anemia_participant_profile WHERE account_id=?');
+        $profile->execute([$participantId]);
+        $publicNavDisplayName=(string)$profile->fetchColumn();
+    }
     $provinces=$db->query('SELECT code,name FROM anemia_province ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
     if ($_SERVER['REQUEST_METHOD']==='POST') {
         $csrf=$_POST['token']??null;
@@ -90,7 +111,7 @@ function feedbackOld(string $key): string {
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ประเมินการใช้งาน · Anemia Portal</title>
 
-<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><script defer src="public-navigation.js?v=1"></script><link rel="stylesheet" href="style.css?v=portal-ui-v136"></head>
+<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><script defer src="public-navigation.js?v=2"></script><link rel="stylesheet" href="style.css?v=portal-ui-v136"></head>
 <body class="feedback-page"><?php $publicNavPage='feedback'; require __DIR__.'/_private/public-subpage-header.php'; ?><main><section class="panel">
 
 <header class="knowledge-hero feedback-hero">

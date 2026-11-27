@@ -10,10 +10,10 @@ if(publicProfilePhoto){
  let sessionCheck=0;
  const refreshAccountMenu=async()=>{
   const check=++sessionCheck;
-  let signedIn=false;
+  let signedIn=!accountMenu.hidden;
   try{
    const response=await fetch('participant-photo.php?session=1',{cache:'no-store'});
-   signedIn=response.status===204;
+   if(response.status===204||response.status===404)signedIn=response.status===204;
   }catch{}
   if(check!==sessionCheck)return;
   guestLink.hidden=signedIn;
@@ -38,7 +38,8 @@ if(publicProfilePhoto){
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden)resetAccountMenu();else refreshAccountMenu();
  });
- refreshAccountMenu();
+ if(accountMenu.hidden)refreshAccountMenu();
+ else publicProfilePhoto.src='participant-photo.php';
 }
 const publicMenuToggle=document.querySelector('.public-menu-toggle');
 const publicNavigation=document.querySelector('#public-navigation');

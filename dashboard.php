@@ -616,7 +616,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v108">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v109">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1035,23 +1035,35 @@ function workspaceInfo(string $page, ?array $release = null): void
   </nav>
   <?php endif; ?>
   <?php else: ?>
-  <div class="actions"><a class="action <?= !$demoQueue?'primary':'' ?>" href="dashboard.php?view=contact-queue"><?= workspaceIcon('phone') ?>คิวจริง</a>
-   <a class="action <?= $demoQueue?'primary':'' ?>" href="dashboard.php?view=contact-queue&amp;demo=1"><?= workspaceIcon('chart') ?>คิวทดสอบ</a>
-   <a class="action" href="dashboard.php?view=scan-request"><?= workspaceIcon('scan') ?>สแกน QR คำขอ</a>
-   <a class="action" href="index.html?test-otp=1"><?= workspaceIcon('next') ?>เริ่มทดสอบ OTP</a></div>
-  <h2><?= $demoQueue?'คำขอที่บันทึกในโหมดทดสอบ':'คำขอที่ยืนยันเบอร์แล้ว' ?></h2>
-  <a class="action" href="dashboard.php?view=contact-queue<?= $demoQueue?'&amp;demo=1':'' ?><?= $attentionOnly?'':'&amp;attention=1' ?>"><?= workspaceIcon('history') ?><?= $attentionOnly?'ดูคำขอทั้งหมด':'งานที่ต้องติดตาม' ?></a>
+  <div class="queue-heading">
+   <div class="queue-heading-bar">
+    <nav class="queue-tabs" aria-label="ประเภทคิว">
+     <a href="dashboard.php?view=contact-queue" <?= !$demoQueue?'aria-current="page"':'' ?>><?= workspaceIcon('phone') ?>คิวจริง</a>
+     <a href="dashboard.php?view=contact-queue&amp;demo=1" <?= $demoQueue?'aria-current="page"':'' ?>><?= workspaceIcon('chart') ?>คิวทดสอบ</a>
+    </nav>
+    <div class="queue-tools">
+     <a href="dashboard.php?view=scan-request"><?= workspaceIcon('scan') ?>สแกน QR</a>
+     <a href="index.html?test-otp=1"><?= workspaceIcon('play') ?>ทดสอบ OTP</a>
+    </div>
+   </div>
+   <div class="queue-heading-bar">
+    <h2><?= $demoQueue?'คำขอที่บันทึกในโหมดทดสอบ':'คำขอที่ยืนยันเบอร์แล้ว' ?></h2>
+    <a class="queue-attention" <?= $attentionOnly?'aria-current="page"':'' ?> href="dashboard.php?view=contact-queue<?= $demoQueue?'&amp;demo=1':'' ?><?= $attentionOnly?'':'&amp;attention=1' ?>"><?= workspaceIcon('history') ?><?= $attentionOnly?'ดูคำขอทั้งหมด':'งานที่ต้องติดตาม' ?></a>
+   </div>
   <?php
    $desktopQueueUrl='dashboard.php?'.http_build_query(['view'=>'contact-queue']
        + ($demoQueue?['demo'=>1]:[]) + ($attentionOnly?['attention'=>1]:[]));
+   $stateIcons=[''=>'filter','pending'=>'bell','accepted'=>'ready','contacted'=>'phone',
+       'retry_contact'=>'history','scheduled'=>'calendar','attended'=>'person','test_completed'=>'ready',
+       'follow_up'=>'message','closed'=>'lock'];
   ?>
-  <nav class="actions queue-status-filters" aria-label="กรองคำขอตามสถานะ">
+  <nav class="queue-tabs queue-status-tabs" aria-label="กรองคำขอตามสถานะ">
    <?php foreach ([''=>'ทุกสถานะ'] + ANEMIA_REQUEST_STATES as $state=>$label): ?>
-    <a class="action<?= $queueState===$state?' primary':'' ?>"
-       href="<?= esc($desktopQueueUrl.($state!==''?'&status='.rawurlencode($state):'')) ?>"
-       <?= $queueState===$state?'aria-current="page"':'' ?>><?= esc($label) ?></a>
+    <a href="<?= esc($desktopQueueUrl.($state!==''?'&status='.rawurlencode($state):'')) ?>"
+       <?= $queueState===$state?'aria-current="page"':'' ?>><?= workspaceIcon($stateIcons[$state] ?? 'info') ?><?= esc($label) ?></a>
    <?php endforeach; ?>
   </nav>
+  </div>
   <?php $pendingInQueue = $demoQueue ? $pendingDemoCounts : $pendingContactCounts; $counterScope = $demoQueue ? 'demo' : 'live'; ?>
   <div class="contact-pending-summary" aria-live="polite" aria-atomic="true">
    <span><?= workspaceIcon('calendar') ?>ขอนัดรอประสาน <strong data-pending-count="<?= $counterScope ?>.appointment"><?= $pendingInQueue['appointment'] ?></strong></span>

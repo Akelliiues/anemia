@@ -277,29 +277,59 @@ function initializeQueueTimeline() {
  calendar.addEventListener('toggle',()=>{if(calendar.open)historyPanel.open=false;});
  historyPanel.addEventListener('toggle',()=>{if(historyPanel.open)calendar.open=false;});
  const deleteButton=dialog.querySelector('[data-delete-queue]');
- deleteButton?.addEventListener('click',async()=>{
-  const receipt=form.elements.receipt.value;
-  if(!receipt||submit.disabled||!window.confirm(`ลบคำขอ ${receipt} พร้อมประวัติและผลตรวจของรายการนี้ถาวรหรือไม่?`))return;
-  deleteButton.disabled=true;
-  submit.disabled=true;
-  message.textContent='กำลังลบคำขอ…';
-  try{
-   const body=new FormData();
-   body.set('csrf',form.elements.csrf.value);
-   body.set('receipt',receipt);
-   body.set('queue_action','delete');
-   const response=await fetch(location.href,{method:'POST',body,cache:'no-store'});
-   if(response.status!==204)throw new Error('Queue deletion failed');
+ if(deleteButton){
+  const confirmDialog=dialog.querySelector('[data-delete-dialog]');
+  const title=confirmDialog.querySelector('[data-delete-title]');
+  const details=confirmDialog.querySelector('[data-delete-message]');
+  const confirmButton=confirmDialog.querySelector('[data-delete-confirm]');
+  const closeButton=confirmDialog.querySelector('[data-delete-close]');
+  let deleted=false;
+  deleteButton.addEventListener('click',()=>{
+   const receipt=form.elements.receipt.value;
+   if(!receipt||submit.disabled)return;
+   deleted=false;
+   title.textContent='ยืนยันการลบคำขอ';
+   details.textContent=`คำขอ ${receipt} รวมถึงประวัติและผลตรวจของรายการนี้ จะถูกลบถาวร`;
+   closeButton.textContent='ยกเลิก';
+   confirmButton.hidden=false;
+   confirmDialog.showModal();
+   closeButton.focus();
+  });
+  confirmDialog.addEventListener('cancel',event=>{
+   if(confirmButton.disabled)event.preventDefault();
+  });
+  confirmDialog.addEventListener('close',()=>{
+   if(!deleted)return;
    dialog.close();
    document.dispatchEvent(new Event('anemia:queue-changed'));
    document.dispatchEvent(new Event('anemia:queue-deleted'));
-  }catch{
-   message.textContent='ลบคำขอไม่สำเร็จ กรุณาเปิดรายการใหม่แล้วลองอีกครั้ง';
-  }finally{
-   deleteButton.disabled=false;
-   submit.disabled=false;
-  }
- });
+  });
+  confirmButton.addEventListener('click',async()=>{
+   confirmButton.disabled=true;
+   closeButton.disabled=true;
+   details.textContent='กำลังลบคำขอ…';
+   try{
+    const body=new FormData();
+    body.set('csrf',form.elements.csrf.value);
+    body.set('receipt',form.elements.receipt.value);
+    body.set('queue_action','delete');
+    const response=await fetch(location.href,{method:'POST',body,cache:'no-store'});
+    if(response.status!==204)throw new Error('Queue deletion failed');
+    deleted=true;
+    title.textContent='ลบคำขอแล้ว';
+    details.textContent=`ลบรายการ ${form.elements.receipt.value} เรียบร้อยแล้ว`;
+    confirmButton.hidden=true;
+    closeButton.textContent='เสร็จสิ้น';
+   }catch{
+    title.textContent='ลบคำขอไม่สำเร็จ';
+    details.textContent='กรุณาตรวจว่ารายการยังอยู่และบัญชียังเข้าสู่ระบบ แล้วลองอีกครั้ง';
+   }finally{
+    confirmButton.disabled=false;
+    closeButton.disabled=false;
+    closeButton.focus();
+   }
+  });
+ }
  form.addEventListener('submit',event=>{
   event.preventDefault();
   if(!roundField.hidden&&!dayInput.value){roundMessage.textContent='กรุณาเลือกวันที่';calendar.open=true;calendar.querySelector('summary').focus();return;}

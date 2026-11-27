@@ -1148,6 +1148,14 @@ function workspaceInfo(string $page, ?array $release = null): void
    <p data-timeline-message role="status"></p>
    <?php if ($isAdmin): ?>
     <button type="button" class="action" data-delete-queue><?= workspaceIcon('close') ?>ลบคำขอ</button>
+    <dialog class="signal-dialog workspace-dialog" data-delete-dialog aria-labelledby="queue-delete-title">
+     <h2 id="queue-delete-title" data-delete-title>ยืนยันการลบคำขอ</h2>
+     <p data-delete-message role="status"></p>
+     <form method="dialog" class="actions">
+      <button class="action" data-delete-close>ยกเลิก</button>
+      <button type="button" class="action primary" data-delete-confirm><?= workspaceIcon('close') ?>ยืนยันลบ</button>
+     </form>
+    </dialog>
    <?php endif; ?>
    <form method="post" id="queue-workflow-form" class="contact-queue-state" hidden>
     <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="receipt"><input type="hidden" name="previous">
@@ -1197,7 +1205,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    </nav>
   <?php endif; ?>
   </section>
-  <script defer src="queue-timeline.js?v=19"></script>
+  <script defer src="queue-timeline.js?v=20"></script>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">

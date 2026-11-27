@@ -1086,7 +1086,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .staff-install-page [data-install-help] {margin-top:1rem;}
 .staff-mobile-links {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));gap:.65rem;}
 .staff-mobile-links a {min-height:48px;padding:.6rem;text-decoration:none;border-radius:.7rem;}
-.hosted-workspace .admin-top-tabs {position:relative;padding:.27rem;gap:.25rem;border:1px solid #ead8ff30;border-radius:.8rem;background:#1c122c59;}
+.hosted-workspace .admin-top-tabs {position:relative;justify-content:flex-end;padding:.27rem;gap:.25rem;border:1px solid #ead8ff30;border-radius:.8rem;background:#1c122c59;}
 .hosted-workspace .admin-top-tabs .admin-tab {border:1px solid transparent;border-radius:.55rem;justify-content:center;transition:background-color .18s,color .18s;}
 .hosted-workspace .admin-top-tabs :is(.admin-tab[aria-current=page],[data-current] > summary) {border-color:#edddff;background:#f1e6ff;color:#39265b;}
 .hosted-workspace .admin-top-tabs .admin-tab:focus-visible {outline:2px solid #f2d5ff;outline-offset:2px;}

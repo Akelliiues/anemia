@@ -66,9 +66,18 @@ function adminHeading(title,summary){
 function adminTab(key){
  return `<button class="admin-tab" data-admin-view="${key}" aria-current="${adminView===key?'page':'false'}">${icon(adminIcons[key])}<span>${adminTabs[key]}</span></button>`;
 }
+const demoPeriodYear=period=>period.slice(-4);
+const demoPeriodYears=[...new Set(adminPeriods.map(demoPeriodYear))].reverse();
+const latestDemoPeriodForYear=year=>adminPeriods.filter(period=>demoPeriodYear(period)===year).at(-1)??'';
+function demoPeriodFilters(id,selected,label='เดือน'){
+ const year=demoPeriodYear(selected);
+ return `<label class="admin-month-filter">ปี พ.ศ.<select id="${id}-year">
+ <option value="">ทุกปี</option>${demoPeriodYears.map(item=>`<option value="${item}" ${item===year?'selected':''}>${item}</option>`).join('')}</select></label>
+ <label class="admin-month-filter">${label}<select id="${id}" ${year?'':'disabled'}>
+ ${year?'':'<option value="">ทุกเดือน</option>'}${adminPeriods.filter(period=>year&&demoPeriodYear(period)===year).map(period=>`<option value="${period}" ${period===selected?'selected':''}>${period.slice(0,-5)}</option>`).join('')}</select></label>`;
+}
 function adminMonthFilter(id,label='เดือน'){
- return `<label class="admin-month-filter">${label}<select id="${id}">
- <option value="">ทุกเดือน</option>${adminPeriods.map(period=>`<option ${period===adminPeriod?'selected':''}>${period}</option>`).join('')}</select></label>`;
+ return demoPeriodFilters(id,adminPeriod,label);
 }
 function adminFilters(scope){
  return `<div class="admin-filters no-print"><label>พื้นที่<select id="admin-region" ${scope.region?'disabled':''}>${scope.region?`<option>${scopeLabel(scope)}</option>`:`<option value="">ครบ 13 เขต</option>${adminRegions.map(region=>`<option value="${region}" ${String(region)===adminRegion?'selected':''}>${regionLabel(region)}</option>`).join('')}`}</select></label>
@@ -418,6 +427,7 @@ document.addEventListener('change',event=>{
   if(!accounts.some(account=>account.id===value&&account.active))return;
   adminAccount=value;adminRegion='';adminPeriod=latestAdminPeriod;adminMessage='';
  }else if(id==='admin-region')adminRegion=value;
+ else if(id==='admin-period-year'||id==='admin-table-period-year')adminPeriod=latestDemoPeriodForYear(value);
  else if(id==='admin-period'||id==='admin-table-period')adminPeriod=value;
  else return;
  staff();

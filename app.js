@@ -1127,7 +1127,7 @@ function publicSampleMarkup(){
  const valid=sums.low+sums.medium+sums.high;
  publicSelectedSegment=null;clearTimeout(publicTooltipTimer);clearTimeout(mapTooltipTimer);
  return `<h2>ข้อมูลจำลอง</h2>
- <div class="data-toolbar"><div class="data-filters">${publicFilter('data-area','พื้นที่','area',publicArea)}${publicFilter('data-period','เดือน','period',publicPeriod)}</div>${button('ดาวน์โหลด CSV ตัวอย่าง','export-public','download')}</div>
+ <div class="data-toolbar"><div class="data-filters">${publicFilter('data-area','พื้นที่','area',publicArea)}${demoPeriodFilters('data-period',publicPeriod)}</div>${button('ดาวน์โหลด CSV ตัวอย่าง','export-public','download')}</div>
  <div class="grid data-kpis"><section class="card">${box('history')}<strong>${(valid+sums.unknown).toLocaleString('th-TH')}</strong><div>ครั้งที่ทำแบบประเมิน</div></section><section class="card">${box('check')}<strong>${valid.toLocaleString('th-TH')}</strong><div>ครั้งที่สรุประดับได้</div></section><section class="card">${box('refresh')}<strong>${sums.unknown.toLocaleString('th-TH')}</strong><div>ครั้งที่ยังสรุประดับไม่ได้</div></section></div>
  ${publicMap(sums,valid)}
  ${publicCharts(sums,valid)}
@@ -1191,6 +1191,7 @@ document.addEventListener('change',event=>{
   return;
  }
  if(id==='data-area')publicArea=value;
+ else if(id==='data-period-year')publicPeriod=latestDemoPeriodForYear(value);
  else if(id==='data-period')publicPeriod=value;
  else return;
  updatePublicSample('#'+id);

@@ -2458,3 +2458,6 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 ) {
  border-inline-start:1px solid color-mix(in srgb,var(--ink) 15%,transparent);
 }
+
+.staff-dashboard-page .province-report-toolbar select[name=month_year],
+.staff-dashboard-page .province-report-toolbar select[name=month_number] {width:auto;min-width:7rem;}

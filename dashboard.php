@@ -43,6 +43,12 @@ $callbackTimes = ['08:30','09:30','10:30','11:30','13:00','14:00','15:00','16:00
 $callbackClosedDays = preg_split('/[\s,]+/',trim(getenv('ANEMIA_CONTACT_CLOSED_DATES') ?: ''),-1,PREG_SPLIT_NO_EMPTY);
 $evaluationAudience = $_GET['audience'] ?? '';
 $evaluationMonth = $_GET['month'] ?? date('Y-m');
+if (in_array($view,['reports','activity','evaluation'],true) && array_key_exists('month_number',$_GET)) {
+    $monthYear=$_GET['month_year']??null;
+    $monthNumber=$_GET['month_number'];
+    $evaluationMonth=is_string($monthYear) && is_string($monthNumber)
+        ? $monthYear.'-'.$monthNumber : '';
+}
 if (!is_string($evaluationAudience)) $evaluationAudience='';
 if (!is_string($evaluationMonth) || !preg_match('/^20[0-9]{2}-(0[1-9]|1[0-2])$/D',$evaluationMonth)) $evaluationMonth='';
 $region = filter_input(INPUT_GET, 'region', FILTER_VALIDATE_INT, ['options'=>['min_range'=>1,'max_range'=>13]]) ?: 0;
@@ -639,16 +645,25 @@ function workspaceThaiMonth(string $month): string
     return $months[$number] . ' ' . ($year + 543);
 }
 
-function workspaceMonthOptions(string $selected, bool $allowAll): void
+function workspaceMonthFilters(string $selected, bool $allowAll, string $monthLabel='เดือน'): void
 {
-    $current = new DateTimeImmutable('first day of this month');
-    $months = [];
-    for ($offset=0;$offset<36;$offset++) $months[] = $current->modify('-' . $offset . ' months')->format('Y-m');
-    if ($selected !== '' && !in_array($selected,$months,true)) { $months[] = $selected; rsort($months); }
-    if ($allowAll) echo '<option value="">ทุกเดือน</option>';
-    foreach ($months as $month) {
-        echo '<option value="' . esc($month) . '"' . ($month === $selected ? ' selected' : '') . '>' . esc(workspaceThaiMonth($month)) . '</option>';
-    }
+    $currentYear=(int)date('Y');
+    $year=$selected!==''?(int)substr($selected,0,4):$currentYear;
+    $years=array_unique([...range($currentYear,$currentYear-3),$year]);
+    rsort($years);
+    ?>
+    <label>ปี พ.ศ.<select name="month_year">
+     <?php foreach ($years as $option): ?><option value="<?= $option ?>" <?= $option===$year?'selected':'' ?>><?= $option+543 ?></option><?php endforeach; ?>
+    </select></label>
+    <label><?= esc($monthLabel) ?><select name="month_number">
+     <?php if ($allowAll): ?><option value="" <?= $selected===''?'selected':'' ?>>ทุกเดือนทุกปี</option><?php endif; ?>
+     <?php for ($i=1;$i<=12;$i++):
+       $number=sprintf('%02d',$i);
+       $label=explode(' ',workspaceThaiMonth('2000-'.$number))[0]; ?>
+      <option value="<?= $number ?>" <?= $number===substr($selected,5)?'selected':'' ?>><?= esc($label) ?></option>
+     <?php endfor; ?>
+    </select></label>
+    <?php
 }
 
 require __DIR__ . '/_private/icons.php';
@@ -674,13 +689,13 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v132">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v133">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=staff-details-v13"></script>
+<script defer src="admin.js?v=staff-details-v14"></script>
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
@@ -822,7 +837,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php if ($canChooseRegion): ?><label>เขตสุขภาพ<select name="region"><option value="0">ทุกเขต</option>
     <?php for ($i=1;$i<=13;$i++): ?><option value="<?= $i ?>" <?= $region === $i ? 'selected' : '' ?>><?= esc(zoneLabel($i)) ?></option><?php endfor; ?>
    </select></label><?php endif; ?>
-   <label>เดือนที่เริ่มประเมิน<select name="month"><?php workspaceMonthOptions($activityMonth,false); ?></select></label>
+   <?php workspaceMonthFilters($activityMonth,false,'เดือนที่เริ่มประเมิน'); ?>
    <button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดงข้อมูล</button>
   </form>
   <?php
@@ -877,7 +892,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <?php if ($canChooseRegion): ?><label>เขตสุขภาพ<select name="region"><option value="0">ทุกเขต</option>
      <?php for ($i=1;$i<=13;$i++): ?><option value="<?= $i ?>" <?= $region === $i ? 'selected' : '' ?>><?= esc(zoneLabel($i)) ?></option><?php endfor; ?>
     </select></label><?php endif; ?>
-    <label>เดือน<select name="month" required><?php workspaceMonthOptions($reportMonth,false); ?></select></label>
+    <?php workspaceMonthFilters($reportMonth,false); ?>
     <button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดง</button>
    </form>
    <div class="actions"><?php if (!$sampleMode): ?><a class="action" href="dashboard.php?view=reports&amp;region=<?= $region ?>&amp;month=<?= esc($reportMonth) ?>&amp;download=csv"><?= workspaceIcon('download') ?>ดาวน์โหลด CSV</a><?php endif; ?><button type="button" class="action primary" onclick="window.print()"><?= workspaceIcon('print') ?>พิมพ์รายงาน</button></div>
@@ -937,7 +952,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <?php foreach(EVALUATION_AUDIENCES as $key=>$label): ?><option value="<?= esc($key) ?>" <?= $evaluationAudience===$key?'selected':'' ?>><?= esc($label) ?></option><?php endforeach; ?>
    </select></label>
    <label>รุ่นแบบประเมิน<select name="version"><?php foreach ([EVALUATION_VERSION,EVALUATION_LEGACY_VERSION] as $version): ?><option <?= $version === $selectedVersion ? 'selected' : '' ?>><?= esc($version) ?></option><?php endforeach; ?></select></label>
-   <label>เดือน <select name="month"><?php workspaceMonthOptions($evaluationMonth,true); ?></select></label>
+   <?php workspaceMonthFilters($evaluationMonth,true); ?>
    <button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดงผล</button>
   </form>
   <div class="actions">

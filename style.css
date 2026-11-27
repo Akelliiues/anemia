@@ -2407,3 +2407,15 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .guide-entry a {display:inline-flex;align-items:center;white-space:nowrap;color:var(--violet);}
 .guide-catalog svg {width:1rem;height:1rem;}
 @media(max-width:690px) {.guide-section dl {grid-template-columns:minmax(0,1fr);}}
+
+@media(min-width:641px) {
+ .hosted-workspace .admin-top-tabs {width:fit-content;max-width:100%;margin-inline-start:auto;}
+}
+.hosted-workspace .admin-top-tabs :is(.admin-tab[aria-current=page],[data-current] > summary.admin-tab) {
+ background:transparent;
+ border-color:transparent;
+ border-bottom-color:#dcc0ff;
+ box-shadow:none;
+ color:#fff;
+ font-weight:800;
+}

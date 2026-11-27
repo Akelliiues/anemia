@@ -18,7 +18,10 @@ if ((!$secure && PHP_SAPI!=='cli-server') || ($_SERVER['REQUEST_METHOD']??'')!==
     demoContactReply(403,['error'=>'คำขอทดสอบไม่ถูกต้อง']);
 }
 $publicDemo=($_GET['public']??'')==='1';
-if ($publicDemo && (getenv('ANEMIA_VERIFY_KEY') || getenv('ANEMIA_VERIFY_SECRET') || getenv('ANEMIA_VERIFY_SERVICE'))) {
+define('ANEMIA_STAFF_BOOT',true);
+require_once __DIR__.'/_private/service-settings.php';
+$otp=anemiaServiceSettings('otp');
+if ($publicDemo && (($otp['mode']??null)!=='test') && (isset($otp['mode']) || anemiaServiceValue($otp,'ANEMIA_VERIFY_KEY') || anemiaServiceValue($otp,'ANEMIA_VERIFY_SECRET') || anemiaServiceValue($otp,'ANEMIA_VERIFY_SERVICE'))) {
     demoContactReply(403,['error'=>'โฮสต์นี้ใช้การยืนยันเบอร์ทาง SMS']);
 }
 ini_set('session.use_strict_mode','1');
@@ -26,7 +29,6 @@ session_name($publicDemo?'anemia_public_demo':'anemia_staff_session');
 session_set_cookie_params(['secure'=>$secure,'httponly'=>true,'samesite'=>'Strict']);
 session_start();
 if (!$publicDemo && (empty($_SESSION['username']) || (int)($_SESSION['until']??0)<=time())) demoContactReply(403,['error'=>'กรุณาเข้าสู่ระบบผู้ดูแลก่อนทดสอบ']);
-define('ANEMIA_STAFF_BOOT',true);
 date_default_timezone_set('Asia/Bangkok');
 
 try {

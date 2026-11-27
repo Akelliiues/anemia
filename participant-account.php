@@ -13,7 +13,8 @@ anemiaParticipantSession($secure);
 $_SESSION['csrf']??=bin2hex(random_bytes(32));
 $account=$_SESSION['account']??null;
 if (($_SESSION['until']??0)<time()) { unset($_SESSION['account']); $account=null; }
-$redirect=getenv('ANEMIA_ACCOUNT_CALLBACK')?:'';
+require_once __DIR__.'/_private/service-settings.php';
+$redirect=anemiaServiceCallback();
 $facebookVersion=getenv('ANEMIA_FACEBOOK_GRAPH_VERSION')?:'';
 $providers=[
     'line'=>['LINE','https://access.line.me/oauth2/v2.1/authorize','https://api.line.me/oauth2/v2.1/token','openid'],
@@ -22,7 +23,8 @@ $providers=[
 ];
 foreach ($providers as $key=>$details) {
     $prefix='ANEMIA_'.strtoupper($key);
-    $providers[$key]+=[4=>getenv($prefix.'_CLIENT_ID')?:'',5=>getenv($prefix.'_CLIENT_SECRET')?:''];
+    $config=anemiaServiceSettings($key);
+    $providers[$key]+=[4=>anemiaServiceLiveValue($config,$prefix.'_CLIENT_ID'),5=>anemiaServiceLiveValue($config,$prefix.'_CLIENT_SECRET')];
 }
 $canConnect=static fn(string $key): bool => isset($providers[$key]) && $providers[$key][4]!=='' && $providers[$key][5]!=='' &&
     filter_var($redirect,FILTER_VALIDATE_URL)!==false && parse_url($redirect,PHP_URL_SCHEME)==='https' &&

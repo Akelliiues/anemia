@@ -4,3 +4,5 @@
 .env.*
 *.sql
 *.log
+
+/_private/service-settings-*.bin*

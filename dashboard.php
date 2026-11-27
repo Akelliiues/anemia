@@ -32,7 +32,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report'], true)) $view = 'overview';
 $unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
 $scannerApp = $unitScanner || $view==='scanner-install';
 $mobileQueue = $view==='contact-queue' && ($_GET['app']??'')==='staff';
@@ -65,7 +65,7 @@ try {
     $canQueue=$isAdmin || ($grant['scope_kind']??'')==='facility';
     $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district'],true);
     [$queueScope,$queueParams]=anemiaQueueNetworkScope($isAdmin,$grant);
-    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','members','programme-report'],true) && !$isAdmin) ||
+    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','services','members','programme-report'],true) && !$isAdmin) ||
         (in_array($view,['contact-queue','scan-request','scanner-install'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
     }
@@ -333,6 +333,32 @@ try {
             echo json_encode($request,JSON_THROW_ON_ERROR);
             exit;
         }
+        if ($view === 'services') {
+            if (!$isAdmin || !is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) {
+                http_response_code(403); exit('คำขอหมดอายุ');
+            }
+            require_once __DIR__.'/_private/service-settings.php';
+            $service=$_POST['service']??'';
+            if (!is_string($service) || !isset(anemiaServiceDefinitions()[$service])) {
+                http_response_code(400); exit('ไม่พบบริการ');
+            }
+            try {
+                $action=$_POST['service_action']??'';
+                if ($action==='save') {
+                    anemiaSaveService($service,$_POST,$staff);
+                    if ($service==='otp') unset($_SESSION['service_otp_test'],$_SESSION['service_otp_verified_at']);
+                    $_SESSION['service_notice']='บันทึกค่าบริการแล้ว';
+                } elseif ($service==='otp' && in_array($action,['otp-send','otp-check'],true)) {
+                    $_SESSION['service_notice']=anemiaTestServiceOtp($action,$_POST);
+                } else {
+                    throw new DomainException('คำขอไม่ถูกต้อง');
+                }
+            } catch (DomainException $error) {
+                $_SESSION['service_notice']=$error->getMessage();
+            }
+            header('Location: dashboard.php?view=services&service='.$service,true,303);
+            exit;
+        }
         if ($view === 'sample-settings') {
             $enabled = $_POST['sample_enabled'] ?? null;
             $allRegions = isset($_POST['sample_all_regions']) ? '1' : '0';
@@ -564,13 +590,13 @@ try {
 $tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจังหวัด','evaluation'=>'ประเมินโครงการ','activity'=>'สถิติการทดลองแบบประเมิน','team'=>'ทีมวิจัยและพัฒนา','guide'=>'คู่มือการใช้งาน','about'=>'เกี่ยวกับระบบ'];
 $tabs['mobile'] = 'Anemia Staff';
 $tabs['scanner-install'] = 'ติดตั้งแอปสแกน QR';
-if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
+if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','services'=>'การเชื่อมต่อบริการ','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 if ($canQueue) $tabs += ['contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
 if ($isAdmin) $tabs['programme-report']='ผลการเรียนรู้';
 if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบริการ';
 if ($isAdmin) $tabs['members']='สมาชิก';
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
-$tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','contact-queue'=>'phone','scan-request'=>'scan'];
+$tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','services'=>'spark','contact-queue'=>'phone','scan-request'=>'scan'];
 $tabIcons['network']='hospital';
 $tabIcons['members']='users';
 $tabIcons['programme-report']='book';
@@ -683,7 +709,7 @@ function workspaceInfo(string $page, ?array $release = null): void
         ['รายงาน','map',['reports','activity','evaluation','programme-report']],
         ['แบบประเมิน','ready',['assessment']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
-        ['ระบบ','users',['members','access','audit','sample-settings','network']],
+        ['ระบบ','users',['members','access','audit','sample-settings','network','services']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];
     foreach ($groups as [$groupLabel,$groupIcon,$keys]):
@@ -1203,6 +1229,10 @@ function workspaceInfo(string $page, ?array $release = null): void
   <?php endif; ?>
   </section>
   <script defer src="queue-timeline.js?v=21"></script>
+  <?php elseif ($view === 'services'):
+   require_once __DIR__.'/_private/service-settings.php';
+   require __DIR__.'/_private/service-view.php';
+  ?>
   <?php elseif ($view === 'sample-settings'): ?>
   <div class="sample-settings-layout">
    <section class="card admin-report sample-setting-card">

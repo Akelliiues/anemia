@@ -18,9 +18,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' ||
     strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0])) !== 'application/json') {
     requestReply(403,['error'=>'คำขอไม่ถูกต้อง']);
 }
-$apiKey=getenv('ANEMIA_VERIFY_KEY') ?: '';
-$secret=getenv('ANEMIA_VERIFY_SECRET') ?: '';
-$service=getenv('ANEMIA_VERIFY_SERVICE') ?: '';
+define('ANEMIA_STAFF_BOOT',true);
+require_once __DIR__.'/_private/service-settings.php';
+$otp=anemiaServiceSettings('otp');
+$apiKey=anemiaServiceLiveValue($otp,'ANEMIA_VERIFY_KEY');
+$secret=anemiaServiceLiveValue($otp,'ANEMIA_VERIFY_SECRET');
+$service=anemiaServiceLiveValue($otp,'ANEMIA_VERIFY_SERVICE');
+if (isset($otp['mode']) && $otp['mode']!=='live') {
+    requestReply(503,['demoAvailable'=>$otp['mode']==='test','error'=>'ยังไม่เปิดบริการยืนยันเบอร์โทร']);
+}
 if ($apiKey==='' && $secret==='' && $service==='') {
     requestReply(503,['demoAvailable'=>true,'error'=>'ยังไม่ได้ตั้งค่า SMS']);
 }
@@ -52,7 +58,6 @@ ini_set('session.use_strict_mode','1');
 session_set_cookie_params(['secure'=>true,'httponly'=>true,'samesite'=>'Strict','path'=>'/']);
 session_start();
 date_default_timezone_set('Asia/Bangkok');
-define('ANEMIA_STAFF_BOOT',true);
 try {
     $config=require __DIR__.'/_private/config.php';
     require __DIR__.'/_private/database.php';

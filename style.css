@@ -2252,3 +2252,8 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 @keyframes hero-heart-orbit {
  to {transform:rotate(1turn);}
 }
+
+.queue-status-filters {margin-block: .8rem;}
+.queue-status-filters > span {align-self:center;}
+.queue-clickable-row {cursor:pointer;}
+.queue-clickable-row:is(:hover,:focus-within) {background:color-mix(in srgb,var(--violet) 9%,transparent);}

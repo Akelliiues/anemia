@@ -210,6 +210,10 @@
   }
  }
 
+ document.querySelector('.contact-queue-table')?.addEventListener('click',event=>{
+  if(event.target.closest('a,button,input,select,textarea,label') || window.getSelection()?.toString())return;
+  event.target.closest('.queue-clickable-row')?.querySelector('[data-queue-timeline]')?.click();
+ });
  document.querySelectorAll('[data-queue-timeline]').forEach(button=>button.addEventListener('click',()=>{
   trigger=button;
   form.hidden=true;

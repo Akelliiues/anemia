@@ -2172,7 +2172,8 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .public-subpage-header nav> a {white-space:nowrap;}
 .public-subpage-header [aria-current=page] {background:var(--soft-active);font-weight:700;}
 @media(max-width:990px){
- .public-subpage-header .bar {grid-template-columns:minmax(0,1fr);}
+ .public-subpage-header .bar {grid-template-columns:minmax(0,1fr) auto;}
+ .public-subpage-header .public-menu-toggle:not([hidden]) {grid-column:2;}
  .public-subpage-header nav {grid-template-columns:repeat(2,minmax(0,1fr));}
  .public-subpage-header nav> a {white-space:normal;}
  .public-subpage-header nav :is(summary,a) {font-size:.82rem;}

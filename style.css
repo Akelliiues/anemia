@@ -2234,3 +2234,20 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  background:transparent;
  box-shadow:none;
 }
+
+@media (prefers-reduced-motion:no-preference) {
+ .hero-art .halo::before {
+  content:"";
+  position:absolute;
+  inset:3%;
+  z-index:1;
+  border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 74%,#f9c0e878 88%,#fff 99%,transparent);
+  mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1px));
+  pointer-events:none;
+  animation:hero-heart-orbit 2.2s linear infinite;
+ }
+}
+@keyframes hero-heart-orbit {
+ to {transform:rotate(1turn);}
+}

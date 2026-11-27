@@ -2339,3 +2339,22 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  font-size:.75em;
  font-variant-numeric:tabular-nums;
 }
+
+.network-tools {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:1rem;}
+.network-tool,.network-empty {border:1px solid var(--line);border-radius:1rem;background:color-mix(in srgb,var(--violet) 6%,transparent);}
+.network-tool summary {display:flex;align-items:center;gap:.65rem;padding:.9rem 1rem;cursor:pointer;font-weight:700;}
+.network-tool summary::-webkit-details-marker {display:none;}
+.network-tool summary::after {content:"";margin-inline-start:auto;width:.45rem;height:.45rem;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+.network-tool[open] summary {border-bottom:1px solid var(--line);}
+.network-tool[open] summary::after {transform:rotate(225deg);}
+.network-tool-body {padding:1rem;}
+.network-tool-body > p {margin-top:0;}
+.network-form {display:grid;gap:.85rem;}
+.network-form label {display:grid;gap:.3rem;min-width:0;}
+.network-form :is(input:not([type=hidden]),textarea,select) {box-sizing:border-box;width:100%;margin:0;padding:.6rem .75rem;min-height:2.6rem;border:1px solid var(--line);border-radius:.65rem;background:transparent;color:inherit;font:inherit;}
+.network-form select {color-scheme:inherit;}
+.network-form textarea {resize:vertical;}
+.network-actions {display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.5rem;}
+.network-actions .action {padding:.5rem .7rem;text-decoration:none;}
+.network-empty {padding:.85rem 1rem;}
+@media(max-width:850px) {.network-tools {grid-template-columns:minmax(0,1fr);}}

@@ -14,33 +14,39 @@ $query->execute([...$networkParams,$districtFilter]);
 $facilities=$query->fetchAll(PDO::FETCH_ASSOC);
 $hospitals=array_column(array_filter($facilities,static fn($facility)=>$facility['kind']==='hospital'),'name','code');
 ?>
-<section class="card admin-report stack">
+<section class="card admin-report stack network-panel">
  <h2><?= workspaceIcon('hospital') ?> เครือข่ายโรงพยาบาลและ รพ.สต.</h2>
  <?php if ($networkNotice!==''): ?><p role="status" class="status"><?= esc($networkNotice) ?></p><?php endif; ?>
  <?php if ($isAdmin): ?>
- <details>
-  <summary>เพิ่มหน่วยบริการจากทะเบียนที่ตรวจสอบแล้ว</summary>
+ <div class="network-tools">
+ <details class="network-tool">
+  <summary><?= workspaceIcon('hospital') ?> <span>เพิ่มหน่วยบริการ</span></summary>
+  <div class="network-tool-body">
   <p>ใส่หนึ่งรายการต่อบรรทัด เรียงรหัสหน่วยบริการ รหัสอำเภอ ลำดับจากไฟล์อ้างอิง และค่าโรงพยาบาลประจำอำเภอ (1 หรือ 0)</p>
-  <a class="action" href="dashboard.php?view=network&amp;directory=1"><?= workspaceIcon('download') ?>ดาวน์โหลดลำดับหน่วยบริการ</a>
-  <form method="post" class="stack">
+  <form method="post" class="network-form">
    <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="network_action" value="register">
    <label>รายการหน่วยบริการ<textarea name="registry" rows="4" required></textarea></label>
-   <button class="action primary" type="submit"><?= workspaceIcon('save') ?>เพิ่มเข้าทะเบียน</button>
+   <div class="network-actions">
+  <a class="action" href="dashboard.php?view=network&amp;directory=1"><?= workspaceIcon('download') ?>ดาวน์โหลดลำดับหน่วยบริการ</a>
+    <button class="action primary" type="submit"><?= workspaceIcon('save') ?>เพิ่มเข้าทะเบียน</button>
+   </div>
   </form>
+  </div>
  </details>
- <details>
-  <summary>กำหนดสิทธิ์ให้บัญชีเจ้าหน้าที่</summary>
-  <form method="post" class="admin-filters">
+ <details class="network-tool">
+  <summary><?= workspaceIcon('users') ?> <span>กำหนดสิทธิ์เจ้าหน้าที่</span></summary>
+  <form method="post" class="network-form network-tool-body">
    <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="network_action" value="grant">
    <label>ชื่อบัญชี<input name="username" maxlength="40" required></label>
    <label>ขอบเขต<select name="scope_kind"><option value="province">จัดการในจังหวัด</option><option value="district">จัดการในอำเภอ</option><option value="facility">คิวนัดของหน่วยบริการ</option><option value="remove">ถอนสิทธิ์เครือข่าย</option></select></label>
    <label>รหัสจังหวัด อำเภอ หรือหน่วยบริการ<input name="scope_code" maxlength="12" inputmode="numeric"></label>
-   <button type="submit" class="action primary"><?= workspaceIcon('save') ?>บันทึกสิทธิ์</button>
+   <div class="network-actions"><button type="submit" class="action primary"><?= workspaceIcon('save') ?>บันทึกสิทธิ์</button></div>
   </form>
  </details>
+ </div>
  <?php endif; ?>
  <?php if (!$districts): ?>
-  <p>ยังไม่มีหน่วยบริการในขอบเขตที่รับผิดชอบ</p>
+  <p class="network-empty"><?= workspaceIcon('map') ?> ยังไม่มีหน่วยบริการในขอบเขตที่รับผิดชอบ</p>
  <?php else: ?>
  <form method="get" class="admin-filters">
   <input type="hidden" name="view" value="network">

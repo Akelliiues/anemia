@@ -1009,6 +1009,20 @@ details.hosted-region-progress {padding:.75rem 1rem;}
 .hosted-menu-links a {display:flex;align-items:center;gap:.45rem;padding:.55rem .65rem;border-radius:.45rem;color:#4e327b;text-decoration:none;white-space:nowrap;}
 .hosted-menu-links a svg {width:1rem;height:1rem;flex:none;}
 .hosted-menu-links a:hover,.hosted-menu-links a:focus-visible,.hosted-menu-links a[aria-current=page] {background:#f1e9fa;}
+.hosted-history-menu > summary {
+ display:flex;align-items:center;gap:.45rem;padding:.55rem .65rem;border-radius:.45rem;
+ color:var(--violet);white-space:nowrap;
+}
+.hosted-history-menu > summary svg {width:1rem;height:1rem;flex:none;}
+.hosted-history-menu > summary:is(:hover,:focus-visible),.hosted-history-menu[open] > summary {
+ background:color-mix(in srgb,var(--violet) 10%,transparent);
+}
+.hosted-history-caret {
+ margin-inline-start:auto;width:.4rem;height:.4rem;border:solid currentColor;
+ border-width:0 1px 1px 0;transform:rotate(45deg);
+}
+.hosted-history-menu[open] .hosted-history-caret {transform:rotate(225deg);}
+.hosted-history-menu > a {margin-inline-start:.7rem;}
 @media(max-width:420px){
  .hosted-workspace .admin-top-tabs .admin-tab {gap:.25rem;padding-inline:.4rem;font-size:.875rem;}
  .hosted-workspace .admin-top-tabs .admin-tab svg {width:.8rem;height:.8rem;}

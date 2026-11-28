@@ -832,7 +832,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v165">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v166">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -874,18 +874,19 @@ function workspaceInfo(string $page, ?array $release = null): void
         ['ภาพรวม','chart',['overview']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
         ['รายงาน','map',['reports','schools','programme-report','activity','evaluation']],
-        ['ระบบ','users',['members','network','access','voice-coach','services','usage-audit','audit','sample-settings']],
+        ['ระบบ','users',['members','access','voice-coach','network','sample-settings','services','audit','usage-audit']],
         ['แบบประเมิน','ready',['assessment']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];
+    $historyKeys=array_values(array_intersect(['audit','usage-audit'],array_keys($tabs)));
     foreach ($groups as [$groupLabel,$groupIcon,$keys]):
         $items = array_intersect_key(array_flip($keys), $tabs);
         if (!$items) continue;
         $keys = array_keys($items);
         $hasCurrent = in_array($view,$keys,true);
-        if (count($keys) === 1): $key = $keys[0];
+        if (count($keys) === 1 && !in_array($keys[0],$historyKeys,true)): $key = $keys[0];
    ?>
-    <a class="admin-tab" href="dashboard.php?view=<?= esc($key) ?>" <?= $hasCurrent ? 'aria-current="page"' : '' ?>><?= workspaceIcon($key==='usage-audit'?'history':$groupIcon) ?><?= esc($key==='usage-audit'?$tabs[$key]:$groupLabel) ?></a>
+    <a class="admin-tab" href="dashboard.php?view=<?= esc($key) ?>" <?= $hasCurrent ? 'aria-current="page"' : '' ?>><?= workspaceIcon($groupIcon) ?><?= esc($groupLabel) ?></a>
    <?php else: ?>
     <details class="hosted-menu-group<?= in_array($keys[0],['contact-queue','access'],true)?' hosted-menu-align-end':'' ?>" name="hosted-navigation" <?= $hasCurrent ? 'data-current' : '' ?>>
      <summary class="admin-tab">
@@ -897,7 +898,16 @@ function workspaceInfo(string $page, ?array $release = null): void
      </summary>
      <div class="hosted-menu-links">
       <?php foreach ($keys as $key): ?>
+       <?php if ($key===($historyKeys[0]??null)): ?>
+        <details class="hosted-history-menu" <?= in_array($view,$historyKeys,true)?'open':'' ?>>
+         <summary><?= workspaceIcon('history') ?> ประวัติ <span class="hosted-history-caret" aria-hidden="true"></span></summary>
+         <?php foreach ($historyKeys as $historyKey): ?>
+          <a href="dashboard.php?view=<?= esc($historyKey) ?>" <?= $view===$historyKey?'aria-current="page"':'' ?>><?= workspaceIcon($tabIcons[$historyKey]) ?><?= esc($tabs[$historyKey]) ?></a>
+         <?php endforeach; ?>
+        </details>
+       <?php elseif (!in_array($key,$historyKeys,true)): ?>
        <a href="dashboard.php?view=<?= esc($key) ?>" <?= $view === $key ? 'aria-current="page"' : '' ?> <?php if (in_array($key,['about','team'],true)): ?>data-workspace-dialog="<?= esc($key) ?>" aria-haspopup="dialog"<?php endif; ?>><?= workspaceIcon($tabIcons[$key]) ?><?= esc($tabs[$key]) ?></a>
+       <?php endif; ?>
       <?php endforeach; ?>
       <?php if ($keys[0]==='guide'): ?>
        <a class="staff-install-action" href="staff-install.html" data-staff-install><?= workspaceIcon('download') ?>ติดตั้ง Anemia Staff</a>

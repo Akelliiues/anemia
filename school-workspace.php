@@ -25,7 +25,7 @@ try {
     $identity=anemiaStaffIdentity($db,$_SESSION['username']);
     if (!$identity) { http_response_code(403); exit('บัญชีนี้เข้าใช้งานไม่ได้'); }
     if ($identity['role']!=='school_teacher' && $_SERVER['REQUEST_METHOD']!=='POST') {
-        $query=['view'=>'schools']+array_intersect_key($_GET,array_flip(['region','province','school','cohort','district','q']));
+        $query=['view'=>'schools']+array_intersect_key($_GET,array_flip(['region','province','school','cohort','district','q','school_tab','year','school_status','room_year','unassigned']));
         header('Location: dashboard.php?'.http_build_query($query),true,303); exit;
     }
     $renderSchools=require __DIR__.'/_private/school-view.php';
@@ -41,7 +41,7 @@ try {
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรมโรงเรียน · Anemia Portal</title>
 <script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v4">
-<script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=1"></script>
+<script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=2"></script>
 <body class="staff-dashboard-page"><main class="school-workspace hosted-workspace">
 <header class="admin-top no-print">
  <div class="workspace-header-art" aria-hidden="true"></div>

@@ -36,7 +36,7 @@ return static function (PDO $db,array $identity): void {
     if ($_SERVER['REQUEST_METHOD']==='POST') {
         if (!is_string($_POST['csrf']??null) || !hash_equals($csrf,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
         try {
-            schoolSave($db,$identity,$_POST);
+            $savedSchool=schoolSave($db,$identity,$_POST);
             $_SESSION['school_notice']='บันทึกการเปลี่ยนแปลงแล้ว';
         } catch (DomainException $error) {
             $_SESSION['school_notice']=$error->getMessage();
@@ -44,14 +44,19 @@ return static function (PDO $db,array $identity): void {
             $_SESSION['school_notice']='บันทึกไม่ได้ กรุณาตรวจว่าข้อมูลซ้ำหรือไม่';
             error_log('Anemia school save SQLSTATE '.$error->getCode());
         }
-        $schoolId=filter_input(INPUT_POST,'school',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+        $schoolId=$savedSchool??filter_input(INPUT_POST,'school',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
         $redirect=[];
         foreach (['region','province'] as $key) {
             if (is_string($_GET[$key]??null) && ctype_digit($_GET[$key])) $redirect[$key]=$_GET[$key];
         }
         if ($schoolId) $redirect['school']=$schoolId;
         if (($_POST['school_action']??'')==='school-create' && is_string($_POST['province']??null) && ctype_digit($_POST['province'])) {
-            $redirect=['province'=>$_POST['province']];
+            $redirect=['province'=>$_POST['province']]+$redirect;
+            unset($redirect['region']);
+        }
+        if ($schoolId && in_array($_POST['school_action']??'', ['cohort-edit','cohort-toggle'],true)) {
+            $cohort=filter_input(INPUT_POST,'cohort',FILTER_VALIDATE_INT);
+            if ($cohort) $redirect['cohort']=$cohort;
         }
         $redirect=$schoolRoute+$redirect;
         header('Location: '.$schoolUrl.($redirect?'?'.http_build_query($redirect):''),true,303); exit;
@@ -79,8 +84,9 @@ return static function (PDO $db,array $identity): void {
     $areaFilters=($region?['region'=>$region]:[])+($province!==''?['province'=>$province]:[]);
     $schoolLocation=static fn(array $extra=[]): string => $schoolUrl.'?'.http_build_query($schoolRoute+$areaFilters+$extra);
     $schools=[];
+    $schoolTab=($_GET['school_tab']??'')==='tracking'?'tracking':'registry';
     if ($teacher || $province!=='') {
-        $query=$db->prepare("SELECT s.*,p.name AS province FROM anemia_school s JOIN anemia_province p ON p.code=s.province_code WHERE $scope ORDER BY p.name,s.name");
+        $query=$db->prepare("SELECT s.*,p.name AS province,p.region,sc.username AS coordinator FROM anemia_school s JOIN anemia_province p ON p.code=s.province_code LEFT JOIN anemia_school_coordinator sc ON sc.school_id=s.id WHERE $scope ORDER BY p.name,s.name");
         $query->execute($params);
         $schools=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'id');
     }
@@ -89,14 +95,20 @@ return static function (PDO $db,array $identity): void {
     $cohorts=[];
     $members=[];
     $assignments=[];
-    if ($school) {
-        $ownerFilter=$teacher?' AND c.teacher=?':'';
-        $query=$db->prepare("SELECT c.*, COUNT(m.account_id) AS members, SUM(a.account_id IS NOT NULL) AS completed
-            FROM anemia_school_cohort c LEFT JOIN anemia_school_member m ON m.cohort_id=c.id
+    $roomTeachers=[];
+    $profile=[];
+    $roomHistory=[];
+    $manage=$school && ($admin || ($teacher && $school['coordinator']===$identity['username']));
+    $canAppoint=$school && schoolCanAppoint($db,$identity,$school);
+    if ($school && $schoolTab!=='tracking') {
+        $ownerFilter=$teacher && !$manage ? ' AND ((r.cohort_id IS NULL AND c.teacher=?) OR EXISTS (
+            SELECT 1 FROM anemia_school_room_teacher rt WHERE rt.cohort_id=c.id AND rt.username=?))' : '';
+        $query=$db->prepare("SELECT c.*,r.academic_year,r.grade,r.room_no,COUNT(m.account_id) AS members, COUNT(a.account_id) AS completed
+            FROM anemia_school_cohort c LEFT JOIN anemia_school_room r ON r.cohort_id=c.id LEFT JOIN anemia_school_member m ON m.cohort_id=c.id
             LEFT JOIN anemia_participant_programme_assessment a ON a.account_id=m.account_id AND a.programme_version=c.programme_version
             AND a.instrument_version=? AND a.phase='after'
-            WHERE c.school_id=?$ownerFilter GROUP BY c.id ORDER BY c.id DESC");
-        $query->execute([ANEMIA_PROGRAMME_INSTRUMENT_VERSION,$school['id'],...($teacher?[$identity['username']]:[])]);
+            WHERE c.school_id=?$ownerFilter GROUP BY c.id,r.academic_year,r.grade,r.room_no ORDER BY r.academic_year DESC,r.grade,r.room_no,c.id DESC");
+        $query->execute([ANEMIA_PROGRAMME_INSTRUMENT_VERSION,$school['id'],...($ownerFilter?[$identity['username'],$identity['username']]:[])]);
         $cohorts=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'id');
         $cohortId=filter_input(INPUT_GET,'cohort',FILTER_VALIDATE_INT);
         if (($admin||$teacher) && isset($cohorts[$cohortId])) {
@@ -110,14 +122,62 @@ return static function (PDO $db,array $identity): void {
             $query->execute([ANEMIA_PROGRAMME_INSTRUMENT_VERSION,$cohortId]);
             $members=$query->fetchAll(PDO::FETCH_ASSOC);
         }
-        if ($admin) {
-            $query=$db->prepare("SELECT t.username FROM anemia_school_teacher t JOIN anemia_staff u ON u.username=t.username WHERE school_id=? AND u.enabled=1 AND u.role='school_teacher' ORDER BY t.username");
+        if ($manage) {
+            $query=$db->prepare("SELECT t.username,COALESCE(p.full_name,t.username) AS full_name,p.contact,u.enabled FROM anemia_school_teacher t
+                JOIN anemia_staff u ON u.username=t.username AND u.role='school_teacher'
+                LEFT JOIN anemia_school_teacher_profile p ON p.username=t.username WHERE t.school_id=? ORDER BY full_name");
             $query->execute([$school['id']]);
-            $assignments=$query->fetchAll(PDO::FETCH_COLUMN);
+            $assignments=$query->fetchAll(PDO::FETCH_ASSOC);
+            $query=$db->prepare("SELECT rt.*,COALESCE(p.full_name,rt.username) AS full_name,u.enabled FROM anemia_school_room_teacher rt
+                JOIN anemia_school_room r ON r.cohort_id=rt.cohort_id JOIN anemia_staff u ON u.username=rt.username
+                LEFT JOIN anemia_school_teacher_profile p ON p.username=rt.username WHERE r.school_id=?");
+            $query->execute([$school['id']]);
+            foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $row) $roomTeachers[$row['cohort_id']][$row['duty']]=$row;
+            if (isset($cohorts[$cohortId])) {
+                $query=$db->prepare("SELECT h.*,COALESCE(p.full_name,h.username) AS full_name FROM anemia_school_room_history h
+                    LEFT JOIN anemia_school_teacher_profile p ON p.username=h.username WHERE h.cohort_id=? ORDER BY h.id DESC LIMIT 30");
+                $query->execute([$cohortId]);
+                $roomHistory=$query->fetchAll(PDO::FETCH_ASSOC);
+            }
+        }
+        if ($teacher) {
+            $query=$db->prepare('SELECT full_name,contact FROM anemia_school_teacher_profile WHERE username=?');
+            $query->execute([$identity['username']]);
+            $profile=$query->fetch(PDO::FETCH_ASSOC)?:[];
         }
     }
+    $tracking=[];
+    $trackingYears=[];
+    $trackingYear=filter_input(INPUT_GET,'year',FILTER_VALIDATE_INT,['options'=>['min_range'=>2500,'max_range'=>2642]])?:0;
+    $trackingStatus=$_GET['school_status']??'';
+    if (!in_array($trackingStatus,['no-coordinator','no-rooms','active','disabled'],true)) $trackingStatus='';
+    if (!$teacher && $province!=='' && $schoolTab==='tracking') {
+        $query=$db->prepare('SELECT DISTINCT r.academic_year FROM anemia_school_room r JOIN anemia_school s ON s.id=r.school_id WHERE s.province_code=? ORDER BY r.academic_year DESC');
+        $query->execute([$province]);
+        $trackingYears=array_map('intval',$query->fetchAll(PDO::FETCH_COLUMN));
+        if (!in_array($trackingYear,$trackingYears,true)) $trackingYear=0;
+        $yearClause=$trackingYear?' AND EXISTS (SELECT 1 FROM anemia_school_room r WHERE r.cohort_id=c.id AND r.academic_year=?)':'';
+        $query=$db->prepare("SELECT s.id,s.name,s.enabled,staff.username AS coordinator,COUNT(DISTINCT c.id) AS rooms,
+            COUNT(DISTINCT CASE WHEN s.enabled=1 AND c.accepting=1 AND ? BETWEEN c.opens_on AND c.closes_on THEN c.id END) AS accepting,
+            COUNT(DISTINCT m.account_id) AS members,COUNT(DISTINCT a.account_id) AS completed
+            FROM anemia_school s LEFT JOIN anemia_school_coordinator sc ON sc.school_id=s.id
+            LEFT JOIN anemia_staff staff ON staff.username=sc.username AND staff.enabled=1 AND staff.role='school_teacher'
+            LEFT JOIN anemia_school_cohort c ON c.school_id=s.id$yearClause LEFT JOIN anemia_school_member m ON m.cohort_id=c.id
+            LEFT JOIN anemia_participant_programme_assessment a ON a.account_id=m.account_id AND a.programme_version=c.programme_version
+                AND a.instrument_version=? AND a.phase='after'
+            WHERE s.province_code=? GROUP BY s.id,s.name,s.enabled,staff.username ORDER BY s.name");
+        $query->execute([date('Y-m-d'),...($trackingYear?[$trackingYear]:[]),ANEMIA_PROGRAMME_INSTRUMENT_VERSION,$province]);
+        $tracking=$query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    $trackingRows=array_filter($tracking,static fn(array $row): bool => match ($trackingStatus) {
+        'no-coordinator'=> (bool)$row['enabled'] && !$row['coordinator'],
+        'no-rooms'=> (bool)$row['enabled'] && !$row['rooms'],
+        'active'=> (bool)$row['enabled'] && (bool)$row['rooms'],
+        'disabled'=> !(bool)$row['enabled'],
+        default=>true,
+    });
     $provinces=$admin?$db->query('SELECT code,name FROM anemia_province ORDER BY name')->fetchAll(PDO::FETCH_KEY_PAIR):[];
-    $directory=$admin && $province==='34'?schoolUbonDirectory():['districts'=>[],'schools'=>[]];
+    $directory=$schoolTab==='registry' && $province==='34'?schoolUbonDirectory():['districts'=>[],'schools'=>[]];
     $district=$_GET['district']??'';
     if (!in_array($district,$directory['districts'],true)) $district='';
     $keyword=$_GET['q']??'';
@@ -130,11 +190,18 @@ return static function (PDO $db,array $identity): void {
         if ($registeredSchool['province_code']==='34') $registeredUbon[$registeredSchool['name']]=$registeredSchool['id'];
     }
     $audit=[];
-    if($admin && $school) {
+    if(($manage || $canAppoint) && $school && $schoolTab!=='tracking') {
         $query=$db->prepare('SELECT actor,action_name,created_at FROM anemia_school_audit WHERE school_id=? ORDER BY id DESC LIMIT 20');
         $query->execute([$school['id']]);
         $audit=$query->fetchAll(PDO::FETCH_ASSOC);
     }
+    $roomYears=array_values(array_unique(array_map('intval',array_filter(array_column($cohorts,'academic_year')))));
+    $roomYear=filter_input(INPUT_GET,'room_year',FILTER_VALIDATE_INT)?:0;
+    if (!in_array($roomYear,$roomYears,true)) $roomYear=0;
+    $unassigned=$manage && ($_GET['unassigned']??'')==='1';
+    $visibleCohorts=array_filter($cohorts,static fn(array $row): bool =>
+        (!$roomYear || $roomYear===(int)$row['academic_year']) &&
+        (!$unassigned || ($row['academic_year'] && empty($roomTeachers[$row['id']]['primary']['enabled']))));
     $schoolPostUrl='school-workspace.php'.($areaFilters?'?'.http_build_query($areaFilters):'');
 ?>
 <div class="school-workspace">
@@ -166,6 +233,44 @@ return static function (PDO $db,array $identity): void {
 <?php endif; ?>
 </section>
 <?php endif; ?>
+<?php if (!$teacher && $province!==''): ?>
+<nav class="actions" aria-label="เมนูกิจกรรมโรงเรียน">
+ <?php foreach (['registry'=>'ทะเบียนโรงเรียน','tracking'=>'ติดตามกิจกรรม'] as $tab=>$label): ?>
+  <a class="action<?= $schoolTab===$tab?' primary':'' ?>" href="<?= schoolEscape($schoolLocation(['school_tab'=>$tab])) ?>" <?= $schoolTab===$tab?'aria-current="page"':'' ?>><?= schoolEscape($label) ?></a>
+ <?php endforeach; ?>
+</nav>
+<?php endif; ?>
+<?php if ($schoolTab==='tracking' && $province!==''): ?>
+<section class="card"><h2>ติดตามกิจกรรมรายโรงเรียน</h2>
+ <div class="admin-kpis hosted-kpis">
+  <div class="card"><span>โรงเรียนในทะเบียน</span><strong><?= count($tracking) ?></strong></div>
+  <div class="card"><span>โรงเรียนที่มีห้องกิจกรรม</span><strong><?= count(array_filter(array_column($tracking,'rooms'))) ?></strong></div>
+  <div class="card"><span>ห้องที่เปิดรับ</span><strong><?= array_sum(array_column($tracking,'accepting')) ?></strong></div>
+  <div class="card"><span>โรงเรียนที่รอผู้ประสานงาน</span><strong><?= count(array_filter($tracking,static fn(array $row): bool => $row['enabled'] && !$row['coordinator'])) ?></strong></div>
+ </div>
+ <form method="get" class="network-form school-directory-filters">
+  <input type="hidden" name="view" value="schools"><input type="hidden" name="school_tab" value="tracking">
+  <?php foreach ($areaFilters as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
+  <label>ปีการศึกษา<select name="year"><option value="">ทุกปี</option>
+   <?php foreach ($trackingYears as $year): ?><option value="<?= $year ?>" <?= $trackingYear===$year?'selected':'' ?>><?= $year ?></option><?php endforeach; ?>
+  </select></label>
+  <label>สถานะ<select name="school_status"><option value="">ทุกสถานะ</option>
+   <?php foreach (['no-coordinator'=>'รอผู้ประสานงาน','no-rooms'=>'ยังไม่มีห้องกิจกรรม','active'=>'มีห้องกิจกรรม','disabled'=>'ปิดใช้งาน'] as $key=>$label): ?>
+    <option value="<?= $key ?>" <?= $trackingStatus===$key?'selected':'' ?>><?= $label ?></option>
+   <?php endforeach; ?>
+  </select></label>
+  <button class="action primary">กรองรายงาน</button>
+ </form>
+ <div class="tablewrap"><table class="admin-table"><thead><tr><th scope="col">โรงเรียน</th><th scope="col">สถานะ</th><th scope="col">ห้อง</th><th scope="col">เปิดรับ</th><th scope="col">เข้าร่วม (คน)</th><th scope="col">ทำครบ (คน)</th></tr></thead><tbody>
+ <?php foreach ($trackingRows as $entry): ?>
+ <tr><th scope="row"><a href="<?= schoolEscape($schoolLocation(['school'=>(int)$entry['id']])) ?>#school-activities"><?= schoolEscape($entry['name']) ?></a></th>
+ <td><?= !$entry['enabled']?'ปิดใช้งาน':(!$entry['coordinator']?'รอผู้ประสานงาน':(!$entry['rooms']?'ยังไม่มีห้องกิจกรรม':'มีห้องกิจกรรม')) ?></td>
+ <td><?= (int)$entry['rooms'] ?></td><td><?= (int)$entry['accepting'] ?></td><td><?= (int)$entry['members'] ?></td><td><?= (int)$entry['completed'] ?></td></tr>
+ <?php endforeach; ?>
+ <?php if (!$trackingRows): ?><tr><td colspan="6">ไม่พบโรงเรียนตามตัวกรอง</td></tr><?php endif; ?>
+ </tbody></table></div>
+</section>
+<?php else: ?>
 <?php if ($directory['schools']): ?>
 <section class="card school-directory" id="school-directory" aria-labelledby="school-directory-title">
  <h2 id="school-directory-title"><?= workspaceIcon('book') ?> โรงเรียนมัธยมปลาย จังหวัดอุบลราชธานี</h2>
@@ -188,9 +293,9 @@ return static function (PDO $db,array $identity): void {
    <td><?= schoolEscape(implode(', ',str_replace('M','ม.',$row['grades']))) ?></td>
    <td><?php if (isset($registeredUbon[$row['name']])): ?>
     <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredUbon[$row['name']]])) ?>#school-activities">จัดการโรงเรียน</a>
-   <?php else: ?>
+   <?php elseif ($admin): ?>
     <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าทะเบียน</button></form>
-   <?php endif; ?></td>
+   <?php else: ?>ยังไม่เข้าทะเบียน<?php endif; ?></td>
   </tr><?php endforeach; ?>
   <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนตามตัวกรอง</td></tr><?php endif; ?>
   </tbody>
@@ -207,44 +312,45 @@ return static function (PDO $db,array $identity): void {
   <label>โรงเรียน<select name="school"><?php foreach($schools as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $item['id']===$school['id']?'selected':'' ?>><?= schoolEscape($item['name'].' · '.$item['province']) ?></option><?php endforeach; ?></select></label>
   <button class="action">แสดงโรงเรียน</button>
  </form>
- <?php if ($admin): ?>
- <details><summary>จัดการสิทธิ์ครูและสถานะโรงเรียน</summary>
-  <p>สร้างบัญชีบทบาทครูจากเมนูจัดการสิทธิ์ แล้วจึงมอบหมายโรงเรียนที่นี่</p>
-  <p>ครูที่ได้รับมอบหมาย <?= schoolEscape(implode(', ',$assignments) ?: 'ยังไม่มี') ?></p>
-  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields"><?php schoolFields($csrf,'grant',(int)$school['id']); ?>
-   <label>ชื่อบัญชีครู<input name="teacher" maxlength="40" required></label><button class="action primary">มอบหมายครู</button>
-  </form>
-  <?php foreach($assignments as $username): ?><form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="actions"><?php schoolFields($csrf,'revoke',(int)$school['id']); ?><input type="hidden" name="teacher" value="<?= schoolEscape($username) ?>"><button class="action">ถอนสิทธิ์ <?= schoolEscape($username) ?></button></form><?php endforeach; ?>
-  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'school-toggle',(int)$school['id']); ?><button class="action"><?= $school['enabled']?'ปิดใช้งานโรงเรียน':'เปิดใช้งานโรงเรียน' ?></button></form>
- </details>
- <?php endif; ?>
+ <?php require __DIR__.'/school-controls.php'; ?>
 </section>
-<?php if ($school['enabled'] && ($teacher||$assignments)): ?>
-<details class="card"><summary>เปิดรุ่นกิจกรรมและห้องเรียน</summary>
- <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields"><?php schoolFields($csrf,'cohort-create',(int)$school['id']); ?>
-  <?php schoolCohortFields(); ?>
-  <?php if ($admin): ?><label>ครูผู้รับผิดชอบ<select name="teacher"><?php foreach($assignments as $owner): ?><option><?= schoolEscape($owner) ?></option><?php endforeach; ?></select></label><?php endif; ?>
-  <button class="action primary">สร้างรุ่นและรหัสเข้าร่วม</button>
+<section class="card"><h2><?= $teacher && !$manage ? 'ห้องของฉัน' : 'ห้องเรียนและรุ่นกิจกรรม' ?></h2>
+ <?php if ($roomYears): ?>
+ <form method="get" class="network-form school-directory-filters">
+  <?php foreach ($schoolRoute+$areaFilters+['school'=>$school['id']] as $key=>$value): ?>
+   <input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>">
+  <?php endforeach; ?>
+  <label>ปีการศึกษา<select name="room_year"><option value="0">ทุกปี</option>
+   <?php foreach ($roomYears as $year): ?><option value="<?= $year ?>" <?= $roomYear===$year?'selected':'' ?>><?= $year ?></option><?php endforeach; ?>
+  </select></label>
+  <?php if ($manage): ?><label>ผู้รับผิดชอบ<select name="unassigned"><option value="0">ทุกห้อง</option><option value="1" <?= $unassigned?'selected':'' ?>>ห้องที่ยังไม่มีครูหลัก</option></select></label><?php endif; ?>
+  <button class="action">กรองห้อง</button>
  </form>
-</details>
-<?php endif; ?>
-<section class="card"><h2>รุ่นกิจกรรม</h2>
- <?php if (!$cohorts): ?><p>ยังไม่มีรุ่นกิจกรรม</p><?php endif; ?>
- <?php foreach($cohorts as $item): ?>
-  <details class="school-cohort" <?= $item['id']==($cohortId??null)?'open':'' ?>>
-   <summary><?= schoolEscape($item['title'].' · '.$item['classroom']) ?> · เข้าร่วม <?= (int)$item['members'] ?> · เรียนครบ <?= (int)$item['completed'] ?></summary>
-   <p><?= schoolEscape($item['opens_on'].' ถึง '.$item['closes_on']) ?> · <?= $item['accepting']?'เปิดรับตามช่วงวันที่':'ปิดรับ' ?></p>
+ <?php endif; ?>
+ <?php if (!$visibleCohorts): ?><p><?= $cohorts?'ไม่พบห้องตามตัวกรอง':'ยังไม่มีรุ่นกิจกรรม' ?></p><?php endif; ?>
+ <?php foreach($visibleCohorts as $item): ?>
+  <details class="school-cohort" <?= (int)$item['id']===($cohortId??null)?'open':'' ?>>
+   <summary><?= schoolEscape(($item['academic_year']?'ปี '.$item['academic_year'].' · ':'').$item['title'].' · '.$item['classroom']) ?> · เข้าร่วม <?= (int)$item['members'] ?> · ทำครบ <?= (int)$item['completed'] ?></summary>
+   <p><?= schoolEscape($item['opens_on'].' ถึง '.$item['closes_on']) ?> · <?= $item['accepting'] && $school['enabled']?'เปิดรับตามช่วงวันที่':'ปิดรับ' ?></p>
+   <?php if ($manage && $item['academic_year']): ?>
+    <p>ครูหลัก <?= schoolEscape($roomTeachers[$item['id']]['primary']['full_name']??'ยังไม่ได้มอบหมาย') ?> · ครูร่วม <?= schoolEscape($roomTeachers[$item['id']]['assistant']['full_name']??'ยังไม่ได้มอบหมาย') ?></p>
+   <?php endif; ?>
    <?php if ($admin||$teacher): ?>
     <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$school['id'],'cohort'=>(int)$item['id']])) ?>">ดูความคืบหน้ารายคน</a>
-    <details><summary>ลิงก์และ QR เข้าร่วม</summary><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div></details>
+    <details><summary>ลิงก์และ QR เข้าร่วม</summary><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div><button type="button" class="action" data-copy-school-link>คัดลอกลิงก์</button></details>
+    <?php if ($manage || !$item['academic_year']): ?>
     <details><summary>แก้ไขรุ่น</summary><form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
      <?php schoolFields($csrf,'cohort-edit',(int)$school['id'],(int)$item['id']); schoolCohortFields($item); ?><button class="action primary">บันทึก</button>
     </form></details>
     <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'cohort-toggle',(int)$school['id'],(int)$item['id']); ?><button class="action"><?= $item['accepting']?'ปิดรับเพิ่ม':'เปิดรับเพิ่ม' ?></button></form>
-    <?php if ($item['id']==($cohortId??null)): ?>
+    <?php endif; ?>
+    <?php if ((int)$item['id']===($cohortId??null)): ?>
+     <?php if ($roomHistory): ?><details><summary>ประวัติเปลี่ยนครูประจำห้อง</summary><ul>
+      <?php foreach ($roomHistory as $entry): ?><li><?= schoolEscape($entry['full_name'].' · '.($entry['duty']==='primary'?'ครูหลัก':'ครูร่วม').' · '.$entry['started_at'].' ถึง '.$entry['ended_at'].' · เปลี่ยนโดย '.$entry['ended_by']) ?></li><?php endforeach; ?>
+     </ul></details><?php endif; ?>
      <?php if (!$members): ?><p>ยังไม่มีผู้เข้าร่วมในห้องนี้</p><?php else: ?>
      <div class="tablewrap"><table class="admin-table"><thead><tr><th>ผู้เข้าร่วม</th><th>บทที่ผ่าน</th><th>สถานะ</th></tr></thead><tbody>
-     <?php foreach($members as $index=>$member): ?><tr><td><?= schoolEscape($member['display_name']?:'ผู้เรียน '.($index+1)) ?></td><td><?= (int)$member['weeks'] ?> / 12</td><td><?= $member['completed']?'เรียนครบ':($member['started']?'กำลังเรียน':'ยังไม่เริ่ม') ?></td></tr><?php endforeach; ?>
+     <?php foreach($members as $index=>$member): ?><tr><td><?= schoolEscape($member['display_name']?:'ผู้เรียน '.($index+1)) ?></td><td><?= (int)$member['weeks'] ?> / 12</td><td><?= $member['completed']?'ทำครบแล้ว':((int)$member['weeks']>=12?'รอแบบประเมินหลังเรียน':($member['started'] || $member['weeks']?'กำลังเรียน':'ยังไม่เริ่ม')) ?></td></tr><?php endforeach; ?>
      </tbody></table></div><?php endif; ?>
     <?php endif; ?>
    <?php endif; ?>
@@ -252,6 +358,7 @@ return static function (PDO $db,array $identity): void {
  <?php endforeach; ?>
 </section>
 <?php if ($audit): ?><details class="card"><summary>ประวัติการจัดการล่าสุด</summary><ul><?php foreach($audit as $entry): ?><li><?= schoolEscape(implode(' · ',$entry)) ?></li><?php endforeach; ?></ul></details><?php endif; ?>
+<?php endif; ?>
 <?php endif; ?>
 </div>
 <?php

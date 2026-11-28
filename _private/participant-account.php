@@ -40,6 +40,12 @@ function anemiaParticipantActivity(PDO $db,string $account): array
         $query->execute([$team['team_id']]);
         $milestone=(int)$query->fetchColumn();
     }
+    $query=$db->prepare("SELECT week_no,MIN(completed_at) AS completed_at FROM anemia_participant_programme_progress
+        WHERE account_id=? AND programme_version LIKE 'school-%' GROUP BY week_no");
+    $query->execute([$account]);
+    foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $week) {
+        $events[]=['title'=>'ผ่านกิจกรรมโรงเรียน สัปดาห์ที่ '.$week['week_no'],'icon'=>'book','date'=>$week['completed_at'],'points'=>1];
+    }
     usort($events,static fn(array $a,array $b): int=>strcmp($b['date'],$a['date']));
     return ['events'=>$events,'points'=>array_sum(array_column($events,'points')),'joined'=>(bool)$team,'team_finished'=>$milestone];
 }

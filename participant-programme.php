@@ -10,6 +10,7 @@ define('ANEMIA_STAFF_BOOT',true);
 require __DIR__.'/_private/participant-account.php';
 require __DIR__.'/_private/participant-programme.php';
 require __DIR__.'/_private/icons.php';
+require __DIR__.'/_private/schools.php';
 anemiaParticipantSession($secure);
 $account=$_SESSION['account']??null;
 $epoch=(int)($_SESSION['epoch']??0);
@@ -21,11 +22,11 @@ function programmeEscape(string $value): string
     return htmlspecialchars($value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
 }
 
-function programmeFormFields(string $csrf,string $action): void
+function programmeFormFields(string $csrf,string $action,string $programmeVersion): void
 {
     ?>
     <input type="hidden" name="csrf" value="<?= programmeEscape($csrf) ?>">
-    <input type="hidden" name="programme_version" value="<?= programmeEscape(ANEMIA_PROGRAMME_VERSION) ?>">
+    <input type="hidden" name="programme_version" value="<?= programmeEscape($programmeVersion) ?>">
     <input type="hidden" name="instrument_version" value="<?= programmeEscape(ANEMIA_PROGRAMME_INSTRUMENT_VERSION) ?>">
     <input type="hidden" name="action" value="<?= programmeEscape($action) ?>">
     <?php
@@ -37,6 +38,10 @@ $notice='';
 $success=false;
 $completed=[];
 $assessments=[];
+$programmeVersion=ANEMIA_PROGRAMME_VERSION;
+$programmeUrl='participant-programme.php';
+$schoolRooms=[];
+$activeRoom=null;
 $weeks=anemiaProgrammeWeeks();
 $readings=anemiaReadingLessons();
 $intro='ลองนึกถึงวันที่เดินขึ้นบันไดแล้วเหนื่อยกว่าปกติ ความเหนื่อยเกิดได้จากหลายสาเหตุ ในเม็ดเลือดแดงมีตัวช่วยพาออกซิเจนชื่อ “ฮีโมโกลบิน” เมื่อมีภาวะโลหิตจาง เลือดจะพาออกซิเจนไปเลี้ยงร่างกายได้น้อยลง บางคนจึงเหนื่อยง่ายขึ้น แบบประเมินใช้คำตอบของคุณมาดูว่าควรไปตรวจเพิ่มเติมไหม หากยังเหนื่อยจนกระทบการเรียนหรืองาน คุณปรึกษาเจ้าหน้าที่ได้แม้คะแนนจะต่ำ';
@@ -51,17 +56,35 @@ if ($account!==null) {
             $account=null;
             throw new DomainException('เซสชันสิ้นสุดแล้ว กรุณาเข้าสู่ระบบใหม่');
         }
-        ['completed'=>$completed,'assessments'=>$assessments]=anemiaProgrammeState($db,$account);
+        anemiaEnsureSchools($db);
+        $query=$db->prepare("SELECT c.id,c.programme_version,c.classroom,c.title,s.name,r.academic_year
+            FROM anemia_school_member m JOIN anemia_school_cohort c ON c.id=m.cohort_id
+            JOIN anemia_school s ON s.id=c.school_id LEFT JOIN anemia_school_room r ON r.cohort_id=c.id
+            WHERE m.account_id=? ORDER BY r.academic_year DESC,m.joined_at DESC,c.id DESC");
+        $query->execute([$account]);
+        $schoolRooms=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'id');
+        $requestedRoom=$_GET['room']??null;
+        if ($requestedRoom===null && $_SERVER['REQUEST_METHOD']==='GET') $requestedRoom=array_key_first($schoolRooms);
+        if ($requestedRoom!==null && $requestedRoom!=='general') {
+            $roomId=filter_var($requestedRoom,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+            $activeRoom=$schoolRooms[$roomId]??null;
+            if (!$activeRoom) throw new DomainException('ไม่พบห้องกิจกรรมในบัญชีนี้');
+            $programmeVersion=$activeRoom['programme_version'];
+            $programmeUrl.='?room='.(int)$activeRoom['id'];
+        } elseif ($requestedRoom==='general' || $schoolRooms) {
+            $programmeUrl.='?room=general';
+        }
+        ['completed'=>$completed,'assessments'=>$assessments]=anemiaProgrammeState($db,$account,$programmeVersion);
         $ready=true;
         if ($_SERVER['REQUEST_METHOD']==='POST') {
             if ($csrf==='' || !is_string($_POST['csrf']??null) || !hash_equals($csrf,$_POST['csrf'])) {
                 http_response_code(403);
                 throw new DomainException('กรุณาเปิดหน้านี้ใหม่ก่อนบันทึก');
             }
-            anemiaSaveProgrammeAction($db,$account,$epoch,$_POST);
+            anemiaSaveProgrammeAction($db,$account,$epoch,$_POST,$programmeVersion);
             $savedWeek=$_POST['action']==='week'?(int)$_POST['week']:0;
             $_SESSION['programme_saved']=$readings[$savedWeek][4]??true;
-            header('Location: participant-programme.php#programme-next',true,303);
+            header('Location: '.$programmeUrl.'#programme-next',true,303);
             exit;
         }
         if (!empty($_SESSION['programme_saved'])) {
@@ -105,6 +128,17 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
     <p>ทำแบบประเมินก่อนเริ่ม บันทึกกิจกรรมตามลำดับ และตอบแบบประเมินหลังทำครบ คุณเลือกเวลาทำกิจกรรมแต่ละสัปดาห์ได้เอง</p>
     <p class="programme-draft"><strong>ฉบับทดลอง</strong> กิจกรรมและแบบประเมินนี้จัดทำเพื่อทดลองระบบ อยู่ระหว่างรอเครื่องมือที่โครงการอนุมัติ คะแนนใช้ทบทวนความรู้และไม่ใช้วินิจฉัยภาวะโลหิตจาง</p>
   </header>
+  <?php if ($schoolRooms): ?>
+    <form method="get" class="network-form">
+      <label>กิจกรรมที่เข้าร่วม<select name="room">
+        <?php foreach ($schoolRooms as $room): ?>
+          <option value="<?= (int)$room['id'] ?>" <?= $activeRoom && $activeRoom['id']===$room['id']?'selected':'' ?>><?= programmeEscape($room['name'].' · '.$room['classroom'].($room['academic_year']?' · '.$room['academic_year']:'')) ?></option>
+        <?php endforeach; ?>
+        <option value="general" <?= !$activeRoom?'selected':'' ?>>กิจกรรมทั่วไป</option>
+      </select></label>
+      <button class="action">เปิดกิจกรรม</button>
+    </form>
+  <?php endif; ?>
   <?php if ($notice!==''): ?><p class="programme-notice" role="<?= $success?'status':'alert' ?>"><?= programmeEscape($notice) ?></p><?php endif; ?>
   <?php if ($account===null): ?>
     <section class="programme-card" aria-labelledby="programme-next">
@@ -117,14 +151,15 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
       <h2 id="programme-progress-label">ความคืบหน้าของฉัน</h2>
       <progress value="<?= count($completed) ?>" max="<?= count($weeks) ?>" aria-labelledby="programme-progress-label"></progress>
       <p>บันทึกแล้ว <?= count($completed) ?> จาก <?= count($weeks) ?> กิจกรรม</p>
+      <?php if ($activeRoom && str_starts_with($programmeVersion,'school-')): ?><p>รับ 1 แต้มเมื่อผ่านแต่ละสัปดาห์ครั้งแรกในกิจกรรมโรงเรียน</p><?php endif; ?>
       <p>ก่อนเริ่ม · <?= isset($assessments['before'])?'ส่งแล้ว':'ยังไม่ได้ส่ง' ?> <span aria-hidden="true"> | </span> หลังจบ · <?= isset($assessments['after'])?'ส่งแล้ว':'ยังไม่ได้ส่ง' ?></p>
     </section>
     <?php if ($phase!==null): ?>
       <section class="programme-card" aria-labelledby="programme-next">
         <h2 id="programme-next"><?= $phase==='before'?'แบบประเมินก่อนเริ่ม':'แบบประเมินหลังจบ' ?></h2>
         <p>เลือกคำตอบหนึ่งข้อในแต่ละคำถาม ระบบจะแสดงคะแนนทั้งสองครั้งหลังส่งแบบประเมินหลังจบ</p>
-        <form method="post" action="participant-programme.php#programme-next">
-          <?php programmeFormFields($csrf,$phase); ?>
+        <form method="post" action="<?= programmeEscape($programmeUrl) ?>#programme-next">
+          <?php programmeFormFields($csrf,$phase,$programmeVersion); ?>
           <?php foreach (anemiaProgrammeQuestions() as $number=>$question): ?>
             <fieldset class="programme-question">
               <legend><?= $number+1 ?>. <?= programmeEscape($question['text']) ?></legend>
@@ -168,8 +203,8 @@ $phase=!isset($assessments['before'])?'before':($next===null && !isset($assessme
          <?php elseif (in_array($next,[4,9,10],true)): ?><a class="programme-resource" href="https://ods.od.nih.gov/factsheets/Iron-Consumer/">อ่านเพิ่มเติมเรื่องธาตุเหล็กจาก NIH (ภาษาอังกฤษ)</a><?php endif; ?>
          <?php if ($weeks[$next][2]!==''): ?><a class="programme-resource" href="<?= programmeEscape($weeks[$next][2]) ?>" target="_blank" rel="noopener">เปิดหน้าที่ใช้ทำกิจกรรม (แท็บใหม่)</a><?php endif; endif; ?>
         <p><strong>ลองทำ</strong> · <?= programmeEscape($weeks[$next][1]) ?></p>
-        <form method="post" action="participant-programme.php#programme-next">
-          <?php programmeFormFields($csrf,'week'); ?>
+        <form method="post" action="<?= programmeEscape($programmeUrl) ?>#programme-next">
+          <?php programmeFormFields($csrf,'week',$programmeVersion); ?>
           <input type="hidden" name="week" value="<?= $next ?>">
           <?php if ($next===1): ?>
            <h3>ทบทวนหลังเรียน <small data-lesson-count></small></h3>

@@ -36,8 +36,8 @@ if ($valid) {
             http_response_code(403); exit('คำขอหมดอายุ');
         }
         if ($posting) $db->beginTransaction();
-        $query=$db->prepare('SELECT c.id,c.title,c.classroom,c.accepting,c.opens_on,c.closes_on,s.name,s.enabled
-            FROM anemia_school_cohort c JOIN anemia_school s ON s.id=c.school_id WHERE c.invite=?'.($posting?' FOR UPDATE':''));
+        $query=$db->prepare('SELECT c.id,c.title,c.classroom,c.accepting,c.opens_on,c.closes_on,s.name,s.enabled,r.academic_year
+            FROM anemia_school_cohort c JOIN anemia_school s ON s.id=c.school_id LEFT JOIN anemia_school_room r ON r.cohort_id=c.id WHERE c.invite=?'.($posting?' FOR UPDATE':''));
         $query->execute([$code]);
         $cohort=$query->fetch(PDO::FETCH_ASSOC)?:null;
         if (!$cohort) throw new DomainException('ไม่พบรุ่นกิจกรรม กรุณาตรวจรหัสกับครู');
@@ -57,7 +57,7 @@ if ($valid) {
             }
             $db->commit();
             unset($_SESSION['school_invite']);
-            header('Location: participant-programme.php',true,303); exit;
+            header('Location: participant-programme.php?room='.(int)$cohort['id'],true,303); exit;
         }
     } catch(DomainException $error) {
         if (isset($db) && $db->inTransaction()) $db->rollBack();
@@ -82,8 +82,8 @@ if ($valid) {
   <p><a href="participant-account.php?return=school&amp;method=staff">เข้าสู่ระบบสำหรับครู</a></p>
  <?php else: ?>
   <h2><?= schoolEscape($cohort['name']) ?></h2>
-  <p><?= schoolEscape($cohort['title'].' · '.$cohort['classroom']) ?></p>
-  <?php if ($joined): ?><a class="action primary" href="participant-programme.php">เรียนต่อ</a>
+  <p><?= schoolEscape($cohort['title'].' · '.$cohort['classroom'].($cohort['academic_year']?' · ปีการศึกษา '.$cohort['academic_year']:'')) ?></p>
+  <?php if ($joined): ?><a class="action primary" href="participant-programme.php?room=<?= (int)$cohort['id'] ?>">เรียนต่อ</a>
   <?php elseif (!$open): ?><p>รุ่นนี้ยังไม่เปิดรับผู้เข้าร่วม</p>
   <?php else: ?>
    <p>เมื่อเข้าร่วม ครูผู้ดูแลจะเห็นชื่อที่แสดงในโปรไฟล์และความคืบหน้าการเรียนของคุณ</p>

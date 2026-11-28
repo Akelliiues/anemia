@@ -174,21 +174,21 @@ function anemiaProgrammeNextWeek(array $completed): ?int
     return null;
 }
 
-function anemiaProgrammeState(PDO $db,string $account): array
+function anemiaProgrammeState(PDO $db,string $account,string $programmeVersion=ANEMIA_PROGRAMME_VERSION): array
 {
     $progress=$db->prepare('SELECT week_no FROM anemia_participant_programme_progress WHERE account_id=? AND programme_version=? ORDER BY week_no');
-    $progress->execute([$account,ANEMIA_PROGRAMME_VERSION]);
+    $progress->execute([$account,$programmeVersion]);
     $assessment=$db->prepare('SELECT phase,score,max_score,submitted_at FROM anemia_participant_programme_assessment
         WHERE account_id=? AND programme_version=? AND instrument_version=?');
-    $assessment->execute([$account,ANEMIA_PROGRAMME_VERSION,ANEMIA_PROGRAMME_INSTRUMENT_VERSION]);
+    $assessment->execute([$account,$programmeVersion,ANEMIA_PROGRAMME_INSTRUMENT_VERSION]);
     return ['completed'=>array_map('intval',$progress->fetchAll(PDO::FETCH_COLUMN)),
         'assessments'=>$assessment->fetchAll(PDO::FETCH_UNIQUE|PDO::FETCH_ASSOC)];
 }
 
-function anemiaSaveProgrammeAction(PDO $db,string $account,int $epoch,array $input): void
+function anemiaSaveProgrammeAction(PDO $db,string $account,int $epoch,array $input,string $programmeVersion=ANEMIA_PROGRAMME_VERSION): void
 {
     $action=$input['action']??'';
-    if (($input['programme_version']??'')!==ANEMIA_PROGRAMME_VERSION ||
+    if (($input['programme_version']??'')!==$programmeVersion ||
         ($input['instrument_version']??'')!==ANEMIA_PROGRAMME_INSTRUMENT_VERSION) {
         throw new DomainException('มีแบบประเมินหรือกิจกรรมฉบับใหม่ กรุณาเปิดหน้านี้อีกครั้ง');
     }
@@ -197,7 +197,7 @@ function anemiaSaveProgrammeAction(PDO $db,string $account,int $epoch,array $inp
         $session=$db->prepare('SELECT 1 FROM anemia_participant_account WHERE id=? AND session_epoch=? AND suspended_at IS NULL FOR UPDATE');
         $session->execute([$account,$epoch]);
         if (!$session->fetchColumn()) throw new DomainException('เซสชันสิ้นสุดแล้ว กรุณาเข้าสู่ระบบใหม่');
-        ['completed'=>$completed,'assessments'=>$assessments]=anemiaProgrammeState($db,$account);
+        ['completed'=>$completed,'assessments'=>$assessments]=anemiaProgrammeState($db,$account,$programmeVersion);
         $next=anemiaProgrammeNextWeek($completed);
         if ($action==='week') {
             $week=filter_var($input['week']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>count(anemiaProgrammeWeeks())]]);
@@ -216,7 +216,7 @@ function anemiaSaveProgrammeAction(PDO $db,string $account,int $epoch,array $inp
                     throw new DomainException(anemiaReadingLessons()[$week][4].' ลองเลือกคำตอบอีกครั้ง');
                 }
                 $db->prepare('INSERT INTO anemia_participant_programme_progress (account_id,programme_version,week_no,completed_at)
-                    VALUES (?,?,?,NOW())')->execute([$account,ANEMIA_PROGRAMME_VERSION,$week]);
+                    VALUES (?,?,?,NOW())')->execute([$account,$programmeVersion,$week]);
             }
         } elseif ($action==='before' || $action==='after') {
             if ($action==='before' && ($input['acknowledge']??'')!=='1') {
@@ -233,7 +233,7 @@ function anemiaSaveProgrammeAction(PDO $db,string $account,int $epoch,array $inp
                 foreach ($questions as $number=>$question) $record[$question['id']]=$answers[$number];
                 $db->prepare('INSERT INTO anemia_participant_programme_assessment
                     (account_id,programme_version,instrument_version,phase,score,max_score,answers_json,submitted_at)
-                    VALUES (?,?,?,?,?,?,?,NOW())')->execute([$account,ANEMIA_PROGRAMME_VERSION,ANEMIA_PROGRAMME_INSTRUMENT_VERSION,
+                    VALUES (?,?,?,?,?,?,?,NOW())')->execute([$account,$programmeVersion,ANEMIA_PROGRAMME_INSTRUMENT_VERSION,
                         $action,$score,count($questions),json_encode($record,JSON_THROW_ON_ERROR)]);
             }
         } else {

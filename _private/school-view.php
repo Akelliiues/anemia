@@ -213,9 +213,14 @@ return static function (PDO $db,array $identity): void {
         ($district==='' || $row['district']===$district) &&
         ($keyword==='' || stripos($row['name'].' '.$row['code'].' '.($row['smis']??'').' '.($row['alternate_code']??'').' '.($row['legacy_name']??''),$keyword)!==false)));
     $directoryPageSize=30;
-    $directoryPages=max(1,(int)ceil(count($listedSchools)/$directoryPageSize));
+    $directoryTotal=count($listedSchools);
+    $directoryPages=max(1,(int)ceil($directoryTotal/$directoryPageSize));
     $directoryPage=max(1,min($directoryPages,filter_input(INPUT_GET,'directory_page',FILTER_VALIDATE_INT)?:1));
     $directoryFilters=['district'=>$district,'q'=>$keyword];
+    $windowStart=max(2,min($directoryPage-1,$directoryPages-3));
+    $visiblePages=$directoryPages<=5?range(1,$directoryPages):[1,...range($windowStart,$windowStart+2),$directoryPages];
+    $directoryPageUrl=static fn(int $page): string => $schoolLocation($directoryFilters+
+        ($school?['school'=>(int)$school['id']]:[])+['directory_page'=>$page]).'#school-directory';
     $registeredSchools=array_column($schools,'id','name');
     $registeredCodes=[];
     if ($registeredSchools && $directory['schools']) {
@@ -326,7 +331,7 @@ return static function (PDO $db,array $identity): void {
   <label>ชื่อหรือรหัสโรงเรียน<input type="search" name="q" maxlength="60" value="<?= schoolEscape($keyword) ?>"></label>
   <button class="action primary"><?= workspaceIcon('filter') ?>ค้นหา</button>
  </form>
- <p role="status">พบ <?= count($listedSchools) ?> แห่ง</p>
+ <div class="school-directory-grid">
  <div class="tablewrap school-directory-table" tabindex="0" aria-label="รายชื่อโรงเรียน">
  <table class="admin-table">
   <thead><tr><th scope="col">โรงเรียน</th><th scope="col"><?= $province==='10'?'เขต':'อำเภอ' ?></th><th scope="col">ระดับชั้น</th><th scope="col">จัดการ</th></tr></thead>
@@ -349,13 +354,34 @@ return static function (PDO $db,array $identity): void {
   <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนในข้อมูลอ้างอิงตามตัวกรอง</td></tr><?php endif; ?>
   </tbody>
  </table></div>
- <?php if ($directoryPages>1): ?>
- <nav class="actions" aria-label="หน้ารายชื่อโรงเรียน">
-  <?php if ($directoryPage>1): ?><a class="action" href="<?= schoolEscape($schoolLocation($directoryFilters+['directory_page'=>$directoryPage-1])) ?>#school-directory">ก่อนหน้า</a><?php endif; ?>
-  <span>หน้า <?= $directoryPage ?> / <?= $directoryPages ?></span>
-  <?php if ($directoryPage<$directoryPages): ?><a class="action" href="<?= schoolEscape($schoolLocation($directoryFilters+['directory_page'=>$directoryPage+1])) ?>#school-directory">ถัดไป</a><?php endif; ?>
- </nav>
+ <?php if ($directoryTotal): ?>
+ <div class="school-directory-footer">
+  <p class="school-directory-range">แสดง <strong><?= number_format(($directoryPage-1)*$directoryPageSize+1) ?>–<?= number_format(min($directoryPage*$directoryPageSize,$directoryTotal)) ?></strong> จาก <strong><?= number_format($directoryTotal) ?></strong> โรงเรียน</p>
+  <?php if ($directoryPages>1): ?>
+  <nav class="school-pagination" aria-label="แบ่งหน้ารายชื่อโรงเรียน">
+   <?php if ($directoryPage>1): ?>
+    <a class="school-page-control school-page-previous" rel="prev" href="<?= schoolEscape($directoryPageUrl($directoryPage-1)) ?>" aria-label="หน้าก่อนหน้า" title="หน้าก่อนหน้า"><?= workspaceIcon('next') ?></a>
+   <?php else: ?>
+    <span class="school-page-control school-page-previous" aria-disabled="true" aria-label="หน้าก่อนหน้า"><?= workspaceIcon('next') ?></span>
+   <?php endif; ?>
+   <?php $previousPage=0; foreach ($visiblePages as $page): ?>
+    <?php if ($page>$previousPage+1): ?><span class="school-page-gap" aria-hidden="true">…</span><?php endif; ?>
+    <?php if ($page===$directoryPage): ?>
+     <span class="school-page-control" aria-current="page" aria-label="หน้าที่ <?= $page ?>"><?= $page ?></span>
+    <?php else: ?>
+     <a class="school-page-control" href="<?= schoolEscape($directoryPageUrl($page)) ?>" aria-label="หน้าที่ <?= $page ?>"><?= $page ?></a>
+    <?php endif; $previousPage=$page; ?>
+   <?php endforeach; ?>
+   <?php if ($directoryPage<$directoryPages): ?>
+    <a class="school-page-control" rel="next" href="<?= schoolEscape($directoryPageUrl($directoryPage+1)) ?>" aria-label="หน้าถัดไป" title="หน้าถัดไป"><?= workspaceIcon('next') ?></a>
+   <?php else: ?>
+    <span class="school-page-control" aria-disabled="true" aria-label="หน้าถัดไป"><?= workspaceIcon('next') ?></span>
+   <?php endif; ?>
+  </nav>
+  <?php endif; ?>
+ </div>
  <?php endif; ?>
+ </div>
  <p class="notice">เกณฑ์คือพบผู้เรียน ม.4–ม.6 อย่างน้อยหนึ่งชั้น หรือมีข้อมูลว่าเปิดสอนมัธยมปลาย
   <a href="https://web2.bopp.go.th/?page_id=878" target="_blank" rel="noopener">สพฐ. 10 มิ.ย. 2569</a>
   · <a href="https://school.opec.go.th/" target="_blank" rel="noopener">ทะเบียนโรงเรียนเอกชน สช.</a>

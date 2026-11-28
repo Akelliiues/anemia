@@ -2982,3 +2982,19 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .workspace-photo-form small {font-size:.8rem;color:var(--muted);}
 .workspace-photo-form p {flex-basis:100%;margin:0;font-size:.86rem;}
 .workspace-photo-form p:empty {display:none;}
+
+#workspace-account {padding:clamp(.7rem,2vw,1rem);}
+#workspace-account .workspace-dialog-heading {margin-bottom:.55rem;padding-bottom:.45rem;}
+#workspace-account .workspace-dialog-heading h2 {font-size:clamp(1.05rem,3.6vw,1.4rem);}
+#workspace-account .workspace-dialog-heading .action {padding:.3rem .55rem;}
+#workspace-account:has(.workspace-account-security[open]) > :is(.workspace-account-summary,.workspace-photo-form,.workspace-account-links,.staff-app-account-actions) {display:none;}
+#workspace-account .workspace-account-summary {padding:.55rem;}
+#workspace-account .workspace-account-links,
+#workspace-account .workspace-account-security,
+#workspace-account .workspace-photo-form {margin-block:.45rem;}
+#workspace-account .workspace-account-security:last-child {margin-bottom:0;}
+#workspace-account .workspace-account-security[open] summary {padding-block:.35rem;}
+#workspace-account #account-password-form label {margin-block:.4rem;gap:.18rem;}
+#workspace-account #account-password-form input[type=password] {padding:.42rem .65rem;}
+#workspace-account [data-password-message] {margin:.3rem 0;}
+#workspace-account [data-password-message]:empty {display:none;}

@@ -39,21 +39,21 @@ try {
 
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>กิจกรรมโรงเรียน · Anemia Portal</title>
+<title>พื้นที่ครู · Anemia Portal</title>
 <script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v7">
+<link rel="stylesheet" href="teacher-workspace.css?v=1">
 <script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=7"></script>
-<body class="staff-dashboard-page"><main class="school-workspace hosted-workspace">
+<body class="staff-dashboard-page teacher-page"><main class="school-workspace hosted-workspace teacher-workspace">
 <header class="admin-top no-print">
  <div class="workspace-header-art" aria-hidden="true"></div>
  <div class="admin-top-main">
   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">พื้นที่ครู</span></div></div>
   <div class="workspace-account">
-   <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= schoolEscape($identity['username']) ?></strong><small>ครูผู้ดูแลกิจกรรม</small></span></div>
+   <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('person') ?></span><span><strong><?= schoolEscape($identity['username']) ?></strong><small>บัญชีครู</small></span></div>
    <form class="hosted-logout" method="post" action="login.php"><input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
   </div>
  </div>
 </header>
-<section class="card school-page-intro"><h1 class="title">กิจกรรมโรงเรียน</h1></section>
 <?= $schoolContent ?>
 </main>
 <?php require __DIR__ . '/_private/staff-footer.php'; ?>

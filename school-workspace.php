@@ -44,7 +44,15 @@ try {
             error_log('Anemia school save SQLSTATE '.$error->getCode());
         }
         $schoolId=filter_input(INPUT_POST,'school',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
-        header('Location: school-workspace.php'.($schoolId?'?school='.$schoolId:''),true,303); exit;
+        $redirect=[];
+        foreach (['region','province'] as $key) {
+            if (is_string($_GET[$key]??null) && ctype_digit($_GET[$key])) $redirect[$key]=$_GET[$key];
+        }
+        if ($schoolId) $redirect['school']=$schoolId;
+        if (($_POST['school_action']??'')==='school-create' && is_string($_POST['province']??null) && ctype_digit($_POST['province'])) {
+            $redirect=['province'=>$_POST['province']];
+        }
+        header('Location: school-workspace.php'.($redirect?'?'.http_build_query($redirect):''),true,303); exit;
     }
     [$scope,$params]=schoolScope($identity);
     $regions=[];
@@ -63,15 +71,17 @@ try {
             !$region || (int)$row['region']===$region),'name','code');
         $requestedProvince=$_GET['province']??'';
         if (is_string($requestedProvince) && isset($areaProvinces[$requestedProvince])) $province=$requestedProvince;
-        elseif (count($areaRows)===1) $province=(string)$areaRows[0]['code'];
         if ($region) { $scope.=' AND p.region=?'; $params[]=$region; }
         if ($province!=='') { $scope.=' AND s.province_code=?'; $params[]=$province; }
     }
     $areaFilters=($region?['region'=>$region]:[])+($province!==''?['province'=>$province]:[]);
     $schoolLocation=static fn(array $extra=[]): string => 'school-workspace.php?'.http_build_query($areaFilters+$extra);
-    $query=$db->prepare("SELECT s.*,p.name AS province FROM anemia_school s JOIN anemia_province p ON p.code=s.province_code WHERE $scope ORDER BY p.name,s.name");
-    $query->execute($params);
-    $schools=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'id');
+    $schools=[];
+    if ($teacher || $province!=='') {
+        $query=$db->prepare("SELECT s.*,p.name AS province FROM anemia_school s JOIN anemia_province p ON p.code=s.province_code WHERE $scope ORDER BY p.name,s.name");
+        $query->execute($params);
+        $schools=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'id');
+    }
     $schoolId=filter_input(INPUT_GET,'school',FILTER_VALIDATE_INT);
     $school=$schools[$schoolId]??($schools[array_key_first($schools)]??null);
     $cohorts=[];
@@ -105,7 +115,7 @@ try {
         }
     }
     $provinces=$admin?$db->query('SELECT code,name FROM anemia_province ORDER BY name')->fetchAll(PDO::FETCH_KEY_PAIR):[];
-    $directory=$admin && isset($areaProvinces['34']) && ($province==='' || $province==='34')?schoolUbonDirectory():['districts'=>[],'schools'=>[]];
+    $directory=$admin && $province==='34'?schoolUbonDirectory():['districts'=>[],'schools'=>[]];
     $district=$_GET['district']??'';
     if (!in_array($district,$directory['districts'],true)) $district='';
     $keyword=$_GET['q']??'';
@@ -132,7 +142,6 @@ function schoolFields(string $csrf,string $action,?int $school=null,?int $cohort
     ?>
     <input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>">
     <input type="hidden" name="school_action" value="<?= schoolEscape($action) ?>">
-    <?php foreach ($areaFilters as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
   <?php if ($school): ?><input type="hidden" name="school" value="<?= $school ?>"><?php endif; ?>
     <?php if ($cohort): ?><input type="hidden" name="cohort" value="<?= $cohort ?>"><?php endif; ?>
     <?php
@@ -149,29 +158,35 @@ function schoolCohortFields(array $cohort=[]): void
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรมโรงเรียน · Anemia Portal</title>
-<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v3">
+<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v4">
 <script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=1"></script>
-<body class="staff-dashboard-page"><main class="school-workspace">
-<header class="card">
- <?php if (!$teacher): ?><a href="dashboard.php">กลับหน้าแดชบอร์ด</a><?php endif; ?>
- <h1 class="title"><?= $teacher?'พื้นที่ครู':'กิจกรรมโรงเรียน' ?></h1>
- <p><?= schoolEscape($identity['username']) ?> · <?= $teacher?'ครูผู้ดูแลกิจกรรม':'จัดการและติดตามกิจกรรมโรงเรียน' ?></p>
- <?php if ($teacher): ?><form method="post" action="login.php"><input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>"><button class="action" name="action" value="logout">ออกจากระบบ</button></form><?php endif; ?>
+<body class="staff-dashboard-page"><main class="school-workspace hosted-workspace">
+<header class="admin-top no-print">
+ <div class="workspace-header-art" aria-hidden="true"></div>
+ <div class="admin-top-main">
+  <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption"><?= $teacher?'พื้นที่ครู':'ศูนย์จัดการสำหรับเจ้าหน้าที่' ?></span></div></div>
+  <div class="workspace-account">
+   <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= schoolEscape($identity['username']) ?></strong><small><?= $teacher?'ครูผู้ดูแลกิจกรรม':'เจ้าหน้าที่' ?></small></span></div>
+   <form class="hosted-logout" method="post" action="login.php"><input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
+  </div>
+ </div>
+ <?php if (!$teacher): ?><nav class="admin-top-tabs" aria-label="เมนูหลังบ้าน"><a class="action" href="dashboard.php"><?= workspaceIcon('chart') ?>กลับหน้าแดชบอร์ด</a></nav><?php endif; ?>
 </header>
+<section class="card school-page-intro"><h1 class="title">กิจกรรมโรงเรียน</h1></section>
 <?php if ($notice!==''): ?><p class="notice" role="status"><?= schoolEscape($notice) ?></p><?php endif; ?>
 <?php if (!$teacher): ?>
 <section class="card" aria-labelledby="school-area-title">
  <h2 id="school-area-title"><?= workspaceIcon('map') ?> พื้นที่กิจกรรมโรงเรียน</h2>
  <form method="get" class="network-form school-directory-filters">
-  <label>เขตสุขภาพ<select name="region" onchange="this.form.elements.province.value='';this.form.requestSubmit()">
+  <label>เขตสุขภาพ<select name="region" onchange="this.form.elements.province.value='';this.form.submit()">
    <?php if (count($regions)>1): ?><option value="0">ทุกเขตตามสิทธิ์</option><?php endif; ?>
    <?php foreach ($regions as $zone): ?><option value="<?= $zone ?>" <?= $region===$zone?'selected':'' ?>><?= $zone===13?'เขต 13 · กรุงเทพมหานคร':'เขตสุขภาพที่ '.$zone ?></option><?php endforeach; ?>
   </select></label>
-  <label>จังหวัด<select name="province">
-   <?php if (count($areaProvinces)>1): ?><option value="">ทุกจังหวัดในพื้นที่</option><?php endif; ?>
+  <label>จังหวัด<select name="province" required>
+   <option value="">เลือกจังหวัด</option>
    <?php foreach ($areaProvinces as $code=>$name): ?><option value="<?= schoolEscape((string)$code) ?>" <?= $province===(string)$code?'selected':'' ?>><?= schoolEscape($name) ?></option><?php endforeach; ?>
   </select></label>
-  <button class="action primary"><?= workspaceIcon('filter') ?>แสดงพื้นที่</button>
+  <button class="action primary"><?= workspaceIcon('filter') ?>แสดงโรงเรียน</button>
  </form>
 </section>
 <?php endif; ?>
@@ -189,6 +204,7 @@ function schoolCohortFields(array $cohort=[]): void
  <h2 id="school-directory-title"><?= workspaceIcon('book') ?> โรงเรียนมัธยมปลาย จังหวัดอุบลราชธานี</h2>
  <p><?= count($directory['schools']) ?> แห่งใน <?= count($directory['districts']) ?> อำเภอ · ปีการศึกษา 2569</p>
  <form method="get" action="school-workspace.php#school-directory" class="network-form school-directory-filters">
+  <?php foreach ($areaFilters as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
   <?php if ($school): ?><input type="hidden" name="school" value="<?= (int)$school['id'] ?>"><?php endif; ?>
   <label>อำเภอ<select name="district"><option value="">ทุกอำเภอ</option><?php foreach ($directory['districts'] as $name): ?><option <?= $name===$district?'selected':'' ?>><?= schoolEscape($name) ?></option><?php endforeach; ?></select></label>
   <label>ชื่อหรือรหัสโรงเรียน<input type="search" name="q" maxlength="60" value="<?= schoolEscape($keyword) ?>"></label>
@@ -214,7 +230,7 @@ function schoolCohortFields(array $cohort=[]): void
  <p class="notice">แสดงโรงเรียนที่มีผู้เรียน ม.4–ม.6 อย่างน้อยหนึ่งชั้น ณ 10 มิ.ย. 2569 ไม่นับศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอ <a href="https://www.ubnpeo.go.th/eis/" target="_blank" rel="noopener">สำนักงานศึกษาธิการจังหวัดอุบลราชธานี</a></p>
 </section>
 <?php endif; ?>
-<?php if (!$school): ?><section class="card"><p>ยังไม่มีโรงเรียนในพื้นที่ที่เลือก</p></section>
+<?php if (!$school): ?><section class="card"><p><?= $teacher?'ยังไม่มีโรงเรียนที่บัญชีนี้ดูแล':($province===''?'เลือกจังหวัดแล้วกดแสดงโรงเรียน':'ยังไม่มีโรงเรียนในทะเบียนของจังหวัดนี้') ?></p></section>
 <?php else: ?>
 <section class="card" id="school-activities">
  <form method="get" class="network-form school-fields">
@@ -268,4 +284,6 @@ function schoolCohortFields(array $cohort=[]): void
 </section>
 <?php if ($audit): ?><details class="card"><summary>ประวัติการจัดการล่าสุด</summary><ul><?php foreach($audit as $entry): ?><li><?= schoolEscape(implode(' · ',$entry)) ?></li><?php endforeach; ?></ul></details><?php endif; ?>
 <?php endif; ?>
-</main></body></html>
+</main>
+<?php require __DIR__ . '/_private/staff-footer.php'; ?>
+</body></html>

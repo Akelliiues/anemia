@@ -1377,22 +1377,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <button type="button" data-workspace-dialog="account" aria-haspopup="dialog"><?= workspaceIcon('users') ?>บัญชี</button>
   </nav>
   <?php endif; ?>
-<?php if (!$staffAppView): ?><footer class="site-footer no-print">
-  <div class="footer-inner">
-    <div class="footer-identity">
-      <span class="mark"><?= workspaceIcon('province') ?></span>
-      <div><strong>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</strong>
-        <p>กรมอนามัย กระทรวงสาธารณสุข</p></div>
-    </div>
-    <address>
-      <p>45 หมู่ 4 ถนนสถลมาร์ค ตำบลธาตุ อำเภอวารินชำราบ จังหวัดอุบลราชธานี 34190</p>
-      <div class="footer-links">
-        <a href="tel:+6645288586"><span><?= workspaceIcon('phone') ?></span>045-288-586 ถึง 588</a>
-        <a href="https://hpc10.anamai.moph.go.th/" target="_blank" rel="noopener"><span><?= workspaceIcon('next') ?></span>เว็บไซต์ศูนย์อนามัยที่ ๑๐</a>
-      </div>
-    </address>
-  </div>
-</footer><?php endif; ?>
+<?php if (!$staffAppView) require __DIR__ . '/_private/staff-footer.php'; ?>
 <dialog id="workspace-account" class="workspace-dialog no-print" aria-labelledby="workspace-account-title">
  <header class="workspace-dialog-heading">
   <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> <?= $staffWorkDock?'บัญชีเจ้าหน้าที่':'เปลี่ยนรหัสผ่าน' ?></h2>

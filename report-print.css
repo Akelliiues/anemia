@@ -14,7 +14,9 @@ body {margin:0;color:#111;background:#ebe9ef;font:16pt/1.15 "TH Sarabun New",san
 .report-print-toolbar {max-width:297mm;margin:0 auto;padding:12px;text-align:center;}
 .report-print-toolbar button {padding:6px 20px;border:0;border-radius:8px;background:#4c318b;color:#fff;font:700 16pt "TH Sarabun New",sans-serif;cursor:pointer;}
 .report-paper-header {text-align:center;border-bottom:1px solid #35333b;padding-bottom:3mm;margin-bottom:4mm;break-inside:avoid;}
-.report-paper-header img {display:block;margin:0 auto 1mm;}
+.report-paper-footer {margin-top:6mm;padding-top:3mm;border-top:1px solid #bfbcc5;text-align:center;font-size:14pt;break-inside:avoid;}
+.report-paper-footer img {display:block;margin:0 auto 1mm;}
+.report-paper-footer p {margin:0;}
 .report-paper-header h1 {margin:1mm 0;font-size:24pt;line-height:1.08;}
 .report-paper-header p {margin:0;}
 h2 {font-size:19pt;margin:4mm 0 1.5mm;break-after:avoid;}

@@ -9,13 +9,11 @@ if (!$provinceDocument && !$region && $identity['role']!=='provincial_report') $
 <!doctype html><html lang="th"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= esc($reportTitle) ?> · Anemia Portal</title>
-<link rel="stylesheet" href="report-print.css?v=1">
+<link rel="stylesheet" href="report-print.css?v=2">
 </head><body<?= $provinceDocument?' class="report-landscape"':'' ?>>
 <div class="report-print-toolbar"><button type="button" onclick="document.fonts.ready.then(()=>window.print())">พิมพ์ / บันทึก PDF</button></div>
 <main class="report-paper">
  <header class="report-paper-header">
-  <img src="portal-heart-clear.png" alt="" width="48" height="48">
-  <p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี · Anemia Portal</p>
   <h1><?= esc($reportTitle) ?></h1>
   <p>พื้นที่ <?= esc($reportScope) ?> · ช่วงเวลา <?= esc($period?workspaceThaiMonth($period):'ทุกเดือน') ?></p>
   <?php if (!$provinceDocument): ?><p>กลุ่มผู้ตอบ <?= esc(EVALUATION_AUDIENCES[$evaluationAudience]??'ทุกกลุ่ม') ?> · รุ่นแบบประเมิน <?= esc($selectedVersion) ?></p><?php endif; ?>
@@ -58,4 +56,8 @@ if (!$provinceDocument && !$region && $identity['role']!=='provincial_report') $
   <?php if ($comments): ?><ul><?php foreach ($comments as $comment): ?><li><?= esc($comment) ?></li><?php endforeach; ?></ul>
   <?php else: ?><p>ยังไม่มีข้อเสนอแนะเพิ่มเติมในตัวกรองนี้</p><?php endif; ?>
  <?php endif; ?>
-</main></body></html>
+<footer class="report-paper-footer">
+  <img src="portal-heart-clear.png" alt="" width="48" height="48">
+  <p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี · Anemia Portal</p>
+ </footer>
+ </main></body></html>

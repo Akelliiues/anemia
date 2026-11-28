@@ -126,18 +126,21 @@ function printDemoReport(scope){
  const report=window.open('','_blank');
  if(!report)return;
  report.opener=null;
- const sheet=new URL('report-print.css?v=1',location.href).href;
+ const sheet=new URL('report-print.css?v=2',location.href).href;
  const logo=new URL('portal-heart-clear.png',location.href).href;
  const area=scope.region?scopeLabel(scope):adminRegion?regionLabel(Number(adminRegion)):'ครบ 13 เขต';
  const issued=new Intl.DateTimeFormat('th-TH',{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date());
  report.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>รายงานการคัดกรองและติดตาม · Anemia Portal</title><link rel="stylesheet" href="${sheet}"></head><body class="report-landscape">
  <div class="report-print-toolbar"><button type="button" onclick="document.fonts.ready.then(()=>window.print())">พิมพ์ / บันทึก PDF</button></div>
- <main class="report-paper"><header class="report-paper-header"><img src="${logo}" alt="" width="48" height="48">
- <p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี · Anemia Portal</p>
+ <main class="report-paper"><header class="report-paper-header">
  <h1>รายงานการคัดกรองและติดตาม</h1><p>พื้นที่ ${area} · ช่วงเวลา ${adminPeriod||'ทุกเดือน'}</p>
  <p>แหล่งข้อมูล ข้อมูลจำลอง · จัดทำ ${issued} น.</p></header>
  ${adminTable(reportRows(scope),scope)}
  <p class="report-note">ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ</p>
+ <footer class="report-paper-footer">
+  <img src="${logo}" alt="" width="48" height="48">
+  <p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี · Anemia Portal</p>
+ </footer>
  </main></body></html>`);
  report.document.close();
 }

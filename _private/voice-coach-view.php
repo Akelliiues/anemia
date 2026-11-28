@@ -6,13 +6,24 @@ $editions=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'edition');
 $draft=$editions['draft']??null;
 $published=$editions['published']??null;
 $example=anemiaVoiceExamples()[$slot];
+$articles=anemiaVoiceArticles();
 ?>
 <section class="card voice-coach-admin">
  <nav class="actions voice-coach-tabs" aria-label="จุดใช้งาน Voice Coach">
-  <?php foreach (anemiaVoiceSlots() as $key=>$label): ?>
+  <?php foreach (array_diff_key(anemiaVoiceSlots(),$articles) as $key=>$label): ?>
    <a class="action<?= $slot===$key?' primary':'' ?>" href="dashboard.php?view=voice-coach&amp;slot=<?= esc($key) ?>" <?= $slot===$key?'aria-current="page"':'' ?>><?= esc($label) ?></a>
   <?php endforeach; ?>
  </nav>
+ <form method="get" class="network-form voice-article-picker">
+  <input type="hidden" name="view" value="voice-coach">
+  <label>คลังความรู้<select name="slot" required>
+   <option value="">เลือกบทความ</option>
+   <?php foreach ($articles as $key=>[$title]): ?>
+    <option value="<?= esc($key) ?>" <?= $slot===$key?'selected':'' ?>><?= esc($title) ?></option>
+   <?php endforeach; ?>
+  </select></label>
+  <button class="action"><?= workspaceIcon('book') ?> เปิดบทความ</button>
+ </form>
  <?php if ($voiceNotice!==''): ?><p class="notice" role="status"><?= esc($voiceNotice) ?></p><?php endif; ?>
  <div class="voice-coach-editor">
   <section>

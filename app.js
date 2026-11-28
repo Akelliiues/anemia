@@ -134,7 +134,7 @@ const voiceFallback={
  high:'เราแนะนำให้ตรวจเลือดเพิ่มเติมเพื่อให้รู้ชัดขึ้นค่ะ คุณเลือกสถานที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้ตามที่สะดวก'
 };
 let voiceCoachRequest;
-const audioUI=(key,homeCard=false)=>`<section class="${homeCard?'card':'status'} voice-coach" data-voice-coach="${key}">
+const audioUI=(key,homeCard=false,article=false)=>`<section class="${homeCard?'card':'status'} voice-coach" data-voice-coach="${key}" ${article?'data-voice-article hidden':''}>
  <div><strong>${box('sound')} ${homeCard?'ตัวอย่างคำแนะนำ':'คำแนะนำเพิ่มเติม'}</strong>
  <p data-voice-copy>${voiceFallback[key]??''}</p><audio controls preload="none" hidden aria-label="ฟังคำแนะนำ"></audio>
  <small data-voice-error role="status"></small></div></section>`;
@@ -147,9 +147,17 @@ function loadVoiceCoach(){
   for(const card of cards){
    const key=card.dataset.voiceCoach;
    const entry=slots?.[key];
-   if(entry?.display_text)card.querySelector('[data-voice-copy]').textContent=entry.display_text;
+   const hasAudio=Number(entry?.has_audio)===1;
+   const copy=card.querySelector('[data-voice-copy]');
+   if(card.hasAttribute('data-voice-article')){
+    const original=knowledge.find(article=>article[0]===key)?.[5].join(' ');
+    const showCopy=Boolean(entry?.display_text && entry.display_text!==original);
+    copy.hidden=!showCopy;
+    card.hidden=!hasAudio&&!showCopy;
+   }
+   if(entry?.display_text)copy.textContent=entry.display_text;
    const audio=card.querySelector('audio');
-   if(Number(entry?.has_audio)!==1 || audio.hasAttribute('src'))continue;
+   if(!hasAudio || audio.hasAttribute('src'))continue;
    audio.addEventListener('error',()=>{
     audio.hidden=true;
     card.querySelector('[data-voice-error]').textContent='เปิดไฟล์เสียงไม่ได้ อ่านคำแนะนำด้านบนได้ค่ะ';
@@ -367,7 +375,7 @@ function openArticle(id){
  const next=playlist[playlist.findIndex(entry=>entry[0]===id)+1];
  const nextControl=next?`<button type="button" class="back floating-back floating-next" data-article="${next[0]}" aria-label="บทถัดไป ${next[3]}" title="บทถัดไป">${icon('next')}</button>`:'';
  set(panel(`${backRow()}${nextControl}<article><header class="knowledge-hero knowledge-article-hero"><div>${box(symbol)}<span class="eyebrow">${category}</span><h1 class="title">${title}</h1><p>${summary}</p></div>${knowledgeArt(id)}</header>
- <div class="knowledge-body"><p>${body[0]}</p><section class="knowledge-action-note"><h2>${id==='urgent'?'ถ้าตั้งครรภ์หรืออาจตั้งครรภ์':'ลองทำดู'}</h2><p>${body[1]}</p></section></div>
+ <div class="knowledge-body"><p>${body[0]}</p><section class="knowledge-action-note"><h2>${id==='urgent'?'ถ้าตั้งครรภ์หรืออาจตั้งครรภ์':'ลองทำดู'}</h2><p>${body[1]}</p></section></div>${audioUI(id,false,true)}
  <section class="knowledge-sources"><h2>แหล่งข้อมูล</h2><ul>${sources.map(key=>{const [label,url]=knowledgeSources[key];return `<li><a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a></li>`;}).join('')}</ul></section>
  <div class="actions">${button('กลับคลังความรู้','learn','book')}${button(originalAnswers.length?'กลับไปดูผลของฉัน':'เริ่มประเมินตนเอง',originalAnswers.length?'result':'start','check',true)}</div></article>`));
 }

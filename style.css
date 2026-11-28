@@ -2808,3 +2808,8 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .voice-coach-editor form + form {margin-top:.7rem;}
 .voice-coach-editor form button {justify-self:start;}
 @media(max-width:720px) {.voice-coach-editor {grid-template-columns:1fr;}}
+
+.voice-coach[hidden],.voice-coach [data-voice-copy][hidden] {display:none;}
+.voice-article-picker {grid-template-columns:minmax(0,32rem) auto;align-items:end;justify-content:start;margin:0 0 1rem;}
+.voice-article-picker select {margin-bottom:0;}
+@media(max-width:500px) {.voice-article-picker {grid-template-columns:1fr;}.voice-article-picker button {justify-self:start;}}

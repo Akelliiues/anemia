@@ -2,11 +2,17 @@
 declare(strict_types=1);
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 
+function anemiaVoiceArticles(): array
+{
+    static $articles;
+    return $articles??=require __DIR__.'/voice-articles.php';
+}
+
 function anemiaVoiceSlots(): array
 {
     return ['home'=>'ตัวอย่างบนหน้าหลัก','low'=>'ผลประเมิน · ดูแลต่อเนื่อง',
         'medium'=>'ผลประเมิน · มีบางเรื่องให้ดูเพิ่ม','high'=>'ผลประเมิน · แนะนำให้ตรวจเพิ่ม',
-        'unknown'=>'ผลประเมิน · ข้อมูลยังไม่พอสรุป'];
+        'unknown'=>'ผลประเมิน · ข้อมูลยังไม่พอสรุป']+array_map(static fn(array $article): string=>$article[0],anemiaVoiceArticles());
 }
 
 function anemiaVoiceExamples(): array
@@ -17,7 +23,7 @@ function anemiaVoiceExamples(): array
         'low'=>'จากคำตอบของคุณ ผลเบื้องต้นบ่งชี้ว่าความเสี่ยงโลหิตจางน้อยค่ะ มื้อต่อไปลองเพิ่มผัก และเลือกอาหารที่มีธาตุเหล็ก เช่น เนื้อไม่ติดมันหรือถั่ว หากมีอาการหรือยังเป็นกังวล ปรึกษาหน่วยบริการได้เลยค่ะ',
         'medium'=>'มีบางคำตอบที่ควรดูเพิ่มค่ะ คุณลองตอบอีกมุม หรือเลือกปรึกษาหน่วยบริการเรื่องตรวจเลือดได้เลย',
         'high'=>'เราแนะนำให้ตรวจเลือดเพิ่มเติมเพื่อให้รู้ชัดขึ้นค่ะ คุณเลือกสถานที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้ตามที่สะดวก',
-    ];
+    ]+array_map(static fn(array $article): string=>$article[1],anemiaVoiceArticles());
 }
 
 function anemiaEnsureVoiceCoach(PDO $db): void

@@ -60,30 +60,37 @@ $methods=static function(array $row) use ($providerLabels): string {
     return implode(' · ',$items)?:'—';
 };
 ?>
-<section class="card admin-report stack">
- <h2><?= workspaceIcon('users') ?> จัดการบัญชีผู้เข้าร่วม</h2>
+<section class="card admin-report member-directory" aria-labelledby="member-directory-title">
+ <h2 id="member-directory-title"><?= workspaceIcon('users') ?> จัดการบัญชีผู้เข้าร่วม</h2>
  <?php if ($memberNotice!==''): ?><p class="status" role="status"><?= esc($memberNotice) ?></p><?php endif; ?>
- <div class="contact-pending-summary">
-  <span><?= workspaceIcon('users') ?> สมาชิกทั้งหมด <strong><?= number_format((int)$summary['total']) ?></strong></span>
-  <span><?= workspaceIcon('ready') ?> ใช้งานได้ <strong><?= number_format((int)$summary['total']-(int)$summary['suspended']) ?></strong></span>
-  <span><?= workspaceIcon('lock') ?> ระงับ <strong><?= number_format((int)$summary['suspended']) ?></strong></span>
- </div>
- <form method="get" class="admin-filters member-filters">
+ <dl class="member-summary" aria-label="ยอดรวมสมาชิกทุกสถานะ">
+  <?php foreach ([
+    ['users','สมาชิกทั้งหมด',(int)$summary['total']],
+    ['ready','ใช้งานได้',(int)$summary['total']-(int)$summary['suspended']],
+    ['lock','ระงับ',(int)$summary['suspended']],
+  ] as [$icon,$label,$count]): ?>
+   <div class="member-summary-item member-summary-<?= $icon ?>">
+    <span class="member-summary-icon"><?= workspaceIcon($icon) ?></span>
+    <dt><?= $label ?></dt><dd><?= number_format($count) ?></dd>
+   </div>
+  <?php endforeach; ?>
+ </dl>
+ <form method="get" class="network-form member-filters">
   <input type="hidden" name="view" value="members">
   <label>ค้นหาสมาชิก<input type="search" name="member_search" value="<?= esc($search) ?>" placeholder="ชื่อบัญชีหรือรหัสสมาชิก" maxlength="40"></label>
   <label>สถานะ<select name="member_status"><option value="">ทั้งหมด</option><option value="active" <?= $status==='active'?'selected':'' ?>>ใช้งานได้</option><option value="suspended" <?= $status==='suspended'?'selected':'' ?>>ระงับ</option></select></label>
   <label>ช่องทางที่เชื่อม<select name="member_provider"><option value="">ทุกช่องทาง</option>
    <?php foreach ($providerLabels as $key=>$label): ?><option value="<?= esc($key) ?>" <?= $provider===$key?'selected':'' ?>><?= esc($label) ?></option><?php endforeach; ?>
   </select></label>
-  <button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดงข้อมูล</button>
+  <button class="action primary" type="submit"><?= workspaceIcon('filter') ?>แสดงข้อมูล</button>
  </form>
  <?php if ($rows): ?>
- <div class="tablewrap"><table class="admin-table">
-  <thead><tr><th>สมาชิก</th><th>วิธีเข้าสู่ระบบ</th><th>วันที่สมัคร</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+ <div class="tablewrap member-tablewrap" tabindex="0" role="region" aria-label="รายชื่อสมาชิก"><table class="admin-table member-table">
+  <thead><tr><th scope="col">สมาชิก</th><th scope="col">วิธีเข้าสู่ระบบ</th><th scope="col">วันที่สมัคร</th><th scope="col">สถานะ</th><th scope="col">จัดการ</th></tr></thead>
   <tbody><?php foreach ($rows as $row): ?>
    <tr><th scope="row"><?= esc(anemiaMemberListName($row['username'],$row['id'])) ?></th>
-    <td><?= esc($methods($row)) ?></td><td><?= esc(workspaceThaiShortDate($row['connected_at'])) ?></td>
-    <td><?= $row['suspended_at']?'ระงับ':'ใช้งานได้' ?></td>
+    <td class="member-login-method"><?= esc($methods($row)) ?></td><td><?= esc(workspaceThaiShortDate($row['connected_at'])) ?></td>
+    <td><span class="member-state <?= $row['suspended_at']?'is-suspended':'is-active' ?>"><?= workspaceIcon($row['suspended_at']?'lock':'ready') ?><?= $row['suspended_at']?'ระงับ':'ใช้งานได้' ?></span></td>
     <td>
      <?php $detailUrl=['member'=>$row['id']]; $menuId='member-menu-'.$row['id']; ?>
      <a class="action member-menu-trigger" href="<?= esc($memberUrl($detailUrl)) ?>" data-member-menu="<?= $menuId ?>" aria-label="จัดการสมาชิก <?= esc(anemiaMemberListName($row['username'],$row['id'])) ?>">⋯</a>
@@ -96,8 +103,8 @@ $methods=static function(array $row) use ($providerLabels): string {
    </tr>
   <?php endforeach; ?></tbody>
  </table></div>
- <?php else: ?><p>ไม่พบสมาชิกตามตัวกรอง</p><?php endif; ?>
- <?php if ($page>1||$hasNext): ?><nav class="actions" aria-label="หน้ารายชื่อสมาชิก">
+ <?php else: ?><p class="member-empty"><?= workspaceIcon('users') ?> ไม่พบสมาชิกตามตัวกรอง</p><?php endif; ?>
+ <?php if ($page>1||$hasNext): ?><nav class="actions member-pagination" aria-label="หน้ารายชื่อสมาชิก">
   <?php if ($page>1): ?><a class="action" href="<?= esc($memberUrl(['member_page'=>$page-1])) ?>"><?= workspaceIcon('back') ?>ก่อนหน้า</a><?php endif; ?>
   <span>หน้า <?= $page ?></span>
   <?php if ($hasNext): ?><a class="action" href="<?= esc($memberUrl(['member_page'=>$page+1])) ?>">ถัดไป <?= workspaceIcon('next') ?></a><?php endif; ?>

@@ -836,7 +836,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v182">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v183">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -942,7 +942,16 @@ function workspaceInfo(string $page, ?array $release = null): void
  <?php endif; ?>
  <div class="admin-content" id="staff-report-content">
   <?php if (!$staffAppView): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
-   <p><?= esc($scopeName) ?></p>
+   <?php if ($view==='overview' && $canChooseRegion): ?>
+   <details class="overview-region-filter">
+    <summary><?= esc($scopeName) ?> <span class="hosted-menu-caret" aria-hidden="true"></span></summary>
+  <form class="admin-filters hosted-scope-filter hosted-filter-row" method="get"><input type="hidden" name="view" value="overview">
+   <label>เขตสุขภาพ<select name="region"><option value="0">ทุกเขตสุขภาพ</option>
+   <?php for ($i=1;$i<=13;$i++): ?><option value="<?= $i ?>" <?= $region === $i ? 'selected' : '' ?>><?= esc(zoneLabel($i)) ?></option><?php endfor; ?>
+   </select></label><button class="action" type="submit"><?= workspaceIcon('filter') ?>ใช้ตัวกรอง</button>
+  </form>
+   </details>
+   <?php else: ?><p><?= esc($scopeName) ?></p><?php endif; ?>
    <?php if ($view==='scan-request'): ?><a class="action no-print" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a><?php endif; ?>
   </div>
   <?php endif; ?>
@@ -964,12 +973,6 @@ function workspaceInfo(string $page, ?array $release = null): void
   </section>
   <?php endif; ?>
   <?php if ($view === 'overview'): ?>
-  <?php if ($canChooseRegion): ?>
-  <form class="admin-filters hosted-scope-filter hosted-filter-row" method="get"><input type="hidden" name="view" value="overview">
-   <label>เขตสุขภาพ<select name="region"><option value="0">ทุกเขตสุขภาพ</option>
-   <?php for ($i=1;$i<=13;$i++): ?><option value="<?= $i ?>" <?= $region === $i ? 'selected' : '' ?>><?= esc(zoneLabel($i)) ?></option><?php endfor; ?>
-   </select></label><button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดงข้อมูล</button>
-  </form><?php endif; ?>
   <?php $responseCount=(int)$evaluation['overall']['n']; ?>
   <section class="card admin-report hosted-live-summary staff-detail-card">
    <div class="hosted-registry-heading"><span class="iconbox"><?= workspaceIcon('ready') ?></span><div><h2>ประเมินการใช้งาน</h2><p><?= $sampleMode ? 'ตัวอย่างเดือน' : 'ข้อมูลที่ส่งจริงในเดือน' ?> <?= esc(date('m/Y')) ?></p></div></div>

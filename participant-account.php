@@ -32,13 +32,14 @@ $canConnect=static fn(string $key): bool => isset($providers[$key]) && $provider
 $invite=$_REQUEST['invite']??'';
 $invite=is_string($invite)&&preg_match('/^[a-f0-9]{32}$/D',$invite)?$invite:'';
 $returnContext=$_REQUEST['return']??'';
-$returnContext=in_array($returnContext,['portal','programme','school'],true)?$returnContext:'';
+$returnContext=in_array($returnContext,['portal','programme','school','account'],true)?$returnContext:'';
 $returnToPortal=$returnContext!=='';
 $accountReturnUrl=static fn(): string => 'participant-account.php'.($returnContext!==''?'?return='.$returnContext:'');
 $participantDestination=static function(string $context,string $invite): string {
     return match ($context) {
         'programme'=>'participant-programme.php',
         'school'=>'school-join.php',
+        'account'=>'participant-account.php?return=account',
         'portal'=>'index.html',
         default=>'index.html?team=1'.($invite!==''?'&invite='.$invite:''),
     };
@@ -215,7 +216,8 @@ if ($account) {
 <?php endif; ?>
 <section class="<?= $account?'panel participant-account':'staff-access-panel participant-account' ?>">
 <nav class="participant-account-return" aria-label="ทางกลับหน้าหลัก">
- <?php if ($returnContext==='programme'): ?><a href="participant-programme.php"><?= workspaceIcon('back') ?>กลับไปที่กิจกรรม 12 สัปดาห์</a>
+ <?php if ($returnContext==='school'): ?><a href="school-join.php"><?= workspaceIcon('back') ?>กลับไปที่กิจกรรมโรงเรียน</a>
+ <?php elseif ($returnContext==='programme'): ?><a href="participant-programme.php"><?= workspaceIcon('back') ?>กลับไปที่กิจกรรม 12 สัปดาห์</a>
  <?php else: ?><a href="index.html"><?= workspaceIcon('back') ?>กลับหน้าหลัก</a><?php endif; ?>
  <?php if ($account): ?><div class="actions participant-install-actions"><a class="action" href="portal-install.html" data-public-install><?= workspaceIcon('download') ?>ติดตั้ง Anemia Portal</a></div><?php endif; ?>
 </nav>
@@ -269,7 +271,7 @@ if ($account) {
  ?>
  <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
   <a data-pin-mode href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
-  <a data-staff-mode href="login.php?entry=portal<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>"><?= workspaceIcon('lock') ?> รหัสผ่านเจ้าหน้าที่</a>
+  <a data-staff-mode href="login.php?entry=portal<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>"><?= workspaceIcon('lock') ?> รหัสผ่านครู / เจ้าหน้าที่</a>
  </nav>
  <div class="participant-login-fields">
  <div data-member-login>
@@ -301,7 +303,7 @@ if ($account) {
  </div>
  <div data-staff-login hidden>
   <div class="participant-entry-card">
-   <form method="post" action="login.php?entry=inline<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>" aria-label="เข้าสู่ระบบเจ้าหน้าที่">
+   <form method="post" action="login.php?entry=inline<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>" aria-label="เข้าสู่ระบบครูหรือเจ้าหน้าที่">
     <input type="hidden" name="action" value="login">
     <label><span><?= workspaceIcon('person') ?> ชื่อผู้ใช้</span><input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false"></label>
     <div class="participant-password-field">

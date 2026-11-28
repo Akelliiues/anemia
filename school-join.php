@@ -79,6 +79,7 @@ if ($valid) {
  <?php if ($notice!==''): ?><p role="status"><?= schoolEscape($notice) ?></p><?php endif; ?>
  <?php if (!$cohort): ?>
   <form class="network-form" method="get"><label>รหัสจากครู<input name="code" maxlength="32" required></label><button class="action primary">ตรวจรหัส</button></form>
+  <p><a href="participant-account.php?return=school&amp;method=staff">เข้าสู่ระบบสำหรับครู</a></p>
  <?php else: ?>
   <h2><?= schoolEscape($cohort['name']) ?></h2>
   <p><?= schoolEscape($cohort['title'].' · '.$cohort['classroom']) ?></p>

@@ -70,15 +70,16 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
                     http_response_code(429);
                     $message = 'ลองเข้าสู่ระบบใหม่ในอีกสักครู่';
                 } elseif (strlen($user) <= 40 && strlen($pass) <= 128 && $pass !== '') {
-                    $lookup = $db->prepare('SELECT username,salt,password_hash,enabled FROM anemia_staff WHERE username=?');
+                    $lookup = $db->prepare('SELECT username,salt,password_hash,enabled,role FROM anemia_staff WHERE username=?');
                     $lookup->execute([$user]);
                     $account = $lookup->fetch(PDO::FETCH_ASSOC);
                     $hash = hash_pbkdf2('sha256', $pass, $account['salt'] ?? str_repeat('0', 48), 600000, 64);
                     if (hash_equals($account['password_hash'] ?? str_repeat('0', 64), $hash) && $account && (int)$account['enabled'] === 1) {
                         session_regenerate_id(true);
                         $_SESSION = ['username' => $account['username'], 'csrf' => bin2hex(random_bytes(32)), 'until' => time() + 28800];
-                        if ($inlineLogin) $sendInlineLogin(['destination'=>$afterLogin]);
-                        header('Location: '.$afterLogin, true, 303);
+                        $destination=$account['role']==='school_teacher'?'school-workspace.php':$afterLogin;
+                        if ($inlineLogin) $sendInlineLogin(['destination'=>$destination]);
+                        header('Location: '.$destination, true, 303);
                         exit;
                     }
                     $message = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
@@ -88,8 +89,9 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
             }
         }
         if ($staff && $_SERVER['REQUEST_METHOD'] === 'GET') {
-            if ($inlineLogin) $sendInlineLogin(['destination'=>$afterLogin]);
-            header('Location: '.$afterLogin, true, 303);
+            $destination=$staff['role']==='school_teacher'?'school-workspace.php':$afterLogin;
+            if ($inlineLogin) $sendInlineLogin(['destination'=>$destination]);
+            header('Location: '.$destination, true, 303);
             exit;
         }
     } catch (Throwable $error) {
@@ -130,7 +132,7 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
         <?php if (($_GET['entry'] ?? '') === 'portal'): ?>
           <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
             <a href="participant-account.php?return=portal">PIN สมาชิก</a>
-            <a href="login.php?entry=portal" aria-current="page">รหัสผ่านเจ้าหน้าที่</a>
+            <a href="login.php?entry=portal" aria-current="page">รหัสผ่านครู / เจ้าหน้าที่</a>
           </nav>
         <?php endif; ?>
         <?php if ($fault !== ''): ?>

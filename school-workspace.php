@@ -12,7 +12,7 @@ ini_set('session.use_strict_mode','1');
 session_set_cookie_params(['path'=>'/','secure'=>$secure,'httponly'=>true,'samesite'=>'Strict']);
 session_start();
 if (!is_string($_SESSION['username']??null) || ($_SESSION['until']??0)<time()) {
-    header('Location: login.php?next=schools',true,303); exit;
+    header('Location: participant-account.php?return=school&method=staff',true,303); exit;
 }
 define('ANEMIA_STAFF_BOOT',true);
 require __DIR__.'/_private/database.php';

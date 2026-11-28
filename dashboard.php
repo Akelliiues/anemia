@@ -1675,11 +1675,11 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="workspace-avatar-controls">
    <div class="workspace-avatar-picker" role="group" aria-label="เลือกไอคอนโปรไฟล์">
     <?php foreach (STAFF_AVATAR_ICONS as $key=>$label): ?>
-    <button type="submit" name="avatar_choice" value="<?= esc($key) ?>" aria-label="<?= esc($label) ?>" title="<?= esc($label) ?>" aria-pressed="<?= ($staffAvatar['icon']??($staffAvatar['hasPhoto']?'':'person'))===$key?'true':'false' ?>"><?= workspaceIcon($key) ?></button>
+    <button type="button" name="avatar_choice" value="<?= esc($key) ?>" aria-label="<?= esc($label) ?>" title="<?= esc($label) ?>" aria-pressed="<?= ($staffAvatar['icon']??($staffAvatar['hasPhoto']?'':'person'))===$key?'true':'false' ?>"><?= workspaceIcon($key) ?></button>
     <?php endforeach; ?>
    </div>
-   <button type="submit" name="avatar_choice" value="restore" class="action" <?= $staffAvatar['hasPhoto'] && $staffAvatar['icon']!==null?'':'hidden' ?>>ใช้รูปเดิม</button>
-   <button type="submit" name="avatar_choice" value="remove" class="action" <?= $staffAvatar['hasPhoto']?'':'hidden' ?>>ลบรูป</button>
+   <button type="button" name="avatar_choice" value="restore" class="action" <?= $staffAvatar['hasPhoto'] && $staffAvatar['icon']!==null?'':'hidden' ?>>ใช้รูปเดิม</button>
+   <button type="button" name="avatar_choice" value="remove" class="action" <?= $staffAvatar['hasPhoto']?'':'hidden' ?>>ลบรูป</button>
   </div>
   <p data-photo-message role="status"></p>
  </form>
@@ -1841,11 +1841,37 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
 (() => {
  const photoForm=document.querySelector('#staff-photo-form');
  const photoMessage=photoForm.querySelector('[data-photo-message]');
- let photoBusy=false;
+ const photoInput=photoForm.querySelector('[name=profile_photo]');
+ const iconButtons=[...photoForm.querySelectorAll('.workspace-avatar-picker button')];
+ let savedIcon=iconButtons.find(button=>button.getAttribute('aria-pressed')==='true')?.value;
+ let pendingAvatar='upload', photoBusy=false;
+ function markIcon(icon){
+  iconButtons.forEach(button=>button.setAttribute('aria-pressed',String(button.value===icon)));
+ }
+ photoForm.addEventListener('click',event=>{
+  const choice=event.target.closest('button[type=button][name=avatar_choice]')?.value;
+  if(!choice||photoBusy)return;
+  pendingAvatar=choice;
+  photoInput.value='';
+  markIcon(choice==='remove'?(savedIcon||'person'):choice);
+  photoMessage.textContent=choice==='remove'?'กดบันทึกรูปเพื่อยืนยันการลบรูป':'กดบันทึกรูปเพื่อใช้ตัวเลือกนี้';
+ });
+ photoInput.addEventListener('change',()=>{
+  if(!photoInput.files.length)return;
+  pendingAvatar='upload';
+  markIcon(null);
+  photoMessage.textContent='กดบันทึกรูปเพื่อใช้รูปใหม่';
+ });
+ photoForm.closest('dialog').addEventListener('close',()=>{
+  photoForm.reset();
+  pendingAvatar='upload';
+  markIcon(savedIcon);
+  photoMessage.textContent='';
+ });
  photoForm.addEventListener('submit',async event=>{
   event.preventDefault();
   if(photoBusy)return;
-  const choice=event.submitter?.value||'upload';
+  const choice=pendingAvatar;
   const data=new FormData(photoForm);
   data.set('avatar_choice',choice);
   if(choice!=='upload')data.delete('profile_photo');
@@ -1868,10 +1894,12 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
     image.hidden=!showPhoto;
    });
    document.querySelectorAll('[data-staff-avatar-icon]').forEach(node=>{node.hidden=showPhoto||node.dataset.staffAvatarIcon!==activeIcon;});
-   photoForm.querySelectorAll('.workspace-avatar-picker button').forEach(button=>button.setAttribute('aria-pressed',String(!showPhoto&&button.value===activeIcon)));
+   savedIcon=showPhoto?null:activeIcon;
+   markIcon(savedIcon);
    photoForm.querySelector('[value=remove]').hidden=!hasPhoto;
    photoForm.querySelector('[value=restore]').hidden=!hasPhoto||!icon;
-   if(choice==='upload')photoForm.reset();
+   photoForm.reset();
+   pendingAvatar='upload';
   }catch(error){
    photoMessage.textContent=error instanceof SyntaxError?'บันทึกรูปไม่ได้ กรุณาลองอีกครั้ง':error.message;
   }finally{

@@ -146,7 +146,7 @@ return static function (PDO $db,array $identity): void {
   <?php if (!$teacher): ?><input type="hidden" name="view" value="schools"><?php endif; ?>
   <label>เขตสุขภาพ<select name="region" onchange="this.form.elements.province.value='';this.form.submit()">
    <?php if (count($regions)>1): ?><option value="0">ทุกเขตตามสิทธิ์</option><?php endif; ?>
-   <?php foreach ($regions as $zone): ?><option value="<?= $zone ?>" <?= $region===$zone?'selected':'' ?>><?= 'เขตสุขภาพที่ '.$zone ?></option><?php endforeach; ?>
+   <?php foreach ($regions as $zone): ?><option value="<?= $zone ?>" <?= $region===$zone?'selected':'' ?>><?= 'เขตสุขภาพที่ '.$zone.($zone===13?' กรุงเทพมหานคร':'') ?></option><?php endforeach; ?>
   </select></label>
   <label>จังหวัด<select name="province" required>
    <option value="">เลือกจังหวัด</option>

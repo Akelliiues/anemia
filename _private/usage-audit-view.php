@@ -3,8 +3,9 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 if (!$canUsageAudit) { http_response_code(403); exit; }
 [$scope,$parameters]=usageAuditScope($identity);
 $filters=['view'=>'usage-audit'];
-$kinds=['workspace'=>'เปิดหน้าทำงาน','submission'=>'ส่งคำขอจากหลังบ้าน','teacher-preview'=>'ดูในมุมมองครู',
-    'school-change'=>'บันทึกการเปลี่ยนแปลงของโรงเรียน','session'=>'เข้าและออกจากระบบ','enrollment'=>'เข้าร่วมกิจกรรมโรงเรียน'];
+$kinds=['teacher-preview'=>'ดูในมุมมองครู','school-change'=>'จัดการโรงเรียน','session'=>'เข้าและออกจากระบบ',
+    'enrollment'=>'เข้าร่วมกิจกรรมโรงเรียน','data-change'=>'เพิ่ม แก้ไข หรือลบข้อมูล','access-change'=>'เปลี่ยนบัญชีหรือสิทธิ์'];
+$scope.=" AND l.event_kind NOT IN ('workspace','submission')";
 $kind=$_GET['event_kind']??'';
 if (is_string($kind) && isset($kinds[$kind])) {
     $scope.=' AND l.event_kind=?';
@@ -23,22 +24,25 @@ if (is_string($province) && preg_match('/^[0-9]{2}$/D',$province)) {
 [$provinceScope,$provinceParams]=anemiaProvinceScope($identity,(int)$auditRegion);
 $areas=$db->prepare('SELECT code,name FROM anemia_province'.($provinceScope?' WHERE '.$provinceScope:'').' ORDER BY name');
 $areas->execute($provinceParams);
-$before=filter_input(INPUT_GET,'before',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
-if ($before) { $scope.=' AND l.id<?'; $parameters[]=$before; }
-$query=$db->prepare("SELECT l.*,p.name AS province,s.name AS school FROM anemia_usage_audit l
-    LEFT JOIN anemia_province p ON p.code=l.province_code LEFT JOIN anemia_school s ON s.id=l.school_id
-    WHERE $scope ORDER BY l.id DESC LIMIT 51");
-$query->execute($parameters);
-$rows=$query->fetchAll(PDO::FETCH_ASSOC);
-$next=count($rows)>50;
-if ($next) array_pop($rows);
+$before=filter_input(INPUT_GET,'before',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])?:0;
+$after=filter_input(INPUT_GET,'after',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])?:0;
+[$rows,$hasNewer,$hasOlder]=usageAuditPage($db,$scope,$parameters,$before,$after);
+$auditUrl=static fn(array $cursor=[]): string => 'dashboard.php?'.http_build_query($filters+$cursor);
 $events=$tabs+[
     'teacher-workspace'=>'พื้นที่ครู','login'=>'เข้าสู่ระบบ','logout'=>'ออกจากระบบ','school-create'=>'เพิ่มโรงเรียน',
     'directory-add'=>'เพิ่มโรงเรียนจากทะเบียน','school-edit'=>'แก้ไขทะเบียนโรงเรียน','school-withdraw'=>'ถอนการเข้าร่วม',
     'school-archive'=>'ยุติการเข้าร่วม','school-reopen'=>'เปิดใช้งานโรงเรียน','coordinator'=>'แต่งตั้งผู้ประสานงาน',
     'grant'=>'เพิ่มครู','revoke'=>'ถอนสิทธิ์ครู','teacher-profile'=>'แก้ไขข้อมูลครู','rooms-create'=>'สร้างห้อง',
     'rooms-copy'=>'คัดลอกห้อง','room-assign'=>'มอบหมายครู','room-open'=>'เปิดรับนักเรียน','room-close'=>'ปิดรับนักเรียน',
-    'room-target'=>'ตั้งเป้าหมาย','cohort-edit'=>'แก้ไขรุ่น','cohort-toggle'=>'เปลี่ยนสถานะรับสมัคร','school-join'=>'ยืนยันเข้าร่วมห้องเรียน'
+    'room-target'=>'ตั้งเป้าหมาย','cohort-edit'=>'แก้ไขรุ่น','cohort-toggle'=>'เปลี่ยนสถานะรับสมัคร','school-join'=>'ยืนยันเข้าร่วมห้องเรียน',
+    'access-create'=>'สร้างบัญชีเจ้าหน้าที่','access-update'=>'แก้สิทธิ์เจ้าหน้าที่','member-rename'=>'แก้ชื่อบัญชีสมาชิก',
+    'member-suspend'=>'ระงับบัญชีสมาชิก','member-restore'=>'คืนสถานะบัญชีสมาชิก',
+    'member-demo-create'=>'สร้างลูกทีมจำลอง','member-demo-clear'=>'ล้างลูกทีมจำลอง',
+    'network-register'=>'เพิ่มทะเบียนหน่วยบริการ','network-grant'=>'เปลี่ยนสิทธิ์เครือข่าย','network-link'=>'เปลี่ยนแม่ข่าย',
+    'queue-update'=>'เปลี่ยนสถานะคำขอ','queue-delete'=>'ลบคำขอ',
+    'demo-queue-update'=>'เปลี่ยนสถานะคำขอทดสอบ','demo-queue-delete'=>'ลบคำขอทดสอบ',
+    'service-otp'=>'บันทึกตั้งค่า OTP','service-google'=>'บันทึกตั้งค่า Google','service-line'=>'บันทึกตั้งค่า LINE',
+    'service-facebook'=>'บันทึกตั้งค่า Facebook','service-thaid'=>'บันทึกตั้งค่า ThaID',
 ];
 ?>
 <section class="card admin-report usage-audit" aria-labelledby="usage-audit-heading">
@@ -78,8 +82,10 @@ $events=$tabs+[
  <div class="usage-audit-tooltip" popover="auto" aria-hidden="true"></div>
  <script defer src="usage-audit.js?v=1"></script>
  <?php endif; ?>
- <?php if ($before || $next): ?><nav class="actions" aria-label="แบ่งหน้าประวัติ">
-  <?php if ($before): ?><a class="action" href="dashboard.php?<?= esc(http_build_query($filters)) ?>">กลับไปล่าสุด</a><?php endif; ?>
-  <?php if ($next): ?><a class="action" href="dashboard.php?<?= esc(http_build_query($filters+['before'=>end($rows)['id']])) ?>">ดูรายการก่อนหน้า <?= workspaceIcon('next') ?></a><?php endif; ?>
- </nav><?php endif; ?>
+ <nav class="actions usage-audit-pagination" aria-label="แบ่งหน้าประวัติ">
+  <span><?= count($rows) ?> รายการในหน้านี้ · หน้าละ 50 รายการ</span>
+  <?php if ($before || $after): ?><a class="action" href="<?= esc($auditUrl()) ?>">ล่าสุด</a><?php endif; ?>
+  <?php if ($rows && $hasNewer): ?><a class="action" href="<?= esc($auditUrl(['after'=>$rows[0]['id']])) ?>"><?= workspaceIcon('back') ?> ใหม่กว่า</a><?php endif; ?>
+  <?php if ($rows && $hasOlder): ?><a class="action" href="<?= esc($auditUrl(['before'=>end($rows)['id']])) ?>">เก่ากว่า <?= workspaceIcon('next') ?></a><?php endif; ?>
+ </nav>
 </section>

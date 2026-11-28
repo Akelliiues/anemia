@@ -41,6 +41,15 @@ function usageAuditSchool(PDO $db,int $schoolId): ?array
     return $query->fetch(PDO::FETCH_ASSOC)?:null;
 }
 
+function usageAuditFacilityArea(PDO $db,?string $facilityKey): ?array
+{
+    if ($facilityKey===null) return null;
+    $query=$db->prepare('SELECT p.code AS province_code,p.region FROM anemia_network_facility f
+        JOIN anemia_province p ON p.code=LEFT(f.district,2) WHERE f.facility_key=?');
+    $query->execute([$facilityKey]);
+    return $query->fetch(PDO::FETCH_ASSOC)?:null;
+}
+
 function usageAuditStaffSession(PDO $db,string $username,string $event): void
 {
     require_once __DIR__.'/access.php';
@@ -86,4 +95,26 @@ function usageAuditScope(array $identity): array
             [$identity['province_code'],(int)($identity['province_region']??0),20]],
         default=>['1=0',[]]
     };
+}
+
+function usageAuditPage(PDO $db,string $scope,array $parameters,int $older,int $newer): array
+{
+    $order='DESC';
+    if ($newer) {
+        $scope.=' AND l.id>?';
+        $parameters[]=$newer;
+        $order='ASC';
+    } elseif ($older) {
+        $scope.=' AND l.id<?';
+        $parameters[]=$older;
+    }
+    $query=$db->prepare("SELECT l.*,p.name AS province,s.name AS school FROM anemia_usage_audit l
+        LEFT JOIN anemia_province p ON p.code=l.province_code LEFT JOIN anemia_school s ON s.id=l.school_id
+        WHERE $scope ORDER BY l.id $order LIMIT 51");
+    $query->execute($parameters);
+    $rows=$query->fetchAll(PDO::FETCH_ASSOC);
+    $extra=count($rows)>50;
+    if ($extra) array_pop($rows);
+    if ($newer) $rows=array_reverse($rows);
+    return [$rows,$newer?$extra:(bool)$older,$newer?true:$extra];
 }

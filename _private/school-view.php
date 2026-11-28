@@ -154,10 +154,6 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
         $query->execute([$school['id']]);
         $previewTeachers=$query->fetchAll(PDO::FETCH_ASSOC);
     }
-    if ($teacher && !$preview) {
-        usageAuditEnsure($db);
-        usageAuditWrite($db,$identity,'workspace','teacher-workspace',$school);
-    }
     $cohorts=[];
     $members=[];
     $assignments=[];

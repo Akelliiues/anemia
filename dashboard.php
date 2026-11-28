@@ -123,10 +123,6 @@ try {
         (in_array($view,['contact-queue','scan-request','scanner-install'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
     }
-    if (($_GET['counts']??'')!=='1' && ($_GET['school_summary']??'')!=='1') {
-        usageAuditEnsure($db);
-        usageAuditWrite($db,$identity,$_SERVER['REQUEST_METHOD']==='POST'?'submission':'workspace',$view);
-    }
     $scanUnit = $isAdmin ? 'ตามสิทธิ์ผู้ดูแลระบบ' : '';
     if (!$isAdmin && $canQueue && $staffAppView) {
         $unitQuery=$db->prepare('SELECT name FROM anemia_network_facility WHERE code=?');
@@ -170,6 +166,7 @@ try {
             $reason=$_POST['reason']??'';
             if (!is_string($id)||!is_string($action)||!is_string($reason)) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
             try {
+                usageAuditEnsure($db);
                 if (in_array($action,['demo-create','demo-clear'],true)) {
                     $changed=anemiaSetDemoMemberNetwork($db,$id,$staff,$action==='demo-create');
                     $_SESSION['member_notice']=$changed?($action==='demo-create'?'สร้างลูกทีมจำลองแล้ว':'ล้างลูกทีมจำลองแล้ว'):'ข้อมูลจำลองไม่มีการเปลี่ยนแปลง';
@@ -180,6 +177,7 @@ try {
                 } else {
                     $changed=anemiaSetMemberStatus($db,$id,$action,$reason,$staff);
                 }
+                if ($changed) usageAuditWrite($db,$identity,'data-change','member-'.$action);
                 if (!in_array($action,['demo-create','demo-clear'],true)) $_SESSION['member_notice']=$changed?'บันทึกการเปลี่ยนแปลงแล้ว':'ข้อมูลไม่มีการเปลี่ยนแปลง';
             } catch (DomainException $error) {
                 $_SESSION['member_notice']=$error->getMessage();
@@ -202,9 +200,11 @@ try {
         }
         if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['network_action'])) {
             if (!is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
+            usageAuditEnsure($db);
             $db->beginTransaction();
             try {
                 $_SESSION['network_notice']=anemiaSaveNetwork($db,$isAdmin,$grant,$staff,$_POST);
+                usageAuditWrite($db,$identity,'data-change','network-'.$_POST['network_action']);
                 $db->commit();
             } catch (DomainException | PDOException $error) {
                 $db->rollBack();
@@ -297,6 +297,7 @@ try {
             $receipt = $_POST['receipt'] ?? null;
             $state = $_POST['state'] ?? null;
             if (!is_string($receipt) || !preg_match($demoQueue ? '/^DE-[0-9A-F]{16}$/D' : '/^AN-[0-9A-F]{16}$/D',$receipt) || ($state !== null && (!is_string($state) || !isset(ANEMIA_REQUEST_STATES[$state])))) { http_response_code(400); exit('ข้อมูลไม่ถูกต้อง'); }
+            if ($deleteRequest || $state!==null) usageAuditEnsure($db);
             $db->beginTransaction();
             $contactFields=$mobileQueue?',contact_name,phone':'';
             $lookup = $db->prepare("SELECT state,facility,facility_key,submitted_at,preferred_date,appointment_at,appointment_slot,next_contact_at$contactFields FROM $contactTable q WHERE receipt=? AND $queueScope FOR UPDATE");
@@ -308,6 +309,7 @@ try {
                     $delete=$db->prepare("DELETE FROM $table WHERE receipt=?");
                     $delete->execute([$receipt]);
                 }
+                usageAuditWrite($db,$identity,'data-change',$demoQueue?'demo-queue-delete':'queue-delete',usageAuditFacilityArea($db,$request['facility_key']));
                 $db->commit();
                 error_log(sprintf('Anemia queue deleted receipt=%s actor=%s',$receipt,$staff));
                 http_response_code(204);
@@ -375,6 +377,7 @@ try {
                 $lookup->execute([$receipt,...$queueParams]);
                 $request = $lookup->fetch(PDO::FETCH_ASSOC);
                 if (!$request) { $db->rollBack(); http_response_code(409); exit('สิทธิ์เข้าถึงคำขอเปลี่ยนแล้ว'); }
+                usageAuditWrite($db,$identity,'data-change',$demoQueue?'demo-queue-update':'queue-update',usageAuditFacilityArea($db,$request['facility_key']));
             }
             $request['actions'] = array_filter(ANEMIA_REQUEST_ACTIONS,static fn($action)=>in_array($request['state'],$action[1],true));
             $request['appointment_label'] = $request['appointment_at'] && in_array($request['state'],['scheduled','attended','test_completed','follow_up'],true) ? anemiaAppointmentLabel($request['appointment_at'],$request['appointment_slot']) : null;
@@ -403,7 +406,9 @@ try {
             try {
                 $action=$_POST['service_action']??'';
                 if ($action==='save') {
+                    usageAuditEnsure($db);
                     anemiaSaveService($service,$_POST,$staff);
+                    usageAuditWrite($db,$identity,'data-change','service-'.$service);
                     if ($service==='otp') unset($_SESSION['service_otp_test'],$_SESSION['service_otp_verified_at']);
                     $_SESSION['service_notice']='บันทึกค่าบริการแล้ว';
                 } elseif ($service==='facebook' && $action==='facebook-check') {
@@ -451,7 +456,9 @@ try {
         $data = anemiaAccessInput($_POST);
         try {
             if (!$data || !in_array($action, ['create','update'], true)) throw new DomainException('ตรวจชื่อผู้ใช้ บทบาท และพื้นที่อีกครั้ง');
+            usageAuditEnsure($db);
             $_SESSION['access_notice'] = saveAnemiaAccess($db, $staff, $action, $data);
+            usageAuditWrite($db,$identity,'access-change','access-'.$action);
         } catch (DomainException $error) {
             $_SESSION['access_notice'] = ['error'=>$error->getMessage()];
         }
@@ -761,7 +768,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v151">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v152">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>

@@ -2670,3 +2670,7 @@ body:has(> .portal-neural-page) {isolation:isolate;}
   background:light-dark(#382650,#ece1ff);color:light-dark(#fff,#211631);
   box-shadow:0 5px 16px #21163142;overflow-wrap:anywhere;
 }
+
+.usage-audit-pagination {align-items:center;justify-content:flex-end;margin-top:.75rem;}
+.usage-audit-pagination > span {margin-inline-end:auto;color:var(--muted);font-size:.875rem;}
+.usage-audit-pagination > .action {white-space:nowrap;}

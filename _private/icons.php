@@ -30,6 +30,8 @@ function workspaceIcon(string $name): string
         'power' => '<path d="M12 2v9m5-6a8 8 0 1 1-10 0"/>',
         'book' => '<path d="M12 6v15M3 4c4-1 7 0 9 2 2-2 5-3 9-2v15c-4-1-7 0-9 2-2-2-5-3-9-2z"/>',
         'info' => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>',
+        'plus' => '<path d="M12 5v14M5 12h14"/>',
+        'check' => '<path d="m5 12 4 4L19 6"/>',
         'next' => '<path d="m10 6 6 6-6 6"/>',
         'phone' => '<path d="M7 3H4a1 1 0 0 0-1 1c0 9 8 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a14 14 0 0 1-7-7l2-2z"/>',
         'chart' => '<path d="M3 3v18h18M8 16v-3m5 3V8m5 8V5"/>',

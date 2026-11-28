@@ -24,16 +24,17 @@ function schoolCohortFields(array $cohort=[]): void
     <?php
 }
 
-function schoolParticipationButton(int $id,string $name,bool $enabled,array $summary): void
+function schoolParticipationButton(int $id,string $name,bool $enabled,array $summary,bool $compact=false): void
 {
     $action=$enabled?($summary['hasData']?'school-archive':'school-withdraw'):'school-reopen';
     $label=$enabled?'เข้าร่วมแล้ว':($summary['hasData']?'เปิดใช้งานอีกครั้ง':'เพิ่มเข้าร่วม');
     ?>
-    <button type="button" class="action<?= !$enabled && !$summary['hasData']?' primary':'' ?>"
+    <button type="button" class="action<?= !$enabled && !$summary['hasData']?' primary':'' ?><?= $compact?' school-row-icon':'' ?>"
+      aria-label="<?= schoolEscape($label.' · '.$name) ?>" title="<?= schoolEscape($label) ?>"
       data-school-participation="<?= schoolEscape($action) ?>" data-school-id="<?= $id ?>"
       data-school-name="<?= schoolEscape($name) ?>" data-school-has-data="<?= $summary['hasData']?'1':'0' ?>"
       data-school-years="<?= schoolEscape(json_encode($summary['years'],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)) ?>"
-      aria-haspopup="dialog"><?= workspaceIcon($enabled?'ready':'school-add') ?><?= schoolEscape($label) ?></button>
+      aria-haspopup="dialog"><?= workspaceIcon($compact?($enabled?'check':($summary['hasData']?'history':'plus')):($enabled?'ready':'school-add')) ?><?php if (!$compact) echo schoolEscape($label); ?></button>
     <?php
 }
 
@@ -346,14 +347,23 @@ return static function (PDO $db,array $identity): void {
    <td><?= schoolEscape($row['district']) ?></td>
    <td><?= schoolEscape($row['grades']?implode(', ',str_replace('M','ม.',$row['grades'])):'มัธยมปลาย (ไม่ระบุชั้น)') ?></td>
    <td><?php if ($registeredId): $record=$schools[$registeredId]; ?>
-    <div class="actions">
-     <?php if ($admin): schoolParticipationButton((int)$registeredId,$record['name'],(bool)$record['enabled'],$participation[$registeredId]); endif; ?>
+    <div class="school-row-actions">
+     <?php if ($admin): schoolParticipationButton((int)$registeredId,$record['name'],(bool)$record['enabled'],$participation[$registeredId],true); endif; ?>
      <?php if (!$admin || $record['enabled'] || $participation[$registeredId]['hasData']): ?>
-      <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities"><?= $record['enabled']?'จัดการโรงเรียน':'ดูประวัติ' ?></a>
+      <details class="school-row-menu" name="school-row-actions">
+       <summary class="action school-row-icon school-row-menu-toggle"
+         aria-label="<?= schoolEscape('ตัวเลือกจัดการ · '.$row['name']) ?>" title="กางหรือยุบตัวเลือก"><?= workspaceIcon('next') ?></summary>
+       <a class="action school-row-manage" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities"><?= $record['enabled']?'จัดการโรงเรียน':'ดูประวัติ' ?></a>
+      </details>
      <?php endif; ?>
     </div>
    <?php elseif ($admin): ?>
-    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" data-school-update><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>"><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าร่วม</button></form>
+    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" data-school-update>
+     <?php schoolFields($csrf,'directory-add'); ?>
+     <input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>">
+     <input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>">
+     <button class="action primary school-row-icon" aria-label="<?= schoolEscape('เพิ่มเข้าร่วม · '.$row['name']) ?>" title="เพิ่มเข้าร่วม"><?= workspaceIcon('plus') ?></button>
+    </form>
    <?php else: ?>ยังไม่เข้าทะเบียน<?php endif; ?></td>
   </tr><?php endforeach; ?>
   <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนในข้อมูลอ้างอิงตามตัวกรอง</td></tr><?php endif; ?>

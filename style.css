@@ -2612,5 +2612,19 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .school-directory-table thead th {position:sticky;top:0;z-index:1;}
 .school-directory-table th small {font-weight:400;color:var(--muted);}
 .school-directory-table :is(th,td) {padding:.45rem .65rem;}
+.school-row-actions {display:flex;align-items:flex-start;gap:.4rem;}
+.school-directory-table .school-row-icon {
+ display:grid;place-items:center;width:2.6rem;min-height:2.6rem;padding:0;list-style:none;
+ border:1px solid var(--soft-edge,var(--line));border-radius:.68rem;
+}
+.school-row-icon svg {width:1.2rem;height:1.2rem;}
+.school-row-icon:is([data-school-participation=school-withdraw],[data-school-participation=school-archive]) {
+ color:var(--violet);background-color:var(--soft-active,#ebe3f8);
+}
+.school-row-icon[aria-haspopup=dialog]:hover,.school-row-menu-toggle:hover {border-color:var(--violet);}
+.school-row-menu-toggle::-webkit-details-marker {display:none;}
+.school-row-menu-toggle svg {transform:rotate(90deg);}
+.school-row-menu[open] .school-row-menu-toggle svg {transform:rotate(-90deg);}
+.school-row-menu .school-row-manage {margin-block-start:.4rem;}
 .school-directory-table td:last-child {white-space:nowrap;}
 @media(max-width:600px) {.school-directory-filters {grid-template-columns:minmax(0,1fr);}}

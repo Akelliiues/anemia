@@ -99,7 +99,9 @@ function set(html,viewKey,preserveScroll=false){
   navigationStack.push({...activeView,nodes:[...main.childNodes],dialogId:dialog?.id,scroll:window.scrollY});
  }
  activeView={key,step,reviewingMissing,multipleSymptoms,answers,originalAnswers,bodyMeasurements,reviewed,reviewIndex,level,directoryType,directoryListing,activityRound};
+ main.querySelectorAll('[data-voice-coach] audio').forEach(audio=>audio.pause());
  main.replaceChildren(template.content);
+ loadVoiceCoach();
  main.focus({preventScroll:true});
  if(window.scrollY!==scroll)window.scrollTo({top:scroll,behavior:'instant'});
  observeBarCharts();
@@ -114,7 +116,9 @@ function goBack(){
  }
  ({step,reviewingMissing,multipleSymptoms,reviewed,reviewIndex,level,directoryType,directoryListing,activityRound}=previous);
  activeView=previous;
+ main.querySelectorAll('[data-voice-coach] audio').forEach(audio=>audio.pause());
  main.replaceChildren(...previous.nodes);
+ loadVoiceCoach();
  main.focus({preventScroll:true});
  window.scrollTo(0,previous.scroll);
  observeBarCharts();
@@ -122,14 +126,39 @@ function goBack(){
  const activity=main.querySelector('#public-activity');
  if(activity)loadPublicActivity(activity);
 }
-const voiceText={
+const voiceFallback={
+ home:'ดูคำแนะนำหลังตอบแบบประเมิน แล้วเลือกขั้นตอนที่เหมาะกับคุณ',
  unknown:'ขอบคุณที่ตอบเท่าที่จำได้ค่ะ แบบประเมินนี้ยังสรุประดับความเสี่ยงไม่ได้ คุณอ่านคำแนะนำต่อได้เลย หากนึกข้อมูลออก ค่อยกลับมาเติม หรือเลือกดูช่องทางปรึกษาหน่วยบริการได้ค่ะ',
  low:'จากคำตอบของคุณ ผลเบื้องต้นบ่งชี้ว่าความเสี่ยงโลหิตจางน้อยค่ะ มื้อต่อไปลองเพิ่มผัก และเลือกอาหารที่มีธาตุเหล็ก เช่น เนื้อไม่ติดมันหรือถั่ว หากมีอาการหรือยังเป็นกังวล ปรึกษาหน่วยบริการได้เลยค่ะ',
  medium:'มีบางคำตอบที่ควรดูเพิ่มค่ะ คุณลองตอบอีกมุม หรือเลือกปรึกษาหน่วยบริการเรื่องตรวจเลือดได้เลย',
- high:'เราแนะนำให้ตรวจเลือดเพิ่มเติมเพื่อให้รู้ชัดขึ้นค่ะ คุณเลือกสถานที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้ตามที่สะดวก',
- learn:'ผลจากแบบประเมินมาจากคำตอบที่คุณให้ หากหน้าจอแนะนำให้ตรวจเพิ่มเติม กดดูสถานที่ตรวจ หรือเลือกขอให้เจ้าหน้าที่ติดต่อกลับได้ค่ะ'
+ high:'เราแนะนำให้ตรวจเลือดเพิ่มเติมเพื่อให้รู้ชัดขึ้นค่ะ คุณเลือกสถานที่ตรวจหรือขอให้เจ้าหน้าที่ติดต่อกลับได้ตามที่สะดวก'
 };
-const audioUI=(key,showText=true)=>`<div class="status">${box('sound')}<div><strong>Voice Coach ภาษาไทย</strong>${showText?`<p class="small">${voiceText[key]}</p>`: '<p class="small">กดฟังเนื้อหาบทนี้</p>'}<div class="actions"><button class="action" data-voice="${key}">${icon('play')}ฟังคำแนะนำ</button><button class="action" data-go="pause">${icon('pause')}พักเสียง</button></div><span id="voice-status" class="notice" role="status"></span></div></div>`;
+let voiceCoachRequest;
+const audioUI=(key,homeCard=false)=>`<section class="${homeCard?'card':'status'} voice-coach" data-voice-coach="${key}">
+ <div><strong>${box('sound')} ${homeCard?'ตัวอย่างคำแนะนำ':'คำแนะนำเพิ่มเติม'}</strong>
+ <p data-voice-copy>${voiceFallback[key]??''}</p><audio controls preload="none" hidden aria-label="ฟังคำแนะนำ"></audio>
+ <small data-voice-error role="status"></small></div></section>`;
+function loadVoiceCoach(){
+ const cards=[...main.querySelectorAll('[data-voice-coach]')];
+ if(!cards.length)return;
+ voiceCoachRequest??=fetch('voice-coach.php').then(response=>response.ok?response.json():null)
+  .then(data=>data?.slots??null).catch(()=>null);
+ voiceCoachRequest.then(slots=>{
+  for(const card of cards){
+   const key=card.dataset.voiceCoach;
+   const entry=slots?.[key];
+   if(entry?.display_text)card.querySelector('[data-voice-copy]').textContent=entry.display_text;
+   const audio=card.querySelector('audio');
+   if(Number(entry?.has_audio)!==1 || audio.hasAttribute('src'))continue;
+   audio.addEventListener('error',()=>{
+    audio.hidden=true;
+    card.querySelector('[data-voice-error]').textContent='เปิดไฟล์เสียงไม่ได้ อ่านคำแนะนำด้านบนได้ค่ะ';
+   },{once:true});
+   audio.src='voice-coach.php?audio='+encodeURIComponent(key);
+   audio.hidden=false;
+  }
+ });
+}
 function project(){
  set(panel(`${backRow()}${pageHeading('history','เกี่ยวกับโครงการ','ประเมินภาวะโลหิตจางด้วยตนเอง เรียนรู้ และติดตามการเข้ารับบริการ')}
  <div class="grid project-grid"><section class="card">${box('check')}<h2>แบบประเมินและคำแนะนำ</h2><p>แบบประเมินฉบับร่าง 10 ข้อสำหรับหญิงอายุ 15–49 ปี ใช้เป็นต้นทางของคำถามและหน้าผลในเดโม่</p>${button('ลองประเมิน','start','check')}</section>
@@ -142,7 +171,7 @@ function homeActionCard(label,summary,route,symbol){
  <span class="home-card-title">${box(symbol)}<strong>${label}</strong>${icon('next')}</span>
  <span class="home-action-copy">${summary}</span></button>`;
 }
-function home(){set(`<section class="hero"><div><span class="eyebrow">สำหรับผู้หญิงอายุ 15–49 ปี</span><h1><i class="home-title-icon">${icon('pulse')}</i>มาดูแลสุขภาพ<span>ของเรากัน</span></h1><p>ลองตอบเรื่องใกล้ตัว เช่น รอบเดือน อาการช่วงนี้ และอาหารที่กิน แล้วดูคำแนะนำเบื้องต้นเกี่ยวกับภาวะโลหิตจาง</p><div class="actions">${button('เริ่มตอบได้เลย','start','check',true)}${button('เรียนรู้เรื่องโลหิตจาง','learn','book')}${button('ชวนเพื่อน','team-challenge','share')}</div></div><div class="hero-art" aria-hidden="true"><span class="halo">${icon('drop')}</span><span class="hero-ring ring-inner"></span><span class="hero-ring ring-outer"></span><img class="hero-portrait" src="hero-women.webp" alt="" decoding="async" width="520" height="337"><span class="hero-pattern"></span></div></section><div class="grid">${homeActionCard('ประเมินได้ทันที','ตอบเท่าที่จำได้ ข้อไหนไม่แน่ใจมีตัวเลือกให้','start','check')}${homeActionCard('ฟังคำแนะนำได้','กดเพื่อฟังตัวอย่างและดูว่าจะทำอะไรต่อ','home-voice','sound')}<section class="card"><h3 class="home-card-title">${box('hospital')}<span>ติดตามคำขอตรวจ</span></h3><p>ดูว่าหน่วยบริการรับเรื่องแล้วหรือยัง</p>${button('ดูสถานะของฉัน','track','hospital')}</section></div>`);}
+function home(){set(`<section class="hero"><div><span class="eyebrow">สำหรับผู้หญิงอายุ 15–49 ปี</span><h1><i class="home-title-icon">${icon('pulse')}</i>มาดูแลสุขภาพ<span>ของเรากัน</span></h1><p>ลองตอบเรื่องใกล้ตัว เช่น รอบเดือน อาการช่วงนี้ และอาหารที่กิน แล้วดูคำแนะนำเบื้องต้นเกี่ยวกับภาวะโลหิตจาง</p><div class="actions">${button('เริ่มตอบได้เลย','start','check',true)}${button('เรียนรู้เรื่องโลหิตจาง','learn','book')}${button('ชวนเพื่อน','team-challenge','share')}</div></div><div class="hero-art" aria-hidden="true"><span class="halo">${icon('drop')}</span><span class="hero-ring ring-inner"></span><span class="hero-ring ring-outer"></span><img class="hero-portrait" src="hero-women.webp" alt="" decoding="async" width="520" height="337"><span class="hero-pattern"></span></div></section><div class="grid">${homeActionCard('ประเมินได้ทันที','ตอบเท่าที่จำได้ ข้อไหนไม่แน่ใจมีตัวเลือกให้','start','check')}${audioUI('home',true)}<section class="card"><h3 class="home-card-title">${box('hospital')}<span>ติดตามคำขอตรวจ</span></h3><p>ดูว่าหน่วยบริการรับเรื่องแล้วหรือยัง</p>${button('ดูสถานะของฉัน','track','hospital')}</section></div>`);}
 const optionHints={
  3:['รู้สึกเวียนหัว','รู้สึกล้าหรือไม่มีแรง','รู้สึกเหนื่อยง่ายกว่าที่เคย','รู้สึกว่าหัวใจเต้นแรงหรือเร็ว','เลือกข้อนี้ได้ข้อเดียว','เลือกข้อนี้หากนึกไม่ออก'],
  4:['นับเฉพาะครั้งที่ชุ่มเต็มแผ่น','นับเฉพาะครั้งที่ชุ่มเต็มแผ่น'],
@@ -337,9 +366,8 @@ function openArticle(id){
  const playlist=visible.some(entry=>entry[0]===id)?visible:knowledge;
  const next=playlist[playlist.findIndex(entry=>entry[0]===id)+1];
  const nextControl=next?`<button type="button" class="back floating-back floating-next" data-article="${next[0]}" aria-label="บทถัดไป ${next[3]}" title="บทถัดไป">${icon('next')}</button>`:'';
- voiceText.article=body.join(' ');
  set(panel(`${backRow()}${nextControl}<article><header class="knowledge-hero knowledge-article-hero"><div>${box(symbol)}<span class="eyebrow">${category}</span><h1 class="title">${title}</h1><p>${summary}</p></div>${knowledgeArt(id)}</header>
- <div class="knowledge-body"><p>${body[0]}</p><section class="knowledge-action-note"><h2>${id==='urgent'?'ถ้าตั้งครรภ์หรืออาจตั้งครรภ์':'ลองทำดู'}</h2><p>${body[1]}</p></section></div>${audioUI('article',false)}
+ <div class="knowledge-body"><p>${body[0]}</p><section class="knowledge-action-note"><h2>${id==='urgent'?'ถ้าตั้งครรภ์หรืออาจตั้งครรภ์':'ลองทำดู'}</h2><p>${body[1]}</p></section></div>
  <section class="knowledge-sources"><h2>แหล่งข้อมูล</h2><ul>${sources.map(key=>{const [label,url]=knowledgeSources[key];return `<li><a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a></li>`;}).join('')}</ul></section>
  <div class="actions">${button('กลับคลังความรู้','learn','book')}${button(originalAnswers.length?'กลับไปดูผลของฉัน':'เริ่มประเมินตนเอง',originalAnswers.length?'result':'start','check',true)}</div></article>`));
 }
@@ -1273,23 +1301,6 @@ document.addEventListener('change',event=>{
  updatePublicSample('#'+id);
 });
 function exportData(){const rows=['assessment_id,version,first_answers,confirmed_answers,displayed_result,request_status'];if(originalAnswers.length)rows.push(`DEMO-001,demo-v1,${originalAnswers.map(value=>Array.isArray(value)?value.join('+'):value).join('|')},${answers.map(value=>Array.isArray(value)?value.join('+'):value).join('|')},${level},${request?stageNames[stage]:''}`);const link=document.createElement('a');const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8'}));link.href=url;link.download='anemia-demo.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function playVoice(key){
- const status=document.querySelector('#voice-status');
- if(!status||!voiceText[key])return;
- if(!('speechSynthesis' in window)){
-  status.textContent='เครื่องนี้เล่นเสียงไม่ได้ อ่านคำแนะนำด้านบนได้ค่ะ';
-  return;
- }
- const audio=window.speechSynthesis;
- const thai=audio.getVoices().find(item=>item.lang.toLowerCase().startsWith('th'));
- audio.cancel();
- const utterance=new SpeechSynthesisUtterance(voiceText[key]);
- utterance.lang='th-TH';
- if(thai)utterance.voice=thai;
- utterance.rate=.9;
- utterance.onerror=()=>status.textContent='เล่นเสียงไม่สำเร็จ อ่านคำแนะนำด้านบนได้ค่ะ';
- audio.speak(utterance);
-}
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 document.addEventListener('pointerdown',event=>{
  if(!event.target.closest('.team-tip'))main.querySelectorAll('.team-tip button[aria-expanded=true]').forEach(button=>button.setAttribute('aria-expanded','false'));
@@ -1302,16 +1313,6 @@ document.addEventListener('keydown',event=>{
 });
 document.addEventListener('click',event=>{
  const el=event.target.closest('button,path[data-public-segment],path[data-admin-risk],g[data-public-region]');if(!el)return;
- if(el.dataset.voice){playVoice(el.dataset.voice);return;}
- if(el.dataset.go==='pause'){
-  if('speechSynthesis' in window){
-   const audio=window.speechSynthesis;
-   if(audio.paused){audio.resume();el.innerHTML=icon('pause')+'พักเสียง';}
-   else if(audio.speaking){audio.pause();el.innerHTML=icon('play')+'ฟังต่อ';}
-  }
-  return;
- }
- if('speechSynthesis' in window)window.speechSynthesis.cancel();
  if(el.dataset.calendarShift!==undefined){
   const calendar=el.closest('.request-calendar');
   const offset=Math.max(0,Math.min(6,Number(calendar.dataset.offset)+Number(el.dataset.calendarShift)));
@@ -1358,7 +1359,7 @@ document.addEventListener('click',event=>{
   return;
  }
  switch(el.dataset.go){
- case 'home-voice':openArticle('result');playVoice('article');break;case 'project':project();break;case 'home':home();break;case 'start':chooseAssessmentGroup();break;
+ case 'project':project();break;case 'home':home();break;case 'start':chooseAssessmentGroup();break;
  case 'back':goBack();break;
  case 'assessment-public':signalDemo('public');break;
  case 'assessment-student':signalDemo('student');break;

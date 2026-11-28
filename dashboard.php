@@ -32,7 +32,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขตสุขภาพที่ 13 กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'usage-audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'usage-audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'voice-coach', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
 $unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
 $scannerApp = $unitScanner || $view==='scanner-install';
 $mobileQueue = $view==='contact-queue' && ($_GET['app']??'')==='staff';
@@ -119,7 +119,7 @@ try {
     $canQueue=$isAdmin || ($grant['scope_kind']??'')==='facility';
     $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district','facility'],true);
     [$queueScope,$queueParams]=anemiaQueueNetworkScope($isAdmin,$grant);
-    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','services','members','programme-report'],true) && !$isAdmin) ||
+    if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','services','voice-coach','members','programme-report'],true) && !$isAdmin) ||
         (in_array($view,['contact-queue','scan-request','scanner-install'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
     }
@@ -156,6 +156,39 @@ try {
     if (!$canChooseRegion) $region = (int)($identity['province_region'] ?? $identity['region']);
     $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     $token = $_SESSION['csrf'];
+    if ($view==='voice-coach') {
+        require_once __DIR__.'/_private/voice-coach.php';
+        anemiaEnsureVoiceCoach($db);
+        $slot=$_GET['slot']??'home';
+        if (!is_string($slot) || !isset(anemiaVoiceSlots()[$slot])) { http_response_code(404); exit; }
+        if (isset($_GET['draft_audio']) && in_array($_SERVER['REQUEST_METHOD'],['GET','HEAD'],true)) {
+            session_write_close();
+            anemiaVoiceStream($db,$slot,'draft');
+        }
+        if ($_SERVER['REQUEST_METHOD']==='POST') {
+            if (empty($_POST) && (int)($_SERVER['CONTENT_LENGTH']??0)>0) {
+                http_response_code(413); exit('ไฟล์เกินขนาดที่โฮสต์รองรับ');
+            }
+            if (!is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
+            $action=$_POST['voice_action']??'';
+            if (!in_array($action,['save','publish'],true)) { http_response_code(400); exit; }
+            usageAuditEnsure($db);
+            $db->beginTransaction();
+            try {
+                if ($action==='publish') anemiaVoicePublish($db,$slot,$staff);
+                else anemiaVoiceSave($db,$slot,$_POST,$_FILES['audio']??[],$staff);
+                usageAuditWrite($db,$identity,'data-change','voice-'.$action);
+                $db->commit();
+                $_SESSION['voice_notice']=$action==='publish'?'เผยแพร่แล้ว':'บันทึกฉบับร่างแล้ว';
+            } catch (DomainException $error) {
+                $db->rollBack();
+                $_SESSION['voice_notice']=$error->getMessage();
+            }
+            header('Location: dashboard.php?view=voice-coach&slot='.$slot,true,303); exit;
+        }
+        $voiceNotice=$_SESSION['voice_notice']??'';
+        unset($_SESSION['voice_notice']);
+    }
     $memberNotice='';
     if ($view==='members') {
         if ($_SERVER['REQUEST_METHOD']==='POST') {
@@ -699,6 +732,7 @@ if ($canQueue) $tabs += ['contact-queue'=>'คำขอนัดและติ�
 if ($isAdmin) $tabs['programme-report']='ผลการเรียนรู้';
 if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบริการ';
 if ($isAdmin) $tabs['members']='สมาชิก';
+if ($isAdmin) $tabs['voice-coach']='Voice Coach';
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
 $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','services'=>'spark','contact-queue'=>'phone','scan-request'=>'scan'];
 $tabIcons['network']='hospital';
@@ -708,6 +742,7 @@ $tabs['schools']='กิจกรรมโรงเรียน';
 $tabIcons['schools']='users';
 if ($canUsageAudit) $tabs['usage-audit']='ประวัติการใช้งาน';
 $tabIcons['usage-audit']='history';
+$tabIcons['voice-coach']='play';
 $scopeName = $identity['role'] === 'provincial_report' ? ($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? zoneLabel($region) : 'ทุกเขตสุขภาพ');
 function accessFields(array $record, array $provinces): void
 {
@@ -797,7 +832,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v155">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v160">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -839,7 +874,7 @@ function workspaceInfo(string $page, ?array $release = null): void
         ['ภาพรวม','chart',['overview']],
         ['รายงาน','map',['reports','activity','evaluation','programme-report','schools']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
-        ['ระบบ','users',['members','access','usage-audit','audit','sample-settings','network','services']],
+        ['ระบบ','users',['members','access','usage-audit','audit','sample-settings','network','services','voice-coach']],
         ['แบบประเมิน','ready',['assessment']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];
@@ -1153,6 +1188,8 @@ function workspaceInfo(string $page, ?array $release = null): void
   </div>
   <?php elseif ($view === 'usage-audit'): ?>
    <?php require __DIR__ . '/_private/usage-audit-view.php'; ?>
+  <?php elseif ($view === 'voice-coach'): ?>
+   <?php require __DIR__ . '/_private/voice-coach-view.php'; ?>
   <?php elseif ($view === 'audit'): ?>
   <section class="card admin-report"><h2>การเปลี่ยนสิทธิ์ล่าสุด</h2><p>แสดงสูงสุด 100 รายการ</p>
    <?php if (!$auditRows): ?><p>ยังไม่มีประวัติการเปลี่ยนสิทธิ์</p><?php else: ?>

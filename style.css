@@ -2792,3 +2792,19 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .facility-booking-badge[data-ready=true] {background:light-dark(#e2f4ec,#24423b);color:light-dark(#176047,#a5e6d0);}
 .facility-booking-alternatives {padding:.75rem;border:1px solid var(--line);border-radius:12px;}
 .facility-booking-alternatives select {margin-bottom:0;}
+
+.voice-coach > div {min-width:0;width:100%;}
+.voice-coach strong {display:flex;align-items:center;gap:.65rem;}
+.voice-coach p,.voice-coach-copy {white-space:pre-wrap;overflow-wrap:anywhere;}
+.voice-coach audio,.voice-coach-admin audio {display:block;width:min(100%,24rem);}
+.voice-coach audio[hidden] {display:none;}
+.voice-coach [data-voice-error]:empty {display:none;}
+.voice-coach-tabs {margin-bottom:1rem;}
+.voice-coach-tabs a {text-decoration:none;}
+.voice-coach-editor {display:grid;grid-template-columns:1.15fr 1fr;gap:1rem;}
+.voice-coach-editor > section {min-width:0;border:1px solid var(--line);border-radius:14px;padding:1rem;}
+.voice-coach-editor h2 {margin:0 0 .65rem;font-size:1.125rem;}
+.voice-coach-editor textarea {resize:vertical;}
+.voice-coach-editor form + form {margin-top:.7rem;}
+.voice-coach-editor form button {justify-self:start;}
+@media(max-width:720px) {.voice-coach-editor {grid-template-columns:1fr;}}

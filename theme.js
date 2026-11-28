@@ -46,14 +46,14 @@
      if((row+column)%2){context.translate(1000,0);context.scale(-1,1);}
      if(row%2){context.translate(0,400);context.scale(1,-1);}
      context.lineWidth=1.4;
-     context.strokeStyle=header?'#cab6ff70':dark?'#91c8ff75':'#7353ad59';
+     context.strokeStyle=header?'#cab6ff50':dark?'#91c8ff75':'#7353ad59';
      for(const samples of traces){
       context.beginPath();
       samples.forEach(([x,y],i)=>i?context.lineTo(x,y):context.moveTo(x,y));
       context.stroke();
      }
      function dot([x,y],radius){context.beginPath();context.arc(x,y,radius,0,2*Math.PI);context.fill();}
-     context.fillStyle=header?'#dbc9ff9c':dark?'#b7ddf8a0':'#8650b988';
+     context.fillStyle=header?'#dbc9ff78':dark?'#b7ddf8a0':'#8650b988';
      nodes.forEach(node=>dot(node,3));
      if(!reducedMotion.matches){
       for(const [i,samples] of traces.entries()){

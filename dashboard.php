@@ -847,14 +847,14 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v184">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v185">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showOverviewCharts): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=staff-details-v21"></script>
-<script defer src="hosted-dashboard.js?v=scroll-v6"></script>
+<script defer src="admin.js?v=staff-details-v22"></script>
+<script defer src="hosted-dashboard.js?v=scroll-v7"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
 <?php if ($view==='schools'): ?><script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=7"></script><?php endif; ?>

@@ -2946,3 +2946,6 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .workspace-data-mode button[aria-checked=true] .workspace-data-track {background:color-mix(in srgb,var(--violet) 52%,transparent);}
 .workspace-data-mode button[aria-checked=true] .workspace-data-track::before {transform:translate(.95rem,-50%);}
 @media(prefers-reduced-motion:reduce) {.workspace-data-track::before {transition:none;}}
+
+#hosted-sample-dashboard [data-overview-metric][aria-pressed=true] {border-color:var(--violet);background:color-mix(in srgb,var(--violet) 11%,transparent);}
+#hosted-sample-dashboard .admin-table .overview-metric-column {background:color-mix(in srgb,var(--violet) 14%,transparent);font-weight:700;}

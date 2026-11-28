@@ -116,17 +116,20 @@ function animateAdminCounters(){
  }
  window.requestAnimationFrame(frame);
 }
+let selectedOverviewMetric=null;
+const overviewMetrics=[['screened','ครั้งที่ประเมิน','check'],['high','ครั้งที่ได้ผลเสี่ยงสูง','alert'],['referred','คำขอประสาน','phone'],['tested','ยืนยันการตรวจ','hospital']];
 function adminStats(rows){
- const cards=[['screened','ครั้งที่ประเมิน','check'],['high','ครั้งที่ได้ผลเสี่ยงสูง','alert'],['referred','คำขอประสาน','phone'],['tested','ยืนยันการตรวจ','hospital']];
  const hosted=Boolean(document.getElementById('hosted-sample-dashboard'));
- return `<div class="admin-kpis">${cards.map(([key,label,symbol])=>{
+ return `<div class="admin-kpis">${overviewMetrics.map(([key,label,symbol])=>{
   const content=`${box(symbol)}<div class="admin-kpi-copy"><span>${label}</span>${adminCounter(metricTotal(rows,key))}</div>`;
-  return hosted?`<button type="button" class="card staff-detail-card staff-kpi-link" data-go="admin-reports">${content}${icon('next')}</button>`:`<section class="card">${content}</section>`;
+  return hosted?`<button type="button" class="card staff-detail-card staff-kpi-link" data-overview-metric="${key}" aria-pressed="${selectedOverviewMetric===key}">${content}${icon('next')}</button>`:`<section class="card">${content}</section>`;
  }).join('')}</div>`;
 }
-function adminTable(rows,scope){
- return `<div class="tablewrap"><table class="admin-table"><thead><tr><th>พื้นที่</th><th>เดือน</th><th>ประเมิน</th><th>เสี่ยงสูง</th><th>ขอประสาน</th><th>ตรวจแล้ว</th></tr></thead>
- <tbody>${rows.length?rows.map(row=>`<tr><th scope="row">${scope.key==='provincial'?scopeLabel(scope):regionLabel(row.region)}</th><td>${row.period}</td><td>${row.screened}</td><td>${row.high}</td><td>${row.referred}</td><td>${row.tested}</td></tr>`).join(''):'<tr><td colspan="6">ยังไม่มีข้อมูลในช่วงที่เลือก</td></tr>'}</tbody></table></div>`;
+function adminTable(rows,scope,selectedMetric=null){
+ const columns=[['screened','ประเมิน'],['high','เสี่ยงสูง'],['referred','ขอประสาน'],['tested','ตรวจแล้ว']];
+ const metricClass=key=>key===selectedMetric?' class="overview-metric-column"':'';
+ return `<div class="tablewrap"><table class="admin-table"><thead><tr><th scope="col">พื้นที่</th><th scope="col">เดือน</th>${columns.map(([key,label])=>`<th scope="col"${metricClass(key)}>${label}</th>`).join('')}</tr></thead>
+ <tbody>${rows.length?rows.map(row=>`<tr><th scope="row">${scope.key==='provincial'?scopeLabel(scope):regionLabel(row.region)}</th><td>${row.period}</td>${columns.map(([key])=>`<td${metricClass(key)}>${row[key]}</td>`).join('')}</tr>`).join(''):'<tr><td colspan="6">ยังไม่มีข้อมูลในช่วงที่เลือก</td></tr>'}</tbody></table></div>`;
 }
 function printDemoReport(scope){
  const report=window.open('','_blank');
@@ -350,15 +353,16 @@ function selectChartRegion(region){
 function reportView(scope,showHeading=true){
  const rows=reportRows(scope);
  const exporting=adminView==='reports';
+ const metricLabel=exporting?overviewMetrics.find(([key])=>key===selectedOverviewMetric)?.[1]:null;
  const area=scope.region?scopeLabel(scope):adminRegion?regionLabel(Number(adminRegion)):'ครบ 13 เขต';
  return `${showHeading?adminHeading(exporting?'รายงานการคัดกรองและติดตาม':'แดชบอร์ดการคัดกรองและติดตาม','ข้อมูลจำลองสำหรับสาธิตกระบวนการรายงาน'):''}
  <div class="admin-report-toolbar"><p class="admin-report-meta">${icon('calendar')} <span>${area} · ${adminPeriod||(adminYear?'ทุกเดือน ปี '+adminYear:'ทุกเดือน')}</span></p>${adminFilters(scope)}</div>
  ${adminStats(rows)}
  ${exporting?'':`${adminCharts(rows,scope)}<div class="admin-map-slot">${regionMapPanel(scope)}</div>`}
- <section class="card admin-report"><div class="admin-report-top"><h2>${exporting?'รายละเอียดตามพื้นที่และเดือน':'ผลการดำเนินงานรายพื้นที่'}</h2>
+ <section class="card admin-report"><div class="admin-report-top"><h2>${metricLabel|| (exporting?'รายละเอียดตามพื้นที่และเดือน':'ผลการดำเนินงานรายพื้นที่')}</h2>
  <div class="admin-report-controls no-print">${adminMonthFilter('admin-table-period','เลือกเดือน')}
  ${exporting?`<div class="actions no-print">${button('ดาวน์โหลด CSV','admin-csv','download')}${button('พิมพ์ / บันทึก PDF','admin-print','history',true)}</div>`:button('เปิดรายงาน','admin-reports','history')}</div></div>
- ${adminTable(rows,scope)}
+ ${adminTable(rows,scope,exporting?selectedOverviewMetric:null)}
  <p class="notice">${liveOverview?'ยอดประเมินนับรอบแรกที่ระบุจังหวัด ยอดคำขอและการตรวจนับรายการที่จับคู่กับทะเบียนหน่วยบริการ':'ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ'}</p></section>`;
 }
 const canUpdateQueue=scope=>!!(scope?.facility&&facilityDirectory.some(site=>site.id===requestFacilityId&&site.name===scope.facility));

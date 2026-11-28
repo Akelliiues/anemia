@@ -709,7 +709,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v140">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v141">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -785,7 +785,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   </nav>
  </header>
  <?php endif; ?>
- <div class="admin-content">
+ <div class="admin-content" id="staff-report-content">
   <?php if (!$staffAppView): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
    <p><?= esc($scopeName) ?></p>
    <?php if ($view==='scan-request'): ?><a class="action no-print" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a><?php endif; ?>
@@ -1513,20 +1513,29 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
 })();
 </script>
 <div id="report-loading" class="report-loading-overlay no-print" hidden>
- <div class="report-loading-card" role="status"><span class="report-spinner" aria-hidden="true"></span>กำลังโหลดรายงาน</div>
+ <div class="report-loading-card" role="status"><span class="report-spinner" aria-hidden="true"></span><div><strong>กำลังโหลดรายงาน</strong><span class="report-loading-detail">กำลังเตรียมข้อมูลตามตัวกรอง</span></div></div>
 </div>
 <script>
 (() => {
  const overlay = document.getElementById('report-loading');
- const reports = new Set(['overview','reports','activity','evaluation','sample']);
+ const content = document.getElementById('staff-report-content');
+ const reports = new Set(['overview','reports','activity','evaluation','programme-report','sample']);
  let timer;
  const start = () => {
   if (timer !== undefined) return;
-  timer = setTimeout(() => { overlay.hidden = false; },140);
+  timer = setTimeout(() => {
+   content.setAttribute('aria-busy','true');
+   overlay.hidden = false;
+  },140);
  };
- addEventListener('pageshow', () => { clearTimeout(timer); timer = undefined; overlay.hidden = true; });
+ addEventListener('pageshow', () => {
+  clearTimeout(timer);
+  timer = undefined;
+  overlay.hidden = true;
+  content.removeAttribute('aria-busy');
+ });
  document.addEventListener('submit', event => {
-  if (!event.defaultPrevented && event.target.matches('form.hosted-filter-row') &&
+  if (!event.defaultPrevented && event.target.matches('form[method=get]') &&
       reports.has(event.target.elements.view?.value)) start();
  });
  document.addEventListener('click', event => {
@@ -1534,7 +1543,8 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
   if (!link || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || link.target || link.hasAttribute('download')) return;
   const url = new URL(link.href);
   if (url.origin !== location.origin || url.pathname !== location.pathname || url.searchParams.has('download')) return;
-  if (reports.has(url.searchParams.get('view'))) start();
+  if (url.href !== location.href && (url.pathname + url.search !== location.pathname + location.search) &&
+      reports.has(url.searchParams.get('view') || 'overview')) start();
  });
 })();
 </script>

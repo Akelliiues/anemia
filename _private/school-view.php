@@ -24,6 +24,19 @@ function schoolCohortFields(array $cohort=[]): void
     <?php
 }
 
+function schoolParticipationButton(int $id,string $name,bool $enabled,array $summary): void
+{
+    $action=$enabled?($summary['hasData']?'school-archive':'school-withdraw'):'school-reopen';
+    $label=$enabled?'เข้าร่วมแล้ว':($summary['hasData']?'เปิดใช้งานอีกครั้ง':'เพิ่มเข้าร่วม');
+    ?>
+    <button type="button" class="action<?= !$enabled && !$summary['hasData']?' primary':'' ?>"
+      data-school-participation="<?= schoolEscape($action) ?>" data-school-id="<?= $id ?>"
+      data-school-name="<?= schoolEscape($name) ?>" data-school-has-data="<?= $summary['hasData']?'1':'0' ?>"
+      data-school-years="<?= schoolEscape(json_encode($summary['years'],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)) ?>"
+      aria-haspopup="dialog"><?= workspaceIcon($enabled?'ready':'school-add') ?><?= schoolEscape($label) ?></button>
+    <?php
+}
+
 return static function (PDO $db,array $identity): void {
     $schoolRoute=$identity['role']==='school_teacher'?[]:['view'=>'schools'];
     $schoolUrl=$schoolRoute?'dashboard.php':'school-workspace.php';
@@ -37,7 +50,12 @@ return static function (PDO $db,array $identity): void {
         if (!is_string($_POST['csrf']??null) || !hash_equals($csrf,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
         try {
             $savedSchool=schoolSave($db,$identity,$_POST);
-            $_SESSION['school_notice']='บันทึกการเปลี่ยนแปลงแล้ว';
+            $_SESSION['school_notice']=match ($_POST['school_action']??'') {
+                'school-withdraw'=>'ถอนโรงเรียนออกจากโครงการแล้ว',
+                'school-archive'=>'ยุติการเข้าร่วมแล้ว ประวัติของโรงเรียนยังเปิดดูได้',
+                'school-reopen'=>'เปิดใช้งานโรงเรียนแล้ว เลือกห้องที่จะเปิดรับได้จากหน้าจัดการ',
+                default=>'บันทึกการเปลี่ยนแปลงแล้ว',
+            };
         } catch (DomainException $error) {
             $_SESSION['school_notice']=$error->getMessage();
         } catch (PDOException $error) {
@@ -60,6 +78,11 @@ return static function (PDO $db,array $identity): void {
         }
         if (($_POST['school_action']??'')==='directory-add' && isset($savedSchool)) {
             $redirect['province']=$_POST['directory_province']??'34';
+        }
+        if (in_array($_POST['school_action']??'',['school-withdraw','school-archive','school-reopen'],true)) {
+            foreach (['district','q','directory_page'] as $key) {
+                if (is_string($_GET[$key]??null) && strlen($_GET[$key])<=180) $redirect[$key]=$_GET[$key];
+            }
         }
         $redirect=$schoolRoute+$redirect;
         header('Location: '.$schoolUrl.($redirect?'?'.http_build_query($redirect):''),true,303); exit;
@@ -213,7 +236,16 @@ return static function (PDO $db,array $identity): void {
     $visibleCohorts=array_filter($cohorts,static fn(array $row): bool =>
         (!$roomYear || $roomYear===(int)$row['academic_year']) &&
         (!$unassigned || ($row['academic_year'] && empty($roomTeachers[$row['id']]['primary']['enabled']))));
-    $schoolPostUrl='school-workspace.php'.($areaFilters?'?'.http_build_query($areaFilters):'');
+    $pageRows=array_slice($listedSchools,($directoryPage-1)*$directoryPageSize,$directoryPageSize);
+    $directorySchool=static fn(array $row)=>$registeredCodes[$row['code']]??$registeredSchools[$row['name']]??$registeredSchools[$row['legacy_name']??'']??null;
+    $participation=[];
+    if ($admin && $schoolTab==='registry') {
+        $ids=array_filter(array_map($directorySchool,$pageRows));
+        if ($school) $ids[]=$school['id'];
+        $participation=schoolParticipation($db,array_values(array_unique($ids)));
+    }
+    $postFilters=$areaFilters+array_filter($directoryFilters+['directory_page'=>$directoryPage>1?$directoryPage:null]);
+    $schoolPostUrl='school-workspace.php'.($postFilters?'?'.http_build_query($postFilters):'');
 ?>
 <div class="school-workspace">
 <?php if ($notice!==''): ?><p class="notice" role="status"><?= schoolEscape($notice) ?></p><?php endif; ?>
@@ -298,15 +330,20 @@ return static function (PDO $db,array $identity): void {
  <div class="tablewrap school-directory-table" tabindex="0" aria-label="รายชื่อโรงเรียน">
  <table class="admin-table">
   <thead><tr><th scope="col">โรงเรียน</th><th scope="col"><?= $province==='10'?'เขต':'อำเภอ' ?></th><th scope="col">ระดับชั้น</th><th scope="col">จัดการ</th></tr></thead>
-  <tbody><?php foreach (array_slice($listedSchools,($directoryPage-1)*$directoryPageSize,$directoryPageSize) as $row): ?>
-   <?php $registeredId=$registeredCodes[$row['code']]??$registeredSchools[$row['name']]??$registeredSchools[$row['legacy_name']??'']??null; ?><tr>
+  <tbody><?php foreach ($pageRows as $row): ?>
+   <?php $registeredId=$directorySchool($row); ?><tr>
    <th scope="row"><?= schoolEscape($row['name']) ?><br><small><?= schoolEscape(($row['source']==='dla'?'อ้างอิง ':'').$row['code'].' · '.$row['agency']) ?></small></th>
    <td><?= schoolEscape($row['district']) ?></td>
    <td><?= schoolEscape($row['grades']?implode(', ',str_replace('M','ม.',$row['grades'])):'มัธยมปลาย (ไม่ระบุชั้น)') ?></td>
-   <td><?php if ($registeredId): ?>
-    <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities">จัดการโรงเรียน</a>
+   <td><?php if ($registeredId): $record=$schools[$registeredId]; ?>
+    <div class="actions">
+     <?php if ($admin): schoolParticipationButton((int)$registeredId,$record['name'],(bool)$record['enabled'],$participation[$registeredId]); endif; ?>
+     <?php if (!$admin || $record['enabled'] || $participation[$registeredId]['hasData']): ?>
+      <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities"><?= $record['enabled']?'จัดการโรงเรียน':'ดูประวัติ' ?></a>
+     <?php endif; ?>
+    </div>
    <?php elseif ($admin): ?>
-    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>"><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าทะเบียน</button></form>
+    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>"><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าร่วม</button></form>
    <?php else: ?>ยังไม่เข้าทะเบียน<?php endif; ?></td>
   </tr><?php endforeach; ?>
   <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนในข้อมูลอ้างอิงตามตัวกรอง</td></tr><?php endif; ?>
@@ -332,6 +369,7 @@ return static function (PDO $db,array $identity): void {
 <?php if (!$school): ?><section class="card"><p><?= $teacher?'ยังไม่มีโรงเรียนที่บัญชีนี้ดูแล':($province===''?'เลือกจังหวัดแล้วกดแสดงโรงเรียน':'ยังไม่มีโรงเรียนในทะเบียนของจังหวัดนี้') ?></p></section>
 <?php else: ?>
 <section class="card" id="school-activities">
+ <?php if (!$school['enabled']): ?><p class="notice">โรงเรียนหยุดรับผู้เข้าร่วมใหม่ ประวัติกิจกรรมยังเปิดดูได้</p><?php endif; ?>
  <form method="get" class="network-form school-fields">
   <?php if (!$teacher): ?><input type="hidden" name="view" value="schools"><?php endif; ?>
   <?php foreach ($areaFilters as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
@@ -364,7 +402,7 @@ return static function (PDO $db,array $identity): void {
    <?php if ($admin||$teacher): ?>
     <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$school['id'],'cohort'=>(int)$item['id']])) ?>">ดูความคืบหน้ารายคน</a>
     <details><summary>ลิงก์และ QR เข้าร่วม</summary><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div><button type="button" class="action" data-copy-school-link>คัดลอกลิงก์</button></details>
-    <?php if ($manage || !$item['academic_year']): ?>
+    <?php if ($school['enabled'] && ($manage || !$item['academic_year'])): ?>
     <details><summary>แก้ไขรุ่น</summary><form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
      <?php schoolFields($csrf,'cohort-edit',(int)$school['id'],(int)$item['id']); schoolCohortFields($item); ?><button class="action primary">บันทึก</button>
     </form></details>
@@ -385,6 +423,21 @@ return static function (PDO $db,array $identity): void {
 </section>
 <?php if ($audit): ?><details class="card"><summary>ประวัติการจัดการล่าสุด</summary><ul><?php foreach($audit as $entry): ?><li><?= schoolEscape(implode(' · ',$entry)) ?></li><?php endforeach; ?></ul></details><?php endif; ?>
 <?php endif; ?>
+<?php endif; ?>
+<?php if ($admin && $participation): ?>
+<dialog class="workspace-dialog" id="school-participation-dialog" aria-labelledby="school-participation-title">
+ <h2 id="school-participation-title"></h2>
+ <p data-school-dialog-name></p>
+ <p data-school-dialog-description></p>
+ <p data-school-dialog-staff hidden>โรงเรียนมีข้อมูลการมอบหมายครูหรือผู้ประสานงาน</p>
+ <ul data-school-dialog-years hidden></ul>
+ <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="actions">
+  <?php schoolFields($csrf,''); ?>
+  <input type="hidden" name="school">
+  <button type="button" class="action" data-school-dialog-cancel autofocus>ยกเลิก</button>
+  <button type="submit" class="action primary" data-school-dialog-confirm></button>
+ </form>
+</dialog>
 <?php endif; ?>
 </div>
 <?php

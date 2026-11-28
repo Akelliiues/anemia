@@ -41,7 +41,7 @@ try {
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรมโรงเรียน · Anemia Portal</title>
 <script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v4">
-<script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=2"></script>
+<script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=3"></script>
 <body class="staff-dashboard-page"><main class="school-workspace hosted-workspace">
 <header class="admin-top no-print">
  <div class="workspace-header-art" aria-hidden="true"></div>

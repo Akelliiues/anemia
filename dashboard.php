@@ -719,7 +719,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
-<?php if ($view==='schools'): ?><script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=2"></script><?php endif; ?>
+<?php if ($view==='schools'): ?><script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=3"></script><?php endif; ?>
 </head><body class="staff-dashboard-page<?= $staffAppView?' staff-app-page':'' ?><?= $view==='mobile'?' staff-app-home':'' ?><?= $scannerApp?' staff-scanner-page':'' ?>">
 <main style="max-width:1220px">
 <?php if (!$staffAppView) workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>

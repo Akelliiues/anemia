@@ -84,6 +84,35 @@ function schoolSchoolRecord(PDO $db,int $school): array
     return $record;
 }
 
+function schoolParticipation(PDO $db,array $schoolIds): array
+{
+    if (!$schoolIds) return [];
+    $placeholders=implode(',',array_fill(0,count($schoolIds),'?'));
+    $query=$db->prepare("SELECT s.id,r.academic_year,COUNT(DISTINCT c.id) AS rooms,
+        COUNT(DISTINCT m.account_id) AS participants,
+        (EXISTS (SELECT 1 FROM anemia_school_teacher t WHERE t.school_id=s.id)
+        OR EXISTS (SELECT 1 FROM anemia_school_coordinator sc WHERE sc.school_id=s.id)
+        OR EXISTS (SELECT 1 FROM anemia_school_audit a WHERE a.school_id=s.id
+            AND (a.action_name LIKE 'grant:%' OR a.action_name LIKE 'coordinator:%'))) AS has_staff
+        FROM anemia_school s LEFT JOIN anemia_school_cohort c ON c.school_id=s.id
+        LEFT JOIN anemia_school_room r ON r.cohort_id=c.id
+        LEFT JOIN anemia_school_member m ON m.cohort_id=c.id
+        WHERE s.id IN ($placeholders) GROUP BY s.id,r.academic_year ORDER BY r.academic_year DESC");
+    $query->execute($schoolIds);
+    $summary=[];
+    foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $id=(int)$row['id'];
+        $summary[$id]??=['hasData'=>false,'years'=>[]];
+        if ($row['has_staff'] || $row['rooms']) $summary[$id]['hasData']=true;
+        if ($row['rooms']) $summary[$id]['years'][]=[
+            'year'=>$row['academic_year']===null?'รุ่นเดิมที่ไม่ระบุปี':'ปีการศึกษา '.$row['academic_year'],
+            'rooms'=>(int)$row['rooms'],
+            'participants'=>(int)$row['participants'],
+        ];
+    }
+    return $summary;
+}
+
 function schoolSave(PDO $db,array $identity,array $input): int
 {
     $actor=$identity['username'];
@@ -135,11 +164,24 @@ function schoolSave(PDO $db,array $identity,array $input): int
                         ->execute([$school,$username]);
                     $action.=':'.$username;
                     break;
-                case 'school-toggle':
+                case 'school-withdraw':
+                case 'school-archive':
+                case 'school-reopen':
+                    if (!$admin) throw new DomainException('บัญชีนี้ไม่มีสิทธิ์เปลี่ยนสถานะโรงเรียน');
+                    $enabled=$action==='school-reopen';
+                    if ((bool)$record['enabled']===$enabled) {
+                        $db->commit();
+                        return $school;
+                    }
+                    if ($action==='school-withdraw' && schoolParticipation($db,[$school])[$school]['hasData']) {
+                        throw new DomainException('โรงเรียนมีข้อมูลแล้ว กรุณาเลือกยุติการเข้าร่วมเพื่อเก็บประวัติ');
+                    }
+                    $db->prepare('UPDATE anemia_school SET enabled=? WHERE id=?')->execute([(int)$enabled,$school]);
+                    if (!$enabled) $db->prepare('UPDATE anemia_school_cohort SET accepting=0 WHERE school_id=? AND accepting=1')->execute([$school]);
+                    break;
                 case 'school-edit':
                     if (!$admin) throw new DomainException('บัญชีนี้ไม่มีสิทธิ์แก้ไขทะเบียนโรงเรียน');
-                    if ($action==='school-toggle') $db->prepare('UPDATE anemia_school SET enabled=1-enabled WHERE id=?')->execute([$school]);
-                    else $db->prepare('UPDATE anemia_school SET name=? WHERE id=?')->execute([schoolText($input['name']??null,160),$school]);
+                    $db->prepare('UPDATE anemia_school SET name=? WHERE id=?')->execute([schoolText($input['name']??null,160),$school]);
                     break;
                 case 'grant':
                     if (!$manage) throw new DomainException('บัญชีนี้ไม่มีสิทธิ์จัดการทะเบียนครู');
@@ -214,6 +256,7 @@ function schoolSave(PDO $db,array $identity,array $input): int
                     break;
                 case 'cohort-edit':
                 case 'cohort-toggle':
+                    if (!(int)$record['enabled']) throw new DomainException('กรุณาเปิดใช้งานโรงเรียนก่อนแก้ไขห้อง');
                     $query=$db->prepare('SELECT c.teacher,r.cohort_id AS room_id FROM anemia_school_cohort c
                         LEFT JOIN anemia_school_room r ON r.cohort_id=c.id
                         WHERE c.id=? AND c.school_id=? FOR UPDATE');

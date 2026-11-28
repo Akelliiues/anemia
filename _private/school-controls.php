@@ -16,12 +16,10 @@
   <label>ชื่อโรงเรียน<input name="name" maxlength="160" value="<?= schoolEscape($school['name']) ?>" required></label>
   <button class="action primary">บันทึกชื่อโรงเรียน</button>
  </form>
- <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'school-toggle',(int)$school['id']); ?>
-  <button class="action"><?= $school['enabled']?'ปิดใช้งานโรงเรียน':'เปิดใช้งานโรงเรียน' ?></button>
- </form>
+ <?php schoolParticipationButton((int)$school['id'],$school['name'],(bool)$school['enabled'],$participation[$school['id']]); ?>
 </details>
 <?php endif; ?>
-<?php if ($teacher): ?>
+<?php if ($teacher && $school['enabled']): ?>
 <details><summary>ข้อมูลครูของฉัน</summary>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'teacher-profile',(int)$school['id']); ?>
@@ -31,7 +29,7 @@
  </form>
 </details>
 <?php endif; ?>
-<?php if ($manage): ?>
+<?php if ($manage && ($school['enabled'] || $admin)): ?>
 <details><summary>ครูผู้รับผิดชอบ</summary>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'grant',(int)$school['id']); ?>

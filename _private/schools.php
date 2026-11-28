@@ -47,7 +47,7 @@ function schoolScope(array $identity): array
         'account_admin','central_report'=>['1=1',[]],
         'regional_report'=>['p.region=?',[(int)$identity['region']]],
         'provincial_report'=>['s.province_code=?',[$identity['province_code']]],
-        'school_teacher'=>['s.enabled=1 AND EXISTS (SELECT 1 FROM anemia_school_teacher t WHERE t.school_id=s.id AND t.username=?)',[$identity['username']]],
+        'school_teacher'=>['EXISTS (SELECT 1 FROM anemia_school_teacher t WHERE t.school_id=s.id AND t.username=?)',[$identity['username']]],
         default=>['1=0',[]],
     };
 }

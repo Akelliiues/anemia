@@ -170,12 +170,17 @@ function loadVoiceCoach(){
 function publicFeatures(){
  const entries=[
   ['check','รู้ว่าควรทำอะไรต่อ หลังเห็นผลคัดกรอง','ตอบคำถามเรื่องอาการและพฤติกรรมใกล้ตัว แล้วดูคำแนะนำเบื้องต้นที่สอดคล้องกับผลของคุณ','เริ่มประเมิน','index.html?view=start'],
-  ['hospital','จากค้นหาที่ตรวจ ถึงติดตามคำขอ','หาหน่วยบริการใกล้คุณ ดูว่าที่ไหนรับคำขอออนไลน์ และใช้เลขคำขอหรือ QR ติดตามหลังส่ง','ค้นหาหน่วยบริการ','index.html?view=facility-directory'],
+  ['hospital','ค้นหาหน่วยบริการใกล้คุณ','ดูเส้นทางไปโรงพยาบาลหรือ รพ.สต. และดูว่าที่ไหนเปิดรับคำขอออนไลน์','ค้นหาหน่วยบริการ','index.html?view=facility-directory'],
   ['calendar','เปลี่ยนคำแนะนำให้เป็นสิ่งที่ทำได้ทุกสัปดาห์','กิจกรรม 12 สัปดาห์แบ่งการเรียนรู้เป็นช่วงสั้น ๆ ให้ลองทำและกลับมาดูความคืบหน้าในบัญชีของคุณได้','ดูกิจกรรม 12 สัปดาห์','participant-programme.php'],
+  ['history','ติดตามคำขอได้ด้วยตัวเอง','ใช้เลขคำขอหรือ QR จากใบรับคำขอเพื่อดูสถานะล่าสุด','ติดตามคำขอ','index.html?view=track'],
   ['sound','Voice Coach','ฟังคำแนะนำประกอบผลคัดกรองและบทความที่มีเสียงเผยแพร่']
  ];
  set(panel(`<div class="feature-pitch">${pageHeading('check','รู้ความเสี่ยง แล้ววางแผนดูแลตัวเองต่อ','Anemia Portal เชื่อมการคัดกรองภาวะโลหิตจาง การเรียนรู้ และการเข้าถึงหน่วยบริการไว้ในที่เดียว')}</div>
  <div class="feature-grid feature-orbit">
+  <svg class="feature-orbit-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+   <path d="M12 25L50 50L88 25M12 75L50 50" vector-effect="non-scaling-stroke"/>
+   <path class="feature-orbit-fourth-line" d="M50 50L88 75" vector-effect="non-scaling-stroke"/>
+  </svg>
   <div class="feature-hub">${icon('drop')}<strong>Anemia Portal</strong><span>คัดกรอง · เรียนรู้ · ติดตาม</span></div>
   ${entries.map(([symbol,title,description,label,url])=>`
    <article class="feature-card${url?'':' feature-card-voice'}">

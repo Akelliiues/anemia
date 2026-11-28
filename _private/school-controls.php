@@ -16,7 +16,6 @@
   <label>ชื่อโรงเรียน<input name="name" maxlength="160" value="<?= schoolEscape($school['name']) ?>" required></label>
   <button class="action primary">บันทึกชื่อโรงเรียน</button>
  </form>
- <?php schoolParticipationButton((int)$school['id'],$school['name'],(bool)$school['enabled'],$participation[$school['id']]); ?>
 </details>
 <?php endif; ?>
 <?php if ($teacher && $school['enabled']): ?>

@@ -2612,6 +2612,10 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .school-directory-table thead th {position:sticky;top:0;z-index:1;}
 .school-directory-table th small {font-weight:400;color:var(--muted);}
 .school-directory-table :is(th,td) {padding:.45rem .65rem;}
+.school-selected-heading {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem 1rem;background:transparent;padding-block-end:.65rem;border-block-end:1px solid var(--line);}
+.school-selected-heading :is(h2,p) {margin:0;}
+.school-selected-heading p {font-size:.875rem;}
+.school-selected-heading .action {white-space:nowrap;}
 .school-directory-name {color:var(--ink);text-decoration:underline;text-underline-offset:.16em;}
 .school-directory-name:is(:hover,:focus-visible) {color:var(--violet);}
 .school-directory-table .school-row-toggle {min-inline-size:11rem;min-block-size:2.75rem;white-space:nowrap;flex-wrap:nowrap;}

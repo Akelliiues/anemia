@@ -348,7 +348,7 @@ return static function (PDO $db,array $identity): void {
    <tr data-school-code="<?= schoolEscape($row['code']) ?>">
    <th scope="row">
     <?php if ($record): ?>
-     <a class="school-directory-name" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities"
+     <a class="school-directory-name" href="<?= schoolEscape($schoolLocation(array_filter($directoryFilters+['directory_page'=>$directoryPage>1?$directoryPage:null,'school'=>(int)$registeredId]))) ?>#school-activities"
       title="<?= $record['enabled']?'จัดการโรงเรียน':'ดูประวัติ' ?>"><?= schoolEscape($row['name']) ?></a>
     <?php else: ?><?= schoolEscape($row['name']) ?><?php endif; ?>
     <br><small><?= schoolEscape(($row['source']==='dla'?'อ้างอิง ':'').$row['code'].' · '.$row['agency']) ?></small>
@@ -410,11 +410,20 @@ return static function (PDO $db,array $identity): void {
 <?php endif; ?>
 <?php if (!$school): ?><section class="card"><p><?= $teacher?'ยังไม่มีโรงเรียนที่บัญชีนี้ดูแล':($province===''?'เลือกจังหวัดแล้วกดแสดงโรงเรียน':'ยังไม่มีโรงเรียนในทะเบียนของจังหวัดนี้') ?></p></section>
 <?php else: ?>
-<section class="card" id="school-activities">
+<section class="card" id="school-activities" aria-labelledby="school-activities-title">
+ <header class="school-selected-heading">
+  <div>
+   <h2 id="school-activities-title"><?= schoolEscape($school['name']) ?></h2>
+   <p><?= schoolEscape($school['province']) ?> · <?= $school['enabled']?'เข้าร่วมโครงการ':'หยุดเข้าร่วมโครงการ' ?></p>
+  </div>
+  <?php if ($admin): ?>
+   <?php schoolParticipationButton((int)$school['id'],$school['name'],(bool)$school['enabled'],$participation[$school['id']]); ?>
+  <?php endif; ?>
+ </header>
  <?php if (!$school['enabled']): ?><p class="notice">โรงเรียนหยุดรับผู้เข้าร่วมใหม่ ประวัติกิจกรรมยังเปิดดูได้</p><?php endif; ?>
- <form method="get" class="network-form school-fields">
+ <form method="get" action="#school-activities" class="network-form school-fields">
   <?php if (!$teacher): ?><input type="hidden" name="view" value="schools"><?php endif; ?>
-  <?php foreach ($areaFilters as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
+  <?php foreach ($areaFilters+array_filter($directoryFilters+['directory_page'=>$directoryPage>1?$directoryPage:null]) as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
   <label>โรงเรียน<select name="school"><?php foreach($schools as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $item['id']===$school['id']?'selected':'' ?>><?= schoolEscape($item['name'].' · '.$item['province']) ?></option><?php endforeach; ?></select></label>
   <button class="action">แสดงโรงเรียน</button>
  </form>

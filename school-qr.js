@@ -39,6 +39,7 @@ function bindSchoolWorkspace(workspace) {
    const state = button.dataset.schoolParticipation;
    const [title, description, confirmation] = copy[state];
    trigger = button;
+   form.dataset.schoolUpdateOrigin = button.closest('#school-activities') ? 'school' : 'directory';
    schoolParticipationDialog.querySelector('[data-school-update-error]').hidden = true;
    form.elements.school.value = button.dataset.schoolId;
    form.elements.school_action.value = state;
@@ -108,7 +109,7 @@ document.addEventListener('submit', async event => {
   const newTable = updated.querySelector('.school-directory-table');
   if (newTable) newTable.scrollTo({...previousScroll,behavior:'instant'});
   window.scrollTo(pageScroll);
-  const row = code && updated.querySelector('[data-school-code="' + CSS.escape(String(code)) + '"]');
+  const row = form.dataset.schoolUpdateOrigin !== 'school' && code && updated.querySelector('[data-school-code="' + CSS.escape(String(code)) + '"]');
   const control = row ? row.querySelector('.school-row-toggle') :
    updated.querySelector('#school-activities [data-school-participation]');
   control?.focus({preventScroll:true});

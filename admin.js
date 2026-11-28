@@ -230,7 +230,9 @@ function adminChartMonths(scope){
   return {period,screened:rows.length?metricTotal(rows,'screened'):null,high:rows.length?metricTotal(rows,'high'):null};
  });
 }
-function regionMapPanel(scope,rows){
+function regionMapPanel(scope){
+ const year=demoPeriodYear(adminPeriod||latestAdminPeriod);
+ const rows=reportRows(scope,'').filter(row=>demoPeriodYear(row.period)===year);
  const selected=scope.region??(adminRegion?Number(adminRegion):null);
  const interactive=scope.key==='central';
  const hues=['#ab90d1','#9f88c7','#c7a9d9','#d4abd0','#dab9d4','#c596c1','#9e87cd','#8576c2','#ba99d4','#a984c6','#b3a1da','#9b8cc9','#b45383'];
@@ -244,7 +246,7 @@ function regionMapPanel(scope,rows){
  <div class="region-map-layout">
  <div class="region-map-stage"><svg viewBox="0 0 430 700" ${interactive?'role="group"':'role="img"'} aria-label="แผนที่ประเทศไทย 13 เขตสุขภาพ"><defs><filter id="region-map-shadow" x="-15%" y="-10%" width="130%" height="130%"><feDropShadow dx="0" dy="4" stdDeviation="2" flood-color="#4d3069" flood-opacity=".2"/></filter></defs><g class="region-map-shapes" filter="url(#region-map-shadow)">${shapes}</g></svg></div>
  <div class="region-map-controls"><h3>${scope.key==='provincial'?scopeLabel(scope):selected?regionLabel(selected):'ทุกเขตสุขภาพ'}</h3>
- <p class="region-map-period">${adminPeriod||'ทุกเดือนในชุดข้อมูล'}</p>
+ <p class="region-map-period">ภาพรวมปี พ.ศ. ${year} · รวมทุกเดือนที่มีข้อมูล</p>
  ${interactive?`<div class="region-map-picker" role="group" aria-label="เลือกเขตสุขภาพ">${adminRegions.map(region=>`<button type="button" data-chart-region="${region}" aria-label="${regionLabel(region)}" aria-pressed="${region===selected}">${region}</button>`).join('')}</div>
  ${selected?button('ดูครบทุกเขต','admin-clear-region','refresh'):''}`:''}
  <dl class="region-map-metrics" aria-label="สรุปผลการดำเนินงานของพื้นที่">
@@ -253,7 +255,7 @@ function regionMapPanel(scope,rows){
    `<div class="region-map-metric">${box(symbol)}<dt>${label}</dt><dd><strong>${rows.length?countLabel(metricTotal(rows,key)):'—'}</strong> <span>${unit}</span></dd></div>`).join('')}
  </dl>
  ${rows.length?'':'<p class="notice">ยังไม่มีข้อมูลสำหรับพื้นที่และช่วงเวลาที่เลือก</p>'}
- <p class="notice">ขอบเขตจังหวัดจาก <a href="https://github.com/GeoThai/boundaries/tree/v2026.10.23" target="_blank" rel="noopener noreferrer">GeoThai/boundaries</a> · <a href="https://creativecommons.org/licenses/by/3.0/igo/" target="_blank" rel="noopener noreferrer">CC BY 3.0 IGO</a> นำมารวมตามเขตสุขภาพและย่อรายละเอียดเพื่อแสดงผล</p></div>
+ </div>
  </div></section>`;
 }
 document.addEventListener('keydown',event=>{
@@ -315,7 +317,7 @@ function reportView(scope,showHeading=true){
  return `${showHeading?adminHeading(exporting?'รายงานการคัดกรองและติดตาม':'แดชบอร์ดการคัดกรองและติดตาม','ข้อมูลจำลองสำหรับสาธิตกระบวนการรายงาน'):''}
  <div class="admin-report-toolbar"><p class="admin-report-meta">${icon('calendar')} <span>${area} · ${adminPeriod||'ทุกเดือน'}</span></p>${adminFilters(scope)}</div>
  ${adminStats(rows)}
- ${exporting?'':`${adminCharts(rows,scope)}<div class="admin-map-slot">${regionMapPanel(scope,rows)}</div>`}
+ ${exporting?'':`${adminCharts(rows,scope)}<div class="admin-map-slot">${regionMapPanel(scope)}</div>`}
  <section class="card admin-report"><div class="admin-report-top"><h2>${exporting?'รายละเอียดตามพื้นที่และเดือน':'ผลการดำเนินงานรายพื้นที่'}</h2>
  <div class="admin-report-controls no-print">${adminMonthFilter('admin-table-period','เลือกเดือน')}
  ${exporting?`<div class="actions no-print">${button('ดาวน์โหลด CSV','admin-csv','download')}${button('พิมพ์ / บันทึก PDF','admin-print','history',true)}</div>`:button('เปิดรายงาน','admin-reports','history')}</div></div>
@@ -363,7 +365,7 @@ function provinceRollout(){
  <div class="tablewrap"><table class="admin-table"><thead><tr><th>จังหวัด</th><th>เขต</th><th>สถานะเตรียมงาน</th><th>จัดการ</th></tr></thead><tbody>
  ${rows.map(([code,name,region])=>`<tr><th scope="row">${name}</th><td>${region}</td><td>${provinceReadiness[code]===true?'พร้อมนำร่องในแผน':'รอเตรียม'}</td><td><button class="action" data-rollout-code="${code}">${icon(provinceReadiness[code]===true?'refresh':'check')}${provinceReadiness[code]===true?'ย้ายกลับไปรอเตรียม':'ระบุว่าพร้อมนำร่อง'}</button></td></tr>`).join('')||'<tr><td colspan="4">ไม่พบจังหวัดตามตัวกรอง</td></tr>'}
  </tbody></table></div>
- <p class="notice">รหัสจังหวัดจาก <a href="https://github.com/GeoThai/boundaries/tree/v2026.10.23">GeoThai/boundaries</a> · <a href="https://creativecommons.org/licenses/by/3.0/igo/">CC BY 3.0 IGO</a> · การจัดเขตอิง <a href="https://healthkpi.moph.go.th/kpi/kpi_template/2568/025.1.pdf">กระทรวงสาธารณสุข</a></p>`;
+ <p class="notice">รหัสจังหวัดและขอบเขตแผนที่จาก <a href="https://github.com/GeoThai/boundaries/tree/v2026.10.23">GeoThai/boundaries</a> · <a href="https://creativecommons.org/licenses/by/3.0/igo/">CC BY 3.0 IGO</a> ขอบเขตถูกรวมตามเขตสุขภาพและย่อรายละเอียดเพื่อแสดงผล · การจัดเขตอิง <a href="https://healthkpi.moph.go.th/kpi/kpi_template/2568/025.1.pdf">กระทรวงสาธารณสุข</a></p>`;
 }
 function toggleProvinceReadiness(code){
  if(adminScope()?.key!=='administrator'||!nationalProvinces.some(row=>row[0]===code))return;

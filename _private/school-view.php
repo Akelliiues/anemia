@@ -79,7 +79,11 @@ return static function (PDO $db,array $identity): void {
         if (($_POST['school_action']??'')==='directory-add' && isset($savedSchool)) {
             $redirect['province']=$_POST['directory_province']??'34';
         }
-        if (in_array($_POST['school_action']??'',['school-withdraw','school-archive','school-reopen'],true)) {
+        if (in_array($_POST['school_action']??'',['directory-add','school-withdraw','school-archive','school-reopen'],true)) {
+            if (($_SERVER['HTTP_X_SCHOOL_UPDATE']??'')==='1') {
+                $returnSchool=filter_input(INPUT_GET,'return_school',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+                if ($returnSchool) $redirect['school']=$returnSchool;
+            }
             foreach (['district','q','directory_page'] as $key) {
                 if (is_string($_GET[$key]??null) && strlen($_GET[$key])<=180) $redirect[$key]=$_GET[$key];
             }
@@ -249,10 +253,11 @@ return static function (PDO $db,array $identity): void {
         if ($school) $ids[]=$school['id'];
         $participation=schoolParticipation($db,array_values(array_unique($ids)));
     }
-    $postFilters=$areaFilters+array_filter($directoryFilters+['directory_page'=>$directoryPage>1?$directoryPage:null]);
+    $postFilters=$areaFilters+array_filter($directoryFilters+['directory_page'=>$directoryPage>1?$directoryPage:null,'return_school'=>$school['id']??null]);
     $schoolPostUrl='school-workspace.php'.($postFilters?'?'.http_build_query($postFilters):'');
 ?>
-<div class="school-workspace">
+<div class="school-workspace" data-school-workspace>
+<p class="notice" role="alert" data-school-update-error hidden></p>
 <?php if ($notice!==''): ?><p class="notice" role="status"><?= schoolEscape($notice) ?></p><?php endif; ?>
 <?php if (!$teacher): ?>
 <section class="card school-area" aria-labelledby="school-area-title">
@@ -336,7 +341,7 @@ return static function (PDO $db,array $identity): void {
  <table class="admin-table">
   <thead><tr><th scope="col">โรงเรียน</th><th scope="col"><?= $province==='10'?'เขต':'อำเภอ' ?></th><th scope="col">ระดับชั้น</th><th scope="col">จัดการ</th></tr></thead>
   <tbody><?php foreach ($pageRows as $row): ?>
-   <?php $registeredId=$directorySchool($row); ?><tr>
+   <?php $registeredId=$directorySchool($row); ?><tr data-school-code="<?= schoolEscape($row['code']) ?>">
    <th scope="row"><?= schoolEscape($row['name']) ?><br><small><?= schoolEscape(($row['source']==='dla'?'อ้างอิง ':'').$row['code'].' · '.$row['agency']) ?></small></th>
    <td><?= schoolEscape($row['district']) ?></td>
    <td><?= schoolEscape($row['grades']?implode(', ',str_replace('M','ม.',$row['grades'])):'มัธยมปลาย (ไม่ระบุชั้น)') ?></td>
@@ -348,7 +353,7 @@ return static function (PDO $db,array $identity): void {
      <?php endif; ?>
     </div>
    <?php elseif ($admin): ?>
-    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>"><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าร่วม</button></form>
+    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" data-school-update><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>"><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าร่วม</button></form>
    <?php else: ?>ยังไม่เข้าทะเบียน<?php endif; ?></td>
   </tr><?php endforeach; ?>
   <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนในข้อมูลอ้างอิงตามตัวกรอง</td></tr><?php endif; ?>
@@ -457,7 +462,8 @@ return static function (PDO $db,array $identity): void {
  <p data-school-dialog-description></p>
  <p data-school-dialog-staff hidden>โรงเรียนมีข้อมูลการมอบหมายครูหรือผู้ประสานงาน</p>
  <ul data-school-dialog-years hidden></ul>
- <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="actions">
+ <p class="notice" role="alert" data-school-update-error hidden></p>
+ <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="actions" data-school-update>
   <?php schoolFields($csrf,''); ?>
   <input type="hidden" name="school">
   <button type="button" class="action" data-school-dialog-cancel autofocus>ยกเลิก</button>

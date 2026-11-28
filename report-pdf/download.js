@@ -65,8 +65,8 @@
      return {ul:Array.from(element.children, contentText)};
     case 'FOOTER':
      return {unbreakable:true, margin:[0,9,0,0], columns:[
-      {image:'brand',width:17,margin:[0,1,0,0]},
-      {stack:Array.from(footer.querySelectorAll('p'), line => ({text:contentText(line),color:'#737078',fontSize:10}))}
+      {image:'brand',width:22},
+      {stack:Array.from(footer.querySelectorAll('p'), line => ({text:contentText(line),color:'#737078',fontSize:10,lineHeight:0.83}))}
      ],columnGap:5};
     default:
      return {text:contentText(element),fontSize:14,margin:[0,5,0,0]};

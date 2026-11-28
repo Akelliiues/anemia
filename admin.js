@@ -126,8 +126,8 @@ function printDemoReport(scope){
  const report=window.open('','_blank');
  if(!report)return;
  report.opener=null;
- const sheet=new URL('report-print.css?v=5',location.href).href;
- const pdfScript=new URL('report-pdf/download.js?v=2',location.href).href;
+ const sheet=new URL('report-print.css?v=6',location.href).href;
+ const pdfScript=new URL('report-pdf/download.js?v=3',location.href).href;
  const logo=new URL('portal-heart-clear.png',location.href).href;
  const area=scope.region?scopeLabel(scope):adminRegion?regionLabel(Number(adminRegion)):'ครบ 13 เขต';
  const issued=new Intl.DateTimeFormat('th-TH',{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date());
@@ -143,8 +143,8 @@ function printDemoReport(scope){
  ${adminTable(reportRows(scope),scope)}
  <p class="report-note">ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ</p>
  <footer class="report-paper-footer">
-  <img src="${logo}" alt="" width="23" height="23">
-  <div><p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</p><p>Anemia Portal</p></div>
+  <img src="${logo}" alt="" width="29" height="29">
+  <div><p>Anemia Portal</p><p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</p></div>
  </footer>
  </main><script src="${pdfScript}"></script></body></html>`);
  report.document.close();

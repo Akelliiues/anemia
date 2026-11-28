@@ -853,7 +853,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 <?php if ($showOverviewCharts): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=staff-details-v24"></script>
+<script defer src="admin.js?v=staff-details-v25"></script>
 <script defer src="hosted-dashboard.js?v=scroll-v8"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>

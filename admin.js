@@ -141,8 +141,8 @@ function reportTableRows(rows,scope){
  }
  return [...totals.values()];
 }
-function adminTable(rows,scope,selectedMetric=null,hideYear=false){
- const periodLabel=period=>hideYear?period.replace(/\s+(?:ปี )?\d{4}$/,''):period;
+function adminTable(rows,scope,selectedMetric=null){
+ const periodLabel=period=>period.replace(/\s+(?:ปี )?(?:\d{4}|ทุกปี)$/,'');
  const columns=[['screened','ประเมิน'],['high','เสี่ยงสูง'],['referred','ขอประสาน'],['tested','ตรวจแล้ว']];
  const metricClass=key=>key===selectedMetric?' class="overview-metric-column"':'';
  return `<div class="tablewrap"><table class="admin-table"><thead><tr><th scope="col">พื้นที่</th><th scope="col">ช่วงเวลา</th>${columns.map(([key,label])=>`<th scope="col"${metricClass(key)}>${label}</th>`).join('')}</tr></thead>
@@ -386,7 +386,7 @@ function reportView(scope,showHeading=true){
  <section class="card admin-report"><div class="admin-report-top"><h2>${metricLabel|| (exporting?'รายละเอียดตามพื้นที่และเดือน':'ผลการดำเนินงานรายพื้นที่')}</h2>
  <div class="admin-report-controls no-print">${adminMonthFilter('admin-table-period','เลือกเดือน')}
  ${exporting?`<div class="actions no-print">${button('ดาวน์โหลด CSV','admin-csv','download')}${button('พิมพ์ / บันทึก PDF','admin-print','history',true)}</div>`:button('เปิดรายงาน','admin-reports','history')}</div></div>
- ${adminTable(visibleRows,scope,exporting?selectedOverviewMetric:null,Boolean(adminYear))}
+ ${adminTable(visibleRows,scope,exporting?selectedOverviewMetric:null)}
  ${paginated&&pageCount>1?`<nav class="overview-report-pages no-print" aria-label="แบ่งหน้ารายงาน">
   <span role="status">แสดง ${offset+1}–${offset+visibleRows.length} จาก ${tableRows.length} รายการ</span>
   <button type="button" class="action" data-overview-page="-1" ${overviewReportPage===1?'disabled':''}>ก่อนหน้า</button>

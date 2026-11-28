@@ -12,7 +12,7 @@
     <a href="participant-programme.php" <?= $publicNavPage==='programme'?'aria-current="page"':'' ?>>กิจกรรม 12 สัปดาห์</a><a href="index.html?view=learn">คลังความรู้</a><a href="school-join.php"><?= workspaceIcon('users') ?>กิจกรรมโรงเรียน</a>
    </div></details>
    <details class="public-nav-group" name="subpage-navigation"><summary><?= workspaceIcon('info') ?>เกี่ยวกับโครงการ<span class="public-nav-chevron" aria-hidden="true"></span></summary><div class="public-nav-links">
-    <a href="index.html?view=project">ข้อมูลโครงการ</a><a href="index.html?view=open-data">สถิติรายพื้นที่ (Open Data)</a><a href="feedback.php" <?= $publicNavPage==='feedback'?'aria-current="page"':'' ?>>ประเมินการใช้งาน</a>
+    <a href="index.html?view=features">Anemia Portal ทำอะไรได้บ้าง?</a><a href="index.html?view=project">ข้อมูลโครงการ</a><a href="index.html?view=open-data">สถิติรายพื้นที่ (Open Data)</a><a href="feedback.php" <?= $publicNavPage==='feedback'?'aria-current="page"':'' ?>>ประเมินการใช้งาน</a>
    </div></details>
    <a class="public-account-link" data-public-account-guest <?= $publicNavSignedIn?'hidden':'' ?> href="participant-account.php?return=<?= $publicNavPage==='programme'?'programme':'portal' ?>"><?= workspaceIcon('person') ?>เข้าสู่ระบบ / สมัครสมาชิก</a>
    <details class="public-nav-group public-nav-account" name="subpage-navigation" <?= $publicNavSignedIn?'':'hidden' ?>>

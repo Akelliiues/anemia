@@ -167,6 +167,24 @@ function loadVoiceCoach(){
   }
  });
 }
+function publicFeatures(){
+ const entries=[
+  ['check','อยากรู้ว่าควรตรวจภาวะโลหิตจางเพิ่มไหม?','ตอบแบบคัดกรองเบื้องต้น แล้วดูว่าควรเริ่มดูแลตัวเองหรือขอคำแนะนำเพิ่มเติมอย่างไร','เริ่มประเมิน','index.html?view=start'],
+  ['book','อยากรู้เรื่องอาหารและธาตุเหล็ก เริ่มอ่านตรงไหน?','เลือกอ่านบทความเรื่องโลหิตจาง อาหาร หรือการเตรียมตัวไปตรวจ','เปิดคลังความรู้','index.html?view=learn'],
+  ['calendar','อยากค่อย ๆ ปรับพฤติกรรม มีอะไรให้ทำบ้าง?','เรียนรู้และลองทำกิจกรรมทีละสัปดาห์ พร้อมดูความคืบหน้าเมื่อเข้าสู่ระบบ','ดูกิจกรรม 12 สัปดาห์','participant-programme.php'],
+  ['hospital','อยากไปตรวจใกล้บ้าน ต้องทำอย่างไร?','ค้นหาโรงพยาบาลหรือ รพ.สต. ดูเส้นทาง และตรวจว่าหน่วยบริการใดเปิดรับคำขอออนไลน์','ค้นหาหน่วยบริการ','index.html?view=facility-directory'],
+  ['history','ส่งคำขอแล้ว จะดูความคืบหน้าที่ไหน?','ใช้เลขคำขอหรือ QR จากใบรับคำขอเพื่อดูสถานะล่าสุด','ติดตามคำขอ','index.html?view=track'],
+  ['person','อยากกลับมาเรียนต่อหรือดูแต้มสะสมได้ไหม?','เข้าสู่ระบบสมาชิกเพื่อดูโปรไฟล์ ความคืบหน้า และกิจกรรมของคุณ','เปิดบัญชีของฉัน','participant-account.php?return=portal'],
+  ['chart','อยากดูสถิติภาพรวมของแต่ละพื้นที่ได้ไหม?','เปิดหน้าสถิติรายพื้นที่เพื่อดูข้อมูลภาพรวมของโครงการ','ดูสถิติรายพื้นที่','index.html?view=open-data'],
+  ['share','อยากชวนเพื่อนมาทำกิจกรรมด้วยกันได้ไหม?','เปิดหน้าทีมเพื่อเข้าร่วมหรือส่งลิงก์ชวนเพื่อน','เปิดทีมของฉัน','index.html?team=1'],
+  ['check','อยากเสนอให้ปรับปรุงเว็บไซต์ บอกได้ที่ไหน?','ส่งความเห็นเกี่ยวกับการใช้งานผ่านแบบประเมินของโครงการ','ส่งความคิดเห็น','feedback.php']
+ ];
+ set(panel(`${pageHeading('check','Anemia Portal ทำอะไรได้บ้าง?','เลือกคำถามที่ตรงกับสิ่งที่คุณอยากทำ')}`
+  + `<div class="feature-faq">${entries.map(([symbol,question,answer,label,url])=>`
+   <details class="feature-faq-item"><summary>${box(symbol)}<span>${question}</span></summary>
+    <div><p>${answer}</p><a href="${url}">${label} ${icon('next')}</a></div>
+   </details>`).join('')}</div>`,true));
+}
 function project(){
  set(panel(`${backRow()}${pageHeading('history','เกี่ยวกับโครงการ','ประเมินภาวะโลหิตจางด้วยตนเอง เรียนรู้ และติดตามการเข้ารับบริการ')}
  <div class="grid project-grid"><section class="card">${box('check')}<h2>แบบประเมินและคำแนะนำ</h2><p>แบบประเมินฉบับร่าง 10 ข้อสำหรับหญิงอายุ 15–49 ปี ใช้เป็นต้นทางของคำถามและหน้าผลในเดโม่</p>${button('ลองประเมิน','start','check')}</section>
@@ -1426,6 +1444,7 @@ else {
   case 'facility-directory':facilities(false);break;
   case 'track':track();break;
   case 'project':project();break;
+  case 'features':publicFeatures();break;
   case 'open-data':openData();break;
   default:openRequestFromHash();
  }

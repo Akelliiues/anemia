@@ -32,7 +32,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขตสุขภาพที่ 13 กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'usage-audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'voice-coach', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'usage-audit', 'sample', 'team', 'guide', 'staff-features', 'about', 'release', 'activity', 'sample-settings', 'services', 'voice-coach', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
 $unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
 $scannerApp = $unitScanner || $view==='scanner-install';
 $mobileQueue = $view==='contact-queue' && ($_GET['app']??'')==='staff';
@@ -724,7 +724,7 @@ try {
     error_log('Anemia dashboard failed (' . get_class($error) . ')');
     exit('ไม่สามารถโหลดข้อมูลหลังบ้านได้ กรุณาลองใหม่อีกครั้ง');
 }
-$tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจังหวัด','evaluation'=>'ประเมินโครงการ','activity'=>'สถิติการทดลองแบบประเมิน','team'=>'ทีมวิจัยและพัฒนา','guide'=>'คู่มือการใช้งาน','about'=>'เกี่ยวกับระบบ'];
+$tabs = ['overview'=>'ภาพรวม','reports'=>'รายงานจังหวัด','evaluation'=>'ประเมินโครงการ','activity'=>'สถิติการทดลองแบบประเมิน','team'=>'ทีมวิจัยและพัฒนา','guide'=>'คู่มือการใช้งาน','staff-features'=>'ฟีเจอร์สำหรับเจ้าหน้าที่','about'=>'เกี่ยวกับระบบ'];
 $tabs['mobile'] = 'Anemia Staff';
 $tabs['scanner-install'] = 'ติดตั้งแอปสแกน QR';
 if ($isAdmin) $tabs += ['assessment'=>'แบบประเมิน','access'=>'จัดการสิทธิ์','audit'=>'ประวัติสิทธิ์','release'=>'เวอร์ชันและอัปเดต','sample-settings'=>'จัดการข้อมูล','services'=>'การเชื่อมต่อบริการ','contact-queue'=>'คำขอนัดและติดต่อกลับ','scan-request'=>'สแกน QR คำขอ'];
@@ -734,7 +734,7 @@ if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบ
 if ($isAdmin) $tabs['members']='สมาชิก';
 if ($isAdmin) $tabs['voice-coach']='Voice Coach';
 $showSample = $isAdmin && $view === 'overview' && $sampleMode;
-$tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','about'=>'info','release'=>'history','sample-settings'=>'chart','services'=>'spark','contact-queue'=>'phone','scan-request'=>'scan'];
+$tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','staff-features'=>'spark','about'=>'info','release'=>'history','sample-settings'=>'chart','services'=>'spark','contact-queue'=>'phone','scan-request'=>'scan'];
 $tabIcons['network']='hospital';
 $tabIcons['members']='users';
 $tabIcons['programme-report']='book';
@@ -836,7 +836,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v167">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v168">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -880,7 +880,7 @@ function workspaceInfo(string $page, ?array $release = null): void
         ['รายงาน','map',['reports','schools','programme-report','activity','evaluation']],
         ['ระบบ','users',['members','access','voice-coach','network','sample-settings','services','audit','usage-audit']],
         ['แบบประเมิน','ready',['assessment']],
-        ['ช่วยเหลือ','book',['guide','about','team','release']],
+        ['ช่วยเหลือ','book',['guide','staff-features','about','team','release']],
     ];
     $historyKeys=array_values(array_intersect(['audit','usage-audit'],array_keys($tabs)));
     foreach ($groups as [$groupLabel,$groupIcon,$keys]):
@@ -1217,6 +1217,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <td><?= (int)$row['enabled'] ? 'เปิดใช้งาน' : 'ปิดใช้งาน' ?></td>
    </tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
   </section>
+  <?php elseif ($view === 'staff-features'): require __DIR__.'/_private/staff-features-view.php'; ?>
   <?php elseif ($view === 'guide'): require __DIR__.'/_private/guide-view.php'; ?>
   <?php elseif ($view === 'about'): ?>
   <section class="card admin-report"><?php workspaceInfo($view, $localRelease); ?></section>

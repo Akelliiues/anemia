@@ -15,7 +15,8 @@ $account=$_SESSION['account']??null;
 if (($_SESSION['until']??0)<time()) { unset($_SESSION['account']); $account=null; }
 require_once __DIR__.'/_private/service-settings.php';
 $redirect=anemiaServiceCallback();
-$facebookVersion=getenv('ANEMIA_FACEBOOK_GRAPH_VERSION')?:'';
+$facebookSettings=anemiaServiceSettings('facebook');
+$facebookVersion=anemiaServiceLiveValue($facebookSettings,'ANEMIA_FACEBOOK_GRAPH_VERSION');
 $providers=[
     'line'=>['LINE','https://access.line.me/oauth2/v2.1/authorize','https://api.line.me/oauth2/v2.1/token','openid'],
     'google'=>['Google','https://accounts.google.com/o/oauth2/v2/auth','https://oauth2.googleapis.com/token','openid profile'],
@@ -23,12 +24,12 @@ $providers=[
 ];
 foreach ($providers as $key=>$details) {
     $prefix='ANEMIA_'.strtoupper($key);
-    $config=anemiaServiceSettings($key);
+    $config=$key==='facebook'?$facebookSettings:anemiaServiceSettings($key);
     $providers[$key]+=[4=>anemiaServiceLiveValue($config,$prefix.'_CLIENT_ID'),5=>anemiaServiceLiveValue($config,$prefix.'_CLIENT_SECRET')];
 }
 $canConnect=static fn(string $key): bool => isset($providers[$key]) && $providers[$key][4]!=='' && $providers[$key][5]!=='' &&
     filter_var($redirect,FILTER_VALIDATE_URL)!==false && parse_url($redirect,PHP_URL_SCHEME)==='https' &&
-    ($key!=='facebook'||preg_match('/^v\d+\.\d+$/D',$facebookVersion));
+    ($key!=='facebook'||anemiaServiceReady('facebook',$facebookSettings));
 $invite=$_REQUEST['invite']??'';
 $invite=is_string($invite)&&preg_match('/^[a-f0-9]{32}$/D',$invite)?$invite:'';
 $returnContext=$_REQUEST['return']??'';
@@ -198,7 +199,7 @@ if ($account) {
 }
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v138">
+<title><?= $account?'บัญชีของฉัน':'เข้าสู่ระบบ' ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v150">
 <?php if ($account): ?><link rel="manifest" href="portal.webmanifest"><link rel="apple-touch-icon" href="portal-heart-192.png"><script defer src="staff-install.js?v=9"></script><?php endif; ?>
 <body class="<?= $account?'participant-profile-page':'staff-access participant-login-page' ?>"<?= $account?' data-public-install-invite="member"':'' ?>>
 <main class="<?= $account?'participant-account-main':'staff-access-main' ?>">
@@ -335,19 +336,14 @@ if ($account) {
  <input type="hidden" name="invite" value="<?= participantEscape($invite) ?>">
  <?php if ($returnToPortal): ?><input type="hidden" name="return" value="<?= participantEscape($returnContext) ?>"><?php endif; ?>
  <div class="actions">
-  <?php foreach (['line','google'] as $key): $label=$providers[$key][0]; $ready=$canConnect($key); $connected=in_array($key,$linked,true); ?>
+  <?php foreach (['line','google','facebook'] as $key): $label=$providers[$key][0]; $ready=$canConnect($key); $connected=in_array($key,$linked,true); ?>
    <button class="action" name="provider" value="<?= $key ?>" <?= !$ready||$connected?'disabled':'' ?>>
-    <span class="participant-provider-mark" data-provider="<?= $key ?>" aria-hidden="true"><?= $key==='line'?'L':'G' ?></span>
+    <span class="participant-provider-mark" data-provider="<?= $key ?>" aria-hidden="true"><?= ['line'=>'L','google'=>'G','facebook'=>'f'][$key] ?></span>
     <?= $connected?'เชื่อมแล้ว · ':($ready?($account?'เชื่อมด้วย ':'เข้าสู่ระบบด้วย '):'') ?><?= participantEscape($label) ?><?= !$ready&&!$connected?' · ยังไม่เปิด':'' ?>
    </button>
   <?php endforeach; ?>
   <button class="action" type="button" disabled><?= workspaceIcon('person') ?>ThaID · รอเปิดบริการ</button>
  </div>
- <?php if ($canConnect('facebook') || in_array('facebook',$linked,true)): ?>
-  <details><summary>ช่องทางอื่น</summary>
-   <button class="action" name="provider" value="facebook" <?= !$canConnect('facebook')||in_array('facebook',$linked,true)?'disabled':'' ?>>Facebook<?= in_array('facebook',$linked,true)?' · เชื่อมแล้ว':'' ?></button>
-  </details>
- <?php endif; ?>
  <?php if ($account): ?><div class="actions"><a class="action" href="login.php?entry=portal"><?= workspaceIcon('lock') ?> เข้าสู่ระบบเจ้าหน้าที่</a><button class="action" name="provider" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></div><?php endif; ?>
 </form>
 </details>

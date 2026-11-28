@@ -1826,6 +1826,7 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 .participant-signup :is(summary,label) svg {color:var(--violet);}
 .participant-provider-mark {display:inline-grid;place-items:center;width:1.4rem;height:1.4rem;border-radius:.4rem;background:#e9f1ff;color:#2956a1;font-size:.8rem;font-weight:800;}
 .participant-provider-mark[data-provider=line] {background:#dbf6e8;color:#096637;}
+.participant-provider-mark[data-provider=facebook] {background:#0866ff;color:#fff;font-size:1rem;}
 .member-filters input[type=search] {width:100%;min-height:44px;padding:.5rem .65rem;border:1px solid var(--line);border-radius:.65rem;background:transparent;color:var(--ink);font:inherit;}
 .member-menu-trigger.action {min-width:38px;min-height:34px;padding:.15rem .45rem;font-size:1.2rem;line-height:1;text-decoration:none;}
 .member-menu {position:fixed;inset:auto;margin:0;padding:.3rem;min-width:10rem;border:1px solid var(--line);border-radius:.7rem;background:var(--dark-surface,#fff);color:var(--ink);box-shadow:0 10px 24px #21163835;}
@@ -2424,7 +2425,7 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 @media(max-width:850px) {.network-tools {grid-template-columns:minmax(0,1fr);}}
 
 .service-panel {padding:clamp(.9rem,2vw,1.4rem);}
-.service-tabs {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.3rem;padding:.3rem;border:1px solid var(--line);background:color-mix(in srgb,var(--violet) 8%,transparent);border-radius:.85rem;}
+.service-tabs {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.3rem;padding:.3rem;border:1px solid var(--line);background:color-mix(in srgb,var(--violet) 8%,transparent);border-radius:.85rem;}
 .service-panel .service-tabs .service-tab {display:flex;align-items:center;justify-content:center;gap:.5rem;min-height:2.65rem;padding:.25rem;border-radius:.65rem;background:transparent;color:var(--ink);font-weight:700;text-decoration:none;box-shadow:none;}
 .service-panel .service-tabs .service-tab:is(:hover,:focus-visible) {background:color-mix(in srgb,var(--violet) 18%,transparent);}
 .service-panel .service-tabs .service-tab[aria-current=page] {background:#5638a7;color:#fff;}

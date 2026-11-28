@@ -14,6 +14,7 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
  <?php foreach ($services as $id=>[$label,$icon]): ?>
   <a class="service-tab service-tab--<?= esc($id) ?>" href="dashboard.php?view=services&amp;service=<?= esc($id) ?>" <?= $serviceTab===$id?'aria-current="page"':'' ?>><span class="service-tab-icon" aria-hidden="true">
     <?php if ($id==='otp'): ?><?= workspaceIcon('message') ?>
+    <?php elseif ($id==='facebook'): ?><span class="participant-provider-mark" data-provider="facebook">f</span>
     <?php else: ?><img src="service-brand-<?= esc($id) ?>.png" alt="">
     <?php endif; ?>
    </span>
@@ -32,6 +33,7 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
   <div class="network-form"><label>Callback URL <input id="service-callback" readonly value="<?= esc(anemiaServiceCallback()) ?>"></label></div>
   <button type="button" class="action" onclick="const field=document.getElementById('service-callback');field.select();navigator.clipboard?.writeText(field.value).catch(()=>{});"><?= workspaceIcon('layout') ?>คัดลอก Callback URL</button>
   <p>คัดลอก URL นี้ไปตั้งค่าที่ผู้ให้บริการ โหมดทดสอบใช้ตรวจความครบถ้วนของค่า หน้าเข้าสู่ระบบจะแสดงช่องทางนี้เมื่อเปิดใช้จริง</p>
+  <?php if ($serviceTab==='facebook'): ?><p>ใช้ App ID, App Secret และเวอร์ชัน Graph API จากแอปใน Meta for Developers แล้วเพิ่ม Callback URL ใน Valid OAuth Redirect URIs</p><?php endif; ?>
   <?php if ($mode==='live' && $ready): ?><p><a href="participant-account.php?return=portal" target="_blank" rel="noopener">เปิดหน้าเข้าสู่ระบบเพื่อทดสอบ</a></p><?php endif; ?>
  <?php endif; ?>
  <form class="network-form service-form" method="post">

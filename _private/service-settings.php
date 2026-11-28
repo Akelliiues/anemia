@@ -19,6 +19,11 @@ function anemiaServiceDefinitions(): array
             'ANEMIA_GOOGLE_CLIENT_ID'=>['OAuth Client ID',false],
             'ANEMIA_GOOGLE_CLIENT_SECRET'=>['Client Secret',true],
         ]],
+        'facebook'=>['Facebook','login',[
+            'ANEMIA_FACEBOOK_CLIENT_ID'=>['App ID',false],
+            'ANEMIA_FACEBOOK_CLIENT_SECRET'=>['App Secret',true],
+            'ANEMIA_FACEBOOK_GRAPH_VERSION'=>['Graph API Version',false],
+        ]],
         'thaid'=>['ThaID','lock',[
             'THAID_REFERENCE'=>['เลขอ้างอิงการขอเชื่อมต่อ',false],
         ]],
@@ -66,8 +71,12 @@ function anemiaServiceReady(string $provider,array $settings): bool
     return match ($provider) {
         'otp'=>preg_match('/^SK[a-f0-9]{32}$/iD',anemiaServiceValue($settings,'ANEMIA_VERIFY_KEY')) &&
             preg_match('/^VA[a-f0-9]{32}$/iD',anemiaServiceValue($settings,'ANEMIA_VERIFY_SERVICE')),
-        'line','google'=>filter_var(anemiaServiceCallback(),FILTER_VALIDATE_URL)!==false &&
-            parse_url(anemiaServiceCallback(),PHP_URL_SCHEME)==='https',
+        'line','google','facebook'=>filter_var(anemiaServiceCallback(),FILTER_VALIDATE_URL)!==false &&
+            parse_url(anemiaServiceCallback(),PHP_URL_SCHEME)==='https' &&
+            ($provider!=='facebook' || (
+                ctype_digit(anemiaServiceValue($settings,'ANEMIA_FACEBOOK_CLIENT_ID')) &&
+                preg_match('/^v[0-9]+\.[0-9]+$/D',anemiaServiceValue($settings,'ANEMIA_FACEBOOK_GRAPH_VERSION'))
+            )),
         default=>true,
     };
 }

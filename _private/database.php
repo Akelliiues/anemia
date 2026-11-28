@@ -14,11 +14,11 @@ function anemiaDatabase(array $settings): PDO
 function initializeAnemia(PDO $db, array $settings): void
 {
     $db->exec("CREATE TABLE IF NOT EXISTS anemia_schema (version INTEGER PRIMARY KEY) ENGINE=InnoDB");
-    if ($db->query('SELECT version FROM anemia_schema WHERE version=33')->fetchColumn()) return;
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=34')->fetchColumn()) return;
     $lock = $db->query("SELECT GET_LOCK(CONCAT(DATABASE(), ':anemia-schema'), 10)")->fetchColumn();
     if ((int)$lock !== 1) throw new RuntimeException('migration lock unavailable');
     try {
-        if ($db->query('SELECT version FROM anemia_schema WHERE version=33')->fetchColumn()) return;
+        if ($db->query('SELECT version FROM anemia_schema WHERE version=34')->fetchColumn()) return;
         if (!$db->query('SELECT version FROM anemia_schema WHERE version=24')->fetchColumn()) {
         if (!$db->query('SELECT version FROM anemia_schema WHERE version=1')->fetchColumn()) {
         $db->exec("CREATE TABLE IF NOT EXISTS anemia_province (
@@ -266,6 +266,10 @@ function initializeAnemia(PDO $db, array $settings): void
             FOREIGN KEY (username) REFERENCES anemia_staff(username) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (33)');
+        if (!$db->query("SHOW COLUMNS FROM anemia_staff_photo LIKE 'avatar_icon'")->fetch()) {
+            $db->exec('ALTER TABLE anemia_staff_photo MODIFY photo BLOB NULL, ADD avatar_icon VARCHAR(12) NULL');
+        }
+        $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (34)');
     } catch (Throwable $error) {
         if ($db->inTransaction()) $db->rollBack();
         throw $error;

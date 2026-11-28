@@ -2998,3 +2998,11 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 #workspace-account #account-password-form input[type=password] {padding:.42rem .65rem;}
 #workspace-account [data-password-message] {margin:.3rem 0;}
 #workspace-account [data-password-message]:empty {display:none;}
+
+.workspace-avatar-controls {display:flex;align-items:center;flex-wrap:wrap;gap:.35rem;flex-basis:100%;}
+.workspace-avatar-picker {display:flex;gap:.3rem;margin-inline-end:auto;}
+.workspace-avatar-picker button {display:grid;place-items:center;width:2rem;height:2rem;padding:0;border:1px solid var(--line);border-radius:.55rem;color:var(--violet);}
+.workspace-avatar-picker svg {width:1rem;height:1rem;}
+.workspace-avatar-picker button[aria-pressed=true] {border-color:var(--violet);background:color-mix(in srgb,var(--violet) 15%,transparent);}
+.workspace-avatar-controls > .action {padding:.25rem .5rem;font-size:.8rem;}
+.workspace-avatar-controls > [hidden] {display:none!important;}

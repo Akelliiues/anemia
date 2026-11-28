@@ -2939,11 +2939,11 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .workspace-heading-row {display:flex;align-items:center;justify-content:space-between;gap:clamp(.45rem,2vw,1rem);}
 .workspace-heading-row h1 {min-width:0;}
 .workspace-data-mode {display:flex;flex:none;margin:0;white-space:nowrap;}
-.workspace-data-mode button[role=switch] {position:relative;isolation:isolate;display:grid;align-items:center;width:clamp(7.25rem,12vw,8.5rem);height:2.25rem;padding:0;border:1px solid #4d426d;border-radius:2rem;color:#fff;background:#4c426b;box-shadow:inset 0 2px 5px #21152c55;font-size:.77rem;font-weight:750;direction:ltr;transition:background-color .2s,border-color .2s;}
+.workspace-data-mode button[role=switch] {position:relative;isolation:isolate;display:grid;align-items:center;--mode-height:2rem;width:clamp(7rem,11vw,7.8rem);height:var(--mode-height);padding:0;border:1px solid #17604a;border-radius:2rem;color:#fff;background:#207758;box-shadow:inset 0 2px 5px #21152c55;font-size:.77rem;font-weight:750;direction:ltr;transition:background-color .2s,border-color .2s;}
 .workspace-data-mode button[aria-checked=true] {background:#6a3ba0;border-color:#613092;}
 .workspace-data-mode button[role=switch]:hover {filter:brightness(1.09);}
-.workspace-data-mode button[role=switch]::before {content:"";position:absolute;z-index:1;left:3px;top:3px;width:calc(2.25rem - 8px);aspect-ratio:1;border-radius:50%;background:linear-gradient(#fff,#e9e0f5);box-shadow:0 1px 5px #24163777;transition:left .21s cubic-bezier(.2,.75,.25,1);}
-.workspace-data-mode button[aria-checked=true]::before {left:calc(100% - 2.25rem + 5px);}
+.workspace-data-mode button[role=switch]::before {content:"";position:absolute;z-index:1;left:3px;top:3px;width:calc(var(--mode-height) - 8px);aspect-ratio:1;border-radius:50%;background:linear-gradient(#fff,#e9e0f5);box-shadow:0 1px 5px #24163777;transition:left .21s cubic-bezier(.2,.75,.25,1);}
+.workspace-data-mode button[aria-checked=true]::before {left:calc(100% - var(--mode-height) + 5px);}
 .workspace-data-live,.workspace-data-sample {grid-area:1/1;text-align:center;transition:opacity .12s ease;}
 .workspace-data-live {padding-left:1.85rem;}
 .workspace-data-sample {padding-right:1.85rem;}

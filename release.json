@@ -1,10 +1,10 @@
 {
   "format": 1,
-  "version": "1.0.12",
+  "version": "1.2.1",
   "components": {
-    "public": "1.0.12",
-    "staff": "1.0.12",
-    "research": "1.0.12"
+    "public": "1.2.1",
+    "staff": "1.2.1",
+    "research": "1.2.1"
   },
   "build": "20261125221045"
 }

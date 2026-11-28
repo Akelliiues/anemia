@@ -872,9 +872,9 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php
     $groups = [
         ['ภาพรวม','chart',['overview']],
-        ['รายงาน','map',['reports','activity','evaluation','programme-report','schools']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
-        ['ระบบ','users',['members','access','usage-audit','audit','sample-settings','network','services','voice-coach']],
+        ['รายงาน','map',['reports','schools','programme-report','activity','evaluation']],
+        ['ระบบ','users',['members','network','access','voice-coach','services','usage-audit','audit','sample-settings']],
         ['แบบประเมิน','ready',['assessment']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];

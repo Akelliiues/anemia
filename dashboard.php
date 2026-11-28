@@ -942,7 +942,7 @@ function workspaceInfo(string $page, ?array $release = null): void
  <?php endif; ?>
  <div class="admin-content" id="staff-report-content">
   <?php if (!$staffAppView): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
-   <p><?= esc($scopeName) ?></p>
+   <?php if ($view !== 'overview'): ?><p><?= esc($scopeName) ?></p><?php endif; ?>
    <?php if ($view==='scan-request'): ?><a class="action no-print" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a><?php endif; ?>
   </div>
   <?php endif; ?>

@@ -832,7 +832,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v166">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v167">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -901,9 +901,11 @@ function workspaceInfo(string $page, ?array $release = null): void
        <?php if ($key===($historyKeys[0]??null)): ?>
         <details class="hosted-history-menu" <?= in_array($view,$historyKeys,true)?'open':'' ?>>
          <summary><?= workspaceIcon('history') ?> ประวัติ <span class="hosted-history-caret" aria-hidden="true"></span></summary>
+         <div class="hosted-history-links">
          <?php foreach ($historyKeys as $historyKey): ?>
           <a href="dashboard.php?view=<?= esc($historyKey) ?>" <?= $view===$historyKey?'aria-current="page"':'' ?>><?= workspaceIcon($tabIcons[$historyKey]) ?><?= esc($tabs[$historyKey]) ?></a>
          <?php endforeach; ?>
+         </div>
         </details>
        <?php elseif (!in_array($key,$historyKeys,true)): ?>
        <a href="dashboard.php?view=<?= esc($key) ?>" <?= $view === $key ? 'aria-current="page"' : '' ?> <?php if (in_array($key,['about','team'],true)): ?>data-workspace-dialog="<?= esc($key) ?>" aria-haspopup="dialog"<?php endif; ?>><?= workspaceIcon($tabIcons[$key]) ?><?= esc($tabs[$key]) ?></a>
@@ -1574,11 +1576,28 @@ function workspaceInfo(string $page, ?array $release = null): void
 for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group')) {
  const summary = menu.querySelector('summary');
  const links = menu.querySelector('.hosted-menu-links');
+ const historyMenu = links.querySelector('.hosted-history-menu');
  const motion = matchMedia('(prefers-reduced-motion: reduce)');
  let closeTimer;
  let mouseLeft = false;
  let animations = [];
  let fadingOut = false;
+
+ function positionHistory() {
+  if (!menu.open || !historyMenu?.open) return;
+  historyMenu.removeAttribute('data-placement');
+  const flyout = historyMenu.querySelector('.hosted-history-links');
+  const anchor = historyMenu.getBoundingClientRect();
+  const bounds = flyout.getBoundingClientRect();
+  const placement = bounds.right <= document.documentElement.clientWidth - 8 ? 'right'
+    : anchor.left >= bounds.width + 8 ? 'left' : 'inline';
+  historyMenu.dataset.placement = placement;
+ }
+ if (historyMenu) {
+  historyMenu.addEventListener('toggle', positionHistory);
+  historyMenu.querySelector('summary').addEventListener('click',()=>{if(!fadingOut)cancelAnimations();});
+  window.addEventListener('resize', positionHistory);
+ }
 
  function cancelAnimations() {
   animations.forEach(animation => animation.cancel());
@@ -1625,6 +1644,7 @@ for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group
    return;
   }
   menu.open = true;
+  positionHistory();
   if (!motion.matches && typeof links.animate === 'function') {
    fadeItems(true).then(cancelAnimations, () => {});
   }
@@ -1639,6 +1659,7 @@ for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group
   if (menu.open && mouseLeft) scheduleClose();
  });
  menu.addEventListener('toggle', () => {
+  if (menu.open) positionHistory();
   if (!menu.open) {
    clearTimeout(closeTimer);
    cancelAnimations();
@@ -1647,6 +1668,11 @@ for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group
  menu.addEventListener('keydown', event => {
   if (event.key !== 'Escape' || !menu.open) return;
   event.preventDefault();
+  if (historyMenu?.open && historyMenu.contains(event.target)) {
+   historyMenu.open = false;
+   historyMenu.querySelector('summary').focus();
+   return;
+  }
   menu.open = false;
   summary.focus();
  });

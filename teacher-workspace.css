@@ -48,6 +48,19 @@
 .teacher-metric strong {grid-column:2;font-size:1.55rem;font-weight:770;line-height:1.2;font-variant-numeric:tabular-nums;}
 .teacher-rooms,.teacher-tools,.teacher-rooms details {scroll-margin-top:1rem;}
 .teacher-rooms h2,.teacher-tools h2 {margin:.1rem 0 .65rem;line-height:1.35;}
+.teacher-tool-groups {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;align-items:start;}
+.teacher-tool-groups-single {grid-template-columns:minmax(0,1fr);}
+.teacher-tool-group {
+ min-width:0;padding:.85rem;border:1px solid var(--line);border-radius:16px;
+ background:color-mix(in srgb,var(--violet) 4%,transparent);
+}
+.teacher-tool-group h3 {display:flex;align-items:center;gap:.45rem;margin:0 0 .65rem;font-size:1rem;line-height:1.35;}
+.teacher-tool-group h3 svg {width:18px;height:18px;color:var(--violet);}
+.teacher-tool-group .school-disclosure {margin:0;}
+.teacher-tool-group .school-disclosure + .school-disclosure {margin-top:.4rem;}
+.teacher-enrollment-tools {grid-column:1/-1;}
+.teacher-tool-group .school-fields :is(fieldset,.actions) {min-width:0;grid-column:1/-1;}
+.teacher-tool-group .tablewrap {max-width:100%;overflow-x:auto;}
 .teacher-rooms .school-cohort {padding:0;overflow:hidden;}
 .teacher-room-heading {
  display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;
@@ -69,6 +82,7 @@
  .teacher-intro {grid-template-columns:auto minmax(0,1fr);}
  .teacher-intro nav {grid-column:1/-1;}
  .teacher-metrics {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .teacher-tool-groups {grid-template-columns:minmax(0,1fr);}
 }
 @media (max-width:520px) {
  .teacher-intro {gap:.65rem;}

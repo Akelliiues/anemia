@@ -18,6 +18,11 @@
  </form>
 </details>
 <?php endif; ?>
+<?php if ($teacher): ?>
+<div class="teacher-tool-groups<?= $manage?'':' teacher-tool-groups-single' ?>">
+<section class="teacher-tool-group" aria-labelledby="teacher-people-tools">
+ <h3 id="teacher-people-tools"><?= workspaceIcon('users') ?> ครูและผู้รับผิดชอบ</h3>
+<?php endif; ?>
 <?php if ($teacher && $school['enabled']): ?>
 <details class="school-disclosure"><?php schoolDisclosureHeading('ข้อมูลครูของฉัน','person'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
@@ -59,7 +64,12 @@
  </tbody></table></div>
  <?php endif; ?>
 </details>
+<?php if ($teacher): ?></section><?php endif; ?>
 <?php if ($school['enabled']): ?>
+<?php if ($teacher): ?>
+<section class="teacher-tool-group" aria-labelledby="teacher-class-tools">
+ <h3 id="teacher-class-tools"><?= workspaceIcon('book') ?> ห้องเรียน</h3>
+<?php endif; ?>
 <details class="school-disclosure"><?php schoolDisclosureHeading('สร้างห้องเรียนตามปีการศึกษา','calendar'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'rooms-create',(int)$school['id']); ?>
@@ -105,6 +115,13 @@
   <button class="action primary">บันทึกการมอบหมาย</button>
  </form>
 </details>
+<?php endif; ?>
+<?php if ($teacher): ?></section><?php endif; ?>
+<?php if ($years): ?>
+<?php if ($teacher): ?>
+<section class="teacher-tool-group teacher-enrollment-tools" aria-labelledby="teacher-enrollment-tools">
+ <h3 id="teacher-enrollment-tools"><?= workspaceIcon('ready') ?> การรับนักเรียน</h3>
+<?php endif; ?>
 <details class="school-disclosure"><?php schoolDisclosureHeading('เปิดหรือปิดรับนักเรียนหลายห้อง','power'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'rooms-accept',(int)$school['id']); ?>
@@ -116,6 +133,9 @@
   <div class="actions"><button class="action primary" name="accepting" value="1">เปิดรับตามช่วงวันที่</button><button class="action" name="accepting" value="0">ปิดรับ</button></div>
  </form>
 </details>
+<?php if ($teacher): ?></section><?php endif; ?>
 <?php endif; ?>
 <?php endif; ?>
+<?php elseif ($teacher): ?></section>
 <?php endif; ?>
+<?php if ($teacher): ?></div><?php endif; ?>

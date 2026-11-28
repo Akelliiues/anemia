@@ -64,7 +64,7 @@ try {
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>พื้นที่ครู · Anemia Portal</title>
 <script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v7">
-<link rel="stylesheet" href="teacher-workspace.css?v=2">
+<link rel="stylesheet" href="teacher-workspace.css?v=3">
 <script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=7"></script>
 <body class="staff-dashboard-page teacher-page"><main class="school-workspace hosted-workspace teacher-workspace">
 <?php if ($preview): ?>

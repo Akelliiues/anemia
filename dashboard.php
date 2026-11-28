@@ -745,7 +745,7 @@ if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบ
 if ($isAdmin) $tabs['members']='สมาชิก';
 if ($isAdmin) $tabs['voice-coach']='Voice Coach';
 $showOverviewCharts = isset($overviewData);
-$tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','staff-features'=>'spark','about'=>'info','release'=>'history','sample-settings'=>'chart','services'=>'spark','contact-queue'=>'phone','scan-request'=>'scan'];
+$tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'ready','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','staff-features'=>'spark','about'=>'info','release'=>'history','sample-settings'=>'chart','services'=>'spark','contact-queue'=>'phone','scan-request'=>'scan'];
 $tabIcons['network']='hospital';
 $tabIcons['members']='users';
 $tabIcons['programme-report']='book';
@@ -847,7 +847,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v192">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v193">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showOverviewCharts): ?>
@@ -936,7 +936,7 @@ function workspaceInfo(string $page, ?array $release = null): void
  </header>
  <?php endif; ?>
  <div class="admin-content" id="staff-report-content">
-  <?php if (!$staffAppView): ?><div class="admin-heading"><div class="workspace-heading-row"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
+  <?php if (!$staffAppView): ?><div class="admin-heading"><div class="workspace-heading-row"><h1 class="title"><span class="workspace-heading-icon" aria-hidden="true"><?= workspaceIcon($tabIcons[$view] ?? 'info') ?></span><span><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></span></h1>
  <?php if ($sampleEnabled && in_array($view,$sampleViews,true)): ?>
   <form class="workspace-data-mode no-print" action="dashboard.php" method="get" aria-label="แหล่งข้อมูล">
    <input type="hidden" name="view" value="<?= esc($view) ?>">

@@ -41,8 +41,21 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
     $token = $_SESSION['csrf'];
     if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='logout' &&
         is_string($_POST['csrf']??null) && hash_equals($token,$_POST['csrf'])) {
+        $previousUser=$_SESSION['username']??null;
         $_SESSION=[];
         session_regenerate_id(true);
+        if (is_string($previousUser)) {
+            try {
+                $config=require __DIR__.'/_private/config.php';
+                require_once __DIR__.'/_private/database.php';
+                require_once __DIR__.'/_private/usage-audit.php';
+                $db=anemiaDatabase($config);
+                initializeAnemia($db,$config);
+                usageAuditStaffSession($db,$previousUser,'logout');
+            } catch (Throwable $error) {
+                error_log('Anemia logout audit failed: '.get_class($error));
+            }
+        }
         $next=$_GET['next']??'';
         $return='participant-account.php?return=portal&method=staff';
         if (in_array($next,['scan','unit-scan','unit-launch','unit-install','mobile'],true)) $return.='&next='.$next;
@@ -75,6 +88,8 @@ if (!$secure && PHP_SAPI !== 'cli-server') {
                     $account = $lookup->fetch(PDO::FETCH_ASSOC);
                     $hash = hash_pbkdf2('sha256', $pass, $account['salt'] ?? str_repeat('0', 48), 600000, 64);
                     if (hash_equals($account['password_hash'] ?? str_repeat('0', 64), $hash) && $account && (int)$account['enabled'] === 1) {
+                        require_once __DIR__.'/_private/usage-audit.php';
+                        usageAuditStaffSession($db,$account['username'],'login');
                         session_regenerate_id(true);
                         $_SESSION = ['username' => $account['username'], 'csrf' => bin2hex(random_bytes(32)), 'until' => time() + 28800];
                         $destination=$account['role']==='school_teacher'?'school-workspace.php':$afterLogin;

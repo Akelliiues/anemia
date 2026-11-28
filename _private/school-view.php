@@ -52,16 +52,18 @@ function schoolParticipationButton(int $id,string $name,bool $enabled,array $sum
     <?php
 }
 
-return static function (PDO $db,array $identity): void {
-    $schoolRoute=$identity['role']==='school_teacher'?[]:['view'=>'schools'];
-    $schoolUrl=$schoolRoute?'dashboard.php':'school-workspace.php';
+return static function (PDO $db,array $identity,?int $previewSchool=null): void {
+    $teacher=$identity['role']==='school_teacher';
+    $preview=$previewSchool!==null;
+    $schoolRoute=$preview?['preview_teacher'=>$identity['username']]:($teacher?[]:['view'=>'schools']);
+    $schoolUrl=$teacher?'school-workspace.php':'dashboard.php';
     anemiaEnsureSchools($db);
     $admin=$identity['role']==='account_admin';
-    $teacher=$identity['role']==='school_teacher';
     $csrf=$_SESSION['csrf']??=bin2hex(random_bytes(32));
-    $notice=$_SESSION['school_notice']??'';
-    unset($_SESSION['school_notice']);
+    $notice=$preview?'':($_SESSION['school_notice']??'');
+    if (!$preview) unset($_SESSION['school_notice']);
     if ($_SERVER['REQUEST_METHOD']==='POST') {
+        if ($preview) { http_response_code(405); exit; }
         if (!is_string($_POST['csrf']??null) || !hash_equals($csrf,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
         try {
             $savedSchool=schoolSave($db,$identity,$_POST);
@@ -113,6 +115,7 @@ return static function (PDO $db,array $identity): void {
         header('Location: '.$schoolUrl.($redirect?'?'.http_build_query($redirect):'').$anchor,true,303); exit;
     }
     [$scope,$params]=schoolScope($identity);
+    if ($preview) { $scope.=' AND s.id=?'; $params[]=$previewSchool; }
     $regions=[];
     $areaProvinces=[];
     $region=0;
@@ -143,6 +146,18 @@ return static function (PDO $db,array $identity): void {
     }
     $schoolId=filter_input(INPUT_GET,'school',FILTER_VALIDATE_INT);
     $school=$schools[$schoolId]??($schools[array_key_first($schools)]??null);
+    $previewTeachers=[];
+    if (!$teacher && $school && $schoolTab==='registry' && usageCanPreviewTeacher($identity)) {
+        $query=$db->prepare("SELECT u.username,COALESCE(p.full_name,u.username) AS name
+            FROM anemia_school_teacher t JOIN anemia_staff u ON u.username=t.username AND u.enabled=1 AND u.role='school_teacher'
+            LEFT JOIN anemia_school_teacher_profile p ON p.username=u.username WHERE t.school_id=? ORDER BY name,u.username");
+        $query->execute([$school['id']]);
+        $previewTeachers=$query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    if ($teacher && !$preview) {
+        usageAuditEnsure($db);
+        usageAuditWrite($db,$identity,'workspace','teacher-workspace',$school);
+    }
     $cohorts=[];
     $members=[];
     $assignments=[];
@@ -166,7 +181,7 @@ return static function (PDO $db,array $identity): void {
         if (!$teacher) $selectedSchoolTotals=schoolReport($db,$identity,$region,$province,0,date('Y-m-d'),false,(int)$school['id']);
         $cohortId=filter_input(INPUT_GET,'cohort',FILTER_VALIDATE_INT);
         if (($admin||$teacher) && isset($cohorts[$cohortId])) {
-            $query=$db->prepare("SELECT COALESCE(NULLIF(p.display_name,''),'') AS display_name, COUNT(DISTINCT w.week_no) AS weeks,
+     $query=$db->prepare("SELECT ".($preview?"''":"COALESCE(NULLIF(p.display_name,''),'')")." AS display_name, COUNT(DISTINCT w.week_no) AS weeks,
                 MAX(a.phase='after') AS completed, MAX(a.phase='before') AS started
                 FROM anemia_school_member m JOIN anemia_school_cohort c ON c.id=m.cohort_id
                 LEFT JOIN anemia_participant_profile p ON p.account_id=m.account_id
@@ -176,7 +191,7 @@ return static function (PDO $db,array $identity): void {
             $query->execute([ANEMIA_PROGRAMME_INSTRUMENT_VERSION,$cohortId]);
             $members=$query->fetchAll(PDO::FETCH_ASSOC);
         }
-        if ($manage) {
+        if ($manage && !$preview) {
             $query=$db->prepare("SELECT t.username,COALESCE(p.full_name,t.username) AS full_name,p.contact,u.enabled FROM anemia_school_teacher t
                 JOIN anemia_staff u ON u.username=t.username AND u.role='school_teacher'
                 LEFT JOIN anemia_school_teacher_profile p ON p.username=t.username WHERE t.school_id=? ORDER BY full_name");
@@ -187,14 +202,14 @@ return static function (PDO $db,array $identity): void {
                 LEFT JOIN anemia_school_teacher_profile p ON p.username=rt.username WHERE r.school_id=?");
             $query->execute([$school['id']]);
             foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $row) $roomTeachers[$row['cohort_id']][$row['duty']]=$row;
-            if (isset($cohorts[$cohortId])) {
+            if ($admin && isset($cohorts[$cohortId])) {
                 $query=$db->prepare("SELECT h.*,COALESCE(p.full_name,h.username) AS full_name FROM anemia_school_room_history h
                     LEFT JOIN anemia_school_teacher_profile p ON p.username=h.username WHERE h.cohort_id=? ORDER BY h.id DESC LIMIT 30");
                 $query->execute([$cohortId]);
                 $roomHistory=$query->fetchAll(PDO::FETCH_ASSOC);
             }
         }
-        if ($teacher) {
+        if ($teacher && !$preview) {
             $query=$db->prepare('SELECT full_name,contact FROM anemia_school_teacher_profile WHERE username=?');
             $query->execute([$identity['username']]);
             $profile=$query->fetch(PDO::FETCH_ASSOC)?:[];
@@ -260,7 +275,7 @@ return static function (PDO $db,array $identity): void {
         $registeredCodes=$query->fetchAll(PDO::FETCH_KEY_PAIR);
     }
     $audit=[];
-    if(($manage || $canAppoint) && $school && $schoolTab!=='tracking') {
+    if($admin && $school && $schoolTab!=='tracking') {
         $query=$db->prepare('SELECT actor,action_name,created_at FROM anemia_school_audit WHERE school_id=? ORDER BY id DESC LIMIT 20');
         $query->execute([$school['id']]);
         $audit=$query->fetchAll(PDO::FETCH_ASSOC);
@@ -268,7 +283,7 @@ return static function (PDO $db,array $identity): void {
     $roomYears=array_values(array_unique(array_map('intval',array_filter(array_column($cohorts,'academic_year')))));
     $roomYear=filter_input(INPUT_GET,'room_year',FILTER_VALIDATE_INT)?:0;
     if (!in_array($roomYear,$roomYears,true)) $roomYear=0;
-    $unassigned=$manage && ($_GET['unassigned']??'')==='1';
+    $unassigned=$manage && !$preview && ($_GET['unassigned']??'')==='1';
     $visibleCohorts=array_filter($cohorts,static fn(array $row): bool =>
         (!$roomYear || $roomYear===(int)$row['academic_year']) &&
         (!$unassigned || ($row['academic_year'] && empty($roomTeachers[$row['id']]['primary']['enabled']))));
@@ -474,7 +489,7 @@ return static function (PDO $db,array $identity): void {
   </div>
   <nav aria-label="ทางลัดพื้นที่ครู">
    <a href="#teacher-rooms"><?= workspaceIcon('book') ?> ห้องเรียน</a>
-   <?php if ($school['enabled']): ?><a href="#school-activities"><?= workspaceIcon($manage?'users':'person') ?> <?= $manage?'จัดการโรงเรียน':'ข้อมูลครู' ?></a><?php endif; ?>
+   <?php if ($school['enabled'] && !$preview): ?><a href="#school-activities"><?= workspaceIcon($manage?'users':'person') ?> <?= $manage?'จัดการโรงเรียน':'ข้อมูลครู' ?></a><?php endif; ?>
   </nav>
  </section>
  <dl class="teacher-metrics" aria-label="<?= $roomYear?'สรุปปีการศึกษา '.$roomYear:'สรุปห้องที่แสดง' ?>">
@@ -504,6 +519,16 @@ return static function (PDO $db,array $identity): void {
   <label><span><?= workspaceIcon('school') ?> โรงเรียน</span><select name="school"><?php foreach($schools as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $item['id']===$school['id']?'selected':'' ?>><?= schoolEscape($item['name'].' · '.$item['province']) ?></option><?php endforeach; ?></select></label>
   <button class="action">แสดงโรงเรียน</button>
  </form>
+ <?php if ($previewTeachers): ?>
+  <form method="get" action="school-workspace.php" class="network-form school-fields">
+   <input type="hidden" name="school" value="<?= (int)$school['id'] ?>">
+   <label><span><?= workspaceIcon('eye') ?> เลือกบัญชีครู</span><select name="preview_teacher" required>
+    <option value="">เลือกครู</option>
+    <?php foreach ($previewTeachers as $candidate): ?><option value="<?= schoolEscape($candidate['username']) ?>"><?= schoolEscape($candidate['name']) ?></option><?php endforeach; ?>
+   </select></label>
+   <button class="action" type="submit"><?= workspaceIcon('eye') ?> ดูในมุมมองครู</button>
+  </form>
+ <?php endif; ?>
  <?php if ($selectedSchoolTotals!==null): ?>
  <div class="admin-kpis hosted-kpis" aria-label="ยอดรวมทุกปีการศึกษา">
   <?php foreach (['members'=>'นักเรียนเข้าร่วม (คน)','started'=>'ส่งแบบประเมินก่อนเรียน (คน)','completed'=>'นักเรียนทำครบ (คน)'] as $metric=>$label): ?>
@@ -523,7 +548,7 @@ return static function (PDO $db,array $identity): void {
   <label>ปีการศึกษา<select name="room_year"><option value="0">ทุกปี</option>
    <?php foreach ($roomYears as $year): ?><option value="<?= $year ?>" <?= $roomYear===$year?'selected':'' ?>><?= $year ?></option><?php endforeach; ?>
   </select></label>
-  <?php if ($manage): ?><label>ผู้รับผิดชอบ<select name="unassigned"><option value="0">ทุกห้อง</option><option value="1" <?= $unassigned?'selected':'' ?>>ห้องที่ยังไม่มีครูหลัก</option></select></label><?php endif; ?>
+  <?php if ($manage && !$preview): ?><label>ผู้รับผิดชอบ<select name="unassigned"><option value="0">ทุกห้อง</option><option value="1" <?= $unassigned?'selected':'' ?>>ห้องที่ยังไม่มีครูหลัก</option></select></label><?php endif; ?>
   <button class="action">กรองห้อง</button>
  </form>
  <?php endif; ?>
@@ -546,10 +571,10 @@ return static function (PDO $db,array $identity): void {
     .' · เข้าร่วม '.number_format((int)$item['members']).' · ส่งก่อนเรียน '.number_format((int)$item['started']).' · ทำครบ '.number_format((int)$item['completed']),'book'); endif; ?>
    <?php if ($teacher): ?><div class="teacher-room-body"><p>ส่งแบบประเมินก่อนเรียน <strong><?= number_format((int)$item['started']) ?> คน</strong></p><?php endif; ?>
    <p><?= schoolEscape($item['opens_on'].' ถึง '.$item['closes_on']) ?> · <?= $item['accepting'] && $school['enabled']?'เปิดรับตามช่วงวันที่':'ปิดรับ' ?></p>
-   <?php if ($manage && $item['academic_year']): ?>
+   <?php if ($manage && !$preview && $item['academic_year']): ?>
     <p>ครูหลัก <?= schoolEscape($roomTeachers[$item['id']]['primary']['full_name']??'ยังไม่ได้มอบหมาย') ?> · ครูร่วม <?= schoolEscape($roomTeachers[$item['id']]['assistant']['full_name']??'ยังไม่ได้มอบหมาย') ?></p>
    <?php endif; ?>
-   <?php if (($admin||$teacher) && $school['enabled']): ?>
+   <?php if (($admin||$teacher) && !$preview && $school['enabled']): ?>
    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
     <?php schoolFields($csrf,'room-target',(int)$school['id'],(int)$item['id']); ?>
     <label>จำนวนเป้าหมาย (คน)<input type="number" name="target" min="1" max="65535" step="1" value="<?= $item['participation_target']===null?'':(int)$item['participation_target'] ?>" aria-describedby="school-target-help-<?= (int)$item['id'] ?>"></label>
@@ -559,8 +584,8 @@ return static function (PDO $db,array $identity): void {
    <?php endif; ?>
    <?php if ($admin||$teacher): ?>
     <a class="action<?= $teacher?' primary':'' ?>" href="<?= schoolEscape($schoolLocation(['school'=>(int)$school['id'],'cohort'=>(int)$item['id']]+($teacher?['room_year'=>$roomYear,'unassigned'=>$unassigned?'1':'0']:[]))) ?><?= $teacher?'#school-room-'.(int)$item['id']:'' ?>"><?= $teacher?workspaceIcon('chart'):'' ?>ดูความคืบหน้ารายคน</a>
-    <details class="school-disclosure"><?php schoolDisclosureHeading('ลิงก์และ QR เข้าร่วม','scan'); ?><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div><button type="button" class="action" data-copy-school-link>คัดลอกลิงก์</button></details>
-    <?php if ($school['enabled'] && ($manage || !$item['academic_year'])): ?>
+    <?php if (!$preview): ?><details class="school-disclosure"><?php schoolDisclosureHeading('ลิงก์และ QR เข้าร่วม','scan'); ?><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div><button type="button" class="action" data-copy-school-link>คัดลอกลิงก์</button></details><?php endif; ?>
+    <?php if (!$preview && $school['enabled'] && ($manage || !$item['academic_year'])): ?>
     <details class="school-disclosure"><?php schoolDisclosureHeading('แก้ไขรุ่น','edit'); ?><form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
      <?php schoolFields($csrf,'cohort-edit',(int)$school['id'],(int)$item['id']); schoolCohortFields($item); ?><button class="action primary">บันทึก</button>
     </form></details>
@@ -580,7 +605,7 @@ return static function (PDO $db,array $identity): void {
   </details>
  <?php endforeach; ?>
 </section>
-<?php if ($teacher && $school['enabled']): ?>
+<?php if ($teacher && !$preview && $school['enabled']): ?>
  <section id="school-activities" class="card teacher-tools">
   <h2><?= workspaceIcon($manage?'users':'person') ?> <?= $manage?'จัดการโรงเรียน':'ข้อมูลครู' ?></h2>
   <?php require __DIR__.'/school-controls.php'; ?>

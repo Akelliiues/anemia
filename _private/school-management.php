@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
+require_once __DIR__.'/usage-audit.php';
 
 function schoolValue(PDO $db,string $sql,array $params): mixed
 {
@@ -21,10 +22,11 @@ function schoolCanAppoint(PDO $db,array $identity,array $school): bool
     };
 }
 
-function schoolAudit(PDO $db,string $actor,string $action,int $school,?int $cohort=null): void
+function schoolAudit(PDO $db,array $identity,string $action,int $school,?int $cohort=null): void
 {
     $db->prepare('INSERT INTO anemia_school_audit (actor,action_name,school_id,cohort_id) VALUES (?,?,?,?)')
-        ->execute([$actor,$action,$school,$cohort]);
+        ->execute([$identity['username'],$action,$school,$cohort]);
+    usageAuditWrite($db,$identity,'school-change',explode(':',$action,2)[0],usageAuditSchool($db,$school),null,$cohort);
 }
 
 function schoolTeacher(PDO $db,int $school,mixed $value,bool $enroll=false): string
@@ -138,6 +140,7 @@ function schoolSave(PDO $db,array $identity,array $input): int
     $action=$input['school_action']??'';
     $school=(int)filter_var($input['school']??null,FILTER_VALIDATE_INT);
     $cohort=(int)filter_var($input['cohort']??null,FILTER_VALIDATE_INT);
+    usageAuditEnsure($db);
     $db->beginTransaction();
     try {
         if ($action==='school-create' || $action==='directory-add') {
@@ -263,12 +266,12 @@ function schoolSave(PDO $db,array $identity,array $input): int
                         if (!schoolValue($db,'SELECT 1 FROM anemia_school_room WHERE school_id=? AND cohort_id=?',[$school,$roomId])) throw new DomainException('ไม่พบห้องเรียนในโรงเรียนนี้');
                         if ($action==='rooms-accept') {
                             $db->prepare('UPDATE anemia_school_cohort SET accepting=? WHERE id=? AND school_id=?')->execute([$accepting,$roomId,$school]);
-                            schoolAudit($db,$actor,$accepting?'room-open':'room-close',$school,$roomId);
+                            schoolAudit($db,$identity,$accepting?'room-open':'room-close',$school,$roomId);
                             continue;
                         }
                         if ($username!=='' && schoolValue($db,'SELECT 1 FROM anemia_school_room_teacher WHERE cohort_id=? AND username=? AND duty<>?',[$roomId,$username,$duty])) throw new DomainException('บัญชีนี้รับผิดชอบอีกบทบาทในห้องที่เลือกอยู่แล้ว');
                         schoolRoomAssignment($db,$roomId,$duty,$username,$actor);
-                        schoolAudit($db,$actor,$action.':'.$duty.':'.$username,$school,$roomId);
+                        schoolAudit($db,$identity,$action.':'.$duty.':'.$username,$school,$roomId);
                     }
                     break;
                 case 'room-target':
@@ -315,7 +318,7 @@ function schoolSave(PDO $db,array $identity,array $input): int
                     throw new DomainException('ไม่พบการดำเนินการ');
             }
         }
-        if (!in_array($action,['room-assign','rooms-accept'],true)) schoolAudit($db,$actor,$action,$school,$cohort?:null);
+        if (!in_array($action,['room-assign','rooms-accept'],true)) schoolAudit($db,$identity,$action,$school,$cohort?:null);
         $db->commit();
         return $school;
     } catch (Throwable $error) {

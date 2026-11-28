@@ -1,4 +1,6 @@
 .teacher-page .teacher-workspace {max-width:74rem;gap:1rem;}
+.teacher-preview-banner {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;border-inline-start:4px solid var(--violet);}
+.teacher-preview-banner p {margin:.15rem 0 0;}
 .teacher-intro {
  position:relative;isolation:isolate;overflow:hidden;
  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:1rem;

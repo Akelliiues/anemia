@@ -32,7 +32,7 @@ function zoneLabel(int $region): string
     return $region === 13 ? 'เขตสุขภาพที่ 13 กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
-if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
+if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'usage-audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
 $unitScanner = $view==='scan-request' && ($_GET['app'] ?? '')==='unit';
 $scannerApp = $unitScanner || $view==='scanner-install';
 $mobileQueue = $view==='contact-queue' && ($_GET['app']??'')==='staff';
@@ -58,6 +58,7 @@ try {
     $db = anemiaDatabase($config);
     initializeAnemia($db, $config);
     require __DIR__ . '/_private/access.php';
+    require_once __DIR__ . '/_private/usage-audit.php';
     $identity = anemiaStaffIdentity($db, (string)$_SESSION['username']);
     if (!$identity) { $_SESSION = []; loginRequired(); }
     if ($identity['role']==='school_teacher') {
@@ -69,6 +70,16 @@ try {
     $canChooseRegion = $isAdmin || $identity['role'] === 'central_report';
     $roleLabel = $isAdmin ? 'ผู้ดูแลระบบ' : ANEMIA_REPORT_ROLES[$identity['role']];
     $schoolSummaryRequest=$view==='overview' && $_SERVER['REQUEST_METHOD']==='GET' && ($_GET['school_summary']??'')==='1';
+    $canUsageAudit=usageCanPreviewTeacher($identity);
+    if ($view==='usage-audit' && !$canUsageAudit) {
+        http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์ดูประวัติการใช้งาน');
+    }
+    if ($view==='usage-audit') {
+        if ($_SERVER['REQUEST_METHOD']!=='GET') { http_response_code(405); exit('หน้านี้ใช้สำหรับดูประวัติเท่านั้น'); }
+        require_once __DIR__.'/_private/schools.php';
+        anemiaEnsureSchools($db);
+        usageAuditEnsure($db);
+    }
     if ($view==='overview' || ($view==='programme-report' && $isAdmin)) {
         if (!$canChooseRegion) $region=(int)($identity['province_region']??$identity['region']);
         $schoolSummary=null;
@@ -111,6 +122,10 @@ try {
     if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','services','members','programme-report'],true) && !$isAdmin) ||
         (in_array($view,['contact-queue','scan-request','scanner-install'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
         http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์เข้าหน้านี้');
+    }
+    if (($_GET['counts']??'')!=='1' && ($_GET['school_summary']??'')!=='1') {
+        usageAuditEnsure($db);
+        usageAuditWrite($db,$identity,$_SERVER['REQUEST_METHOD']==='POST'?'submission':'workspace',$view);
     }
     $scanUnit = $isAdmin ? 'ตามสิทธิ์ผู้ดูแลระบบ' : '';
     if (!$isAdmin && $canQueue && $staffAppView) {
@@ -655,6 +670,8 @@ $tabIcons['members']='users';
 $tabIcons['programme-report']='book';
 $tabs['schools']='กิจกรรมโรงเรียน';
 $tabIcons['schools']='users';
+if ($canUsageAudit) $tabs['usage-audit']='ประวัติการใช้งาน';
+$tabIcons['usage-audit']='history';
 $scopeName = $identity['role'] === 'provincial_report' ? ($provinces[0]['name'] ?? 'จังหวัดที่รับผิดชอบ') : ($region ? zoneLabel($region) : 'ทุกเขตสุขภาพ');
 function accessFields(array $record, array $provinces): void
 {
@@ -786,7 +803,7 @@ function workspaceInfo(string $page, ?array $release = null): void
         ['ภาพรวม','chart',['overview']],
         ['รายงาน','map',['reports','activity','evaluation','programme-report','schools']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
-        ['ระบบ','users',['members','access','audit','sample-settings','network','services']],
+        ['ระบบ','users',['members','access','usage-audit','audit','sample-settings','network','services']],
         ['แบบประเมิน','ready',['assessment']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];
@@ -797,7 +814,7 @@ function workspaceInfo(string $page, ?array $release = null): void
         $hasCurrent = in_array($view,$keys,true);
         if (count($keys) === 1): $key = $keys[0];
    ?>
-    <a class="admin-tab" href="dashboard.php?view=<?= esc($key) ?>" <?= $hasCurrent ? 'aria-current="page"' : '' ?>><?= workspaceIcon($groupIcon) ?><?= esc($groupLabel) ?></a>
+    <a class="admin-tab" href="dashboard.php?view=<?= esc($key) ?>" <?= $hasCurrent ? 'aria-current="page"' : '' ?>><?= workspaceIcon($key==='usage-audit'?'history':$groupIcon) ?><?= esc($key==='usage-audit'?$tabs[$key]:$groupLabel) ?></a>
    <?php else: ?>
     <details class="hosted-menu-group<?= in_array($keys[0],['contact-queue','access'],true)?' hosted-menu-align-end':'' ?>" name="hosted-navigation" <?= $hasCurrent ? 'data-current' : '' ?>>
      <summary class="admin-tab">
@@ -1098,6 +1115,8 @@ function workspaceInfo(string $page, ?array $release = null): void
     <?php endif; ?>
   <?php endforeach; ?>
   </div>
+  <?php elseif ($view === 'usage-audit'): ?>
+   <?php require __DIR__ . '/_private/usage-audit-view.php'; ?>
   <?php elseif ($view === 'audit'): ?>
   <section class="card admin-report"><h2>การเปลี่ยนสิทธิ์ล่าสุด</h2><p>แสดงสูงสุด 100 รายการ</p>
    <?php if (!$auditRows): ?><p>ยังไม่มีประวัติการเปลี่ยนสิทธิ์</p><?php else: ?>

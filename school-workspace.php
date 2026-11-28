@@ -24,14 +24,28 @@ try {
     initializeAnemia($db,$config);
     $identity=anemiaStaffIdentity($db,$_SESSION['username']);
     if (!$identity) { http_response_code(403); exit('บัญชีนี้เข้าใช้งานไม่ได้'); }
-    if ($identity['role']!=='school_teacher' && $_SERVER['REQUEST_METHOD']!=='POST') {
+    $actor=$identity;
+    $preview=array_key_exists('preview_teacher',$_GET);
+    if ($preview) {
+        if ($_SERVER['REQUEST_METHOD']!=='GET') { http_response_code(405); exit('มุมมองครูใช้สำหรับเปิดดูเท่านั้น'); }
+        require_once __DIR__.'/_private/schools.php';
+        anemiaEnsureSchools($db);
+        $teacher=$_GET['preview_teacher'];
+        $schoolId=filter_input(INPUT_GET,'school',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+        $school=is_string($teacher) && strlen($teacher)<=40 && $schoolId ? usageTeacherPreview($db,$actor,$schoolId,$teacher):null;
+        if (!$school) { http_response_code(403); exit('บัญชีนี้ไม่มีสิทธิ์ดูมุมมองครูที่เลือก'); }
+        usageAuditEnsure($db);
+        usageAuditWrite($db,$actor,'teacher-preview','teacher-workspace',$school,$school['username']);
+        $identity=['username'=>$school['username'],'role'=>'school_teacher'];
+        $back='dashboard.php?'.http_build_query(['view'=>'schools','region'=>$school['region'],'province'=>$school['province_code'],'school'=>$schoolId]).'#school-activities';
+    } elseif ($identity['role']!=='school_teacher' && $_SERVER['REQUEST_METHOD']!=='POST') {
         $query=['view'=>'schools']+array_intersect_key($_GET,array_flip(['region','province','school','cohort','district','q','school_tab','year','school_status','room_year','unassigned','directory_page']));
         header('Location: dashboard.php?'.http_build_query($query),true,303); exit;
     }
     $renderSchools=require __DIR__.'/_private/school-view.php';
     $csrf=$_SESSION['csrf']??=bin2hex(random_bytes(32));
     ob_start();
-    $renderSchools($db,$identity);
+    $renderSchools($db,$identity,$preview?(int)$schoolId:null);
     $schoolContent=ob_get_clean();
 } catch(Throwable $error) {
     http_response_code(503); error_log('Anemia schools unavailable: '.get_class($error)); exit('ยังเปิดกิจกรรมโรงเรียนไม่ได้ กรุณาลองอีกครั้ง');
@@ -49,11 +63,17 @@ try {
  <div class="admin-top-main">
   <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">พื้นที่ครู</span></div></div>
   <div class="workspace-account">
-   <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('person') ?></span><span><strong><?= schoolEscape($identity['username']) ?></strong><small>บัญชีครู</small></span></div>
+   <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('person') ?></span><span><strong><?= schoolEscape($actor['username']) ?></strong><small><?= $preview?'บัญชีผู้ดูแล':'บัญชีครู' ?></small></span></div>
    <form class="hosted-logout" method="post" action="login.php"><input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
   </div>
  </div>
 </header>
+<?php if ($preview): ?>
+<section class="card teacher-preview-banner" aria-label="สถานะมุมมองครู">
+ <div><strong><?= workspaceIcon('eye') ?> กำลังดูในมุมมองครู</strong><p><?= schoolEscape($identity['username']) ?> · อ่านอย่างเดียว</p></div>
+ <a class="action" href="<?= schoolEscape($back) ?>"><?= workspaceIcon('back') ?> กลับสู่หลังบ้าน</a>
+</section>
+<?php endif; ?>
 <?= $schoolContent ?>
 </main>
 <?php require __DIR__ . '/_private/staff-footer.php'; ?>

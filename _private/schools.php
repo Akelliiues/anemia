@@ -71,7 +71,7 @@ function schoolDirectoryEntry(string $province,string $code): ?array
 function schoolJoinState(PDO $db,string $code,?string $account,bool $posting,string $today): array
 {
     if ($posting && !$db->inTransaction()) throw new LogicException('School enrollment requires a transaction');
-    $query=$db->prepare('SELECT c.id,c.title,c.classroom,c.accepting,c.opens_on,c.closes_on,s.name,s.enabled,r.academic_year
+    $query=$db->prepare('SELECT c.id,c.school_id,c.title,c.classroom,c.accepting,c.opens_on,c.closes_on,s.name,s.enabled,r.academic_year
         FROM anemia_school_cohort c JOIN anemia_school s ON s.id=c.school_id LEFT JOIN anemia_school_room r ON r.cohort_id=c.id
         WHERE c.invite=?'.($posting?' FOR UPDATE':''));
     $query->execute([$code]);

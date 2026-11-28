@@ -35,12 +35,18 @@ if ($valid) {
         if ($posting && (!is_string($_POST['csrf']??null) || !hash_equals($csrf,$_POST['csrf']))) {
             http_response_code(403); exit('คำขอหมดอายุ');
         }
-        if ($posting) $db->beginTransaction();
+        if ($posting) {
+            usageAuditEnsure($db);
+            $db->beginTransaction();
+        }
         if (!is_string($account) || anemiaParticipantEpoch($db,$account)!==$epoch) $account=null;
         $state=schoolJoinState($db,$code,$account,$posting,date('Y-m-d'));
         ['cohort'=>$cohort,'open'=>$open,'joined'=>$joined]=$state;
         if ($posting) {
             schoolConfirmEnrollment($db,$state,$account);
+            if (!$joined) {
+                usageAuditWrite($db,['username'=>'','role'=>'participant'],'enrollment','school-join',usageAuditSchool($db,(int)$cohort['school_id']),null,(int)$cohort['id']);
+            }
             $db->commit();
             unset($_SESSION['school_invite']);
             header('Location: participant-programme.php?room='.(int)$cohort['id'],true,303); exit;

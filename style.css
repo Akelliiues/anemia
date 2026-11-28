@@ -1599,7 +1599,10 @@ button.workspace-identity:is(:hover,:focus-visible) {background:#ffffff24;}
 }
 .facility-options-state[data-available=true] {background:light-dark(#e0f2ea,#254739);color:light-dark(#176047,#a9ead4);}
 .facility-options .actions {justify-content:center;}
-.facility-options .actions .action {min-height:44px;border-radius:12px;gap:.4rem;text-decoration:none;}
+.facility-options .actions .action {
+ flex:1 1 11rem;min-width:0;max-width:20rem;min-height:52px;
+ padding:.65rem 1.15rem;border-radius:14px;gap:.55rem;text-decoration:none;
+}
 .facility-options .actions svg,.facility-options-state svg {width:1rem;height:1rem;flex:none;}
 .facility-options-body .notice {margin:.65rem 0 0;}
 [data-anemia-theme=dark] .facility-options {background:#292035;color:var(--ink);border-color:var(--line);}

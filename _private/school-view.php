@@ -52,7 +52,7 @@ function schoolParticipationButton(int $id,string $name,bool $enabled,array $sum
     <?php
 }
 
-return static function (PDO $db,array $identity,?int $previewSchool=null): void {
+return static function (PDO $db,array $identity,?int $previewSchool=null,?callable $teacherBrand=null): void {
     $teacher=$identity['role']==='school_teacher';
     $preview=$previewSchool!==null;
     $schoolRoute=$preview?['preview_teacher'=>$identity['username']]:($teacher?[]:['view'=>'schools']);
@@ -88,6 +88,7 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
             foreach (['room_year','unassigned'] as $key) {
                 if (is_string($_GET[$key]??null) && ctype_digit($_GET[$key])) $redirect[$key]=$_GET[$key];
             }
+            if (in_array($_GET['room_metric']??'',['members','started','completed'],true)) $redirect['room_metric']=$_GET['room_metric'];
         }
         if ($schoolId) $redirect['school']=$schoolId;
         if (($_POST['school_action']??'')==='school-create' && is_string($_POST['province']??null) && ctype_digit($_POST['province'])) {
@@ -283,6 +284,8 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
     $visibleCohorts=array_filter($cohorts,static fn(array $row): bool =>
         (!$roomYear || $roomYear===(int)$row['academic_year']) &&
         (!$unassigned || ($row['academic_year'] && empty($roomTeachers[$row['id']]['primary']['enabled']))));
+    $roomMetric=$teacher && in_array($_GET['room_metric']??'',['members','started','completed'],true)?$_GET['room_metric']:'';
+    $roomRows=$roomMetric===''?$visibleCohorts:array_filter($visibleCohorts,static fn(array $row): bool => (int)$row[$roomMetric]>0);
     $pageRows=array_slice($listedSchools,($directoryPage-1)*$directoryPageSize,$directoryPageSize);
     $directorySchool=static fn(array $row)=>$registeredCodes[$row['code']]??$registeredSchools[$row['name']]??$registeredSchools[$row['legacy_name']??'']??null;
     $participation=[];
@@ -292,7 +295,7 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
         $participation=schoolParticipation($db,array_values(array_unique($ids)));
     }
     $postFilters=$areaFilters+array_filter($directoryFilters+['directory_page'=>$directoryPage>1?$directoryPage:null,'return_school'=>$school['id']??null]);
-    if ($teacher) $postFilters=array_filter(['room_year'=>$roomYear,'unassigned'=>$unassigned?'1':null]);
+    if ($teacher) $postFilters=array_filter(['room_year'=>$roomYear,'unassigned'=>$unassigned?'1':null,'room_metric'=>$roomMetric]);
     $schoolPostUrl='school-workspace.php'.($postFilters?'?'.http_build_query($postFilters):'');
 ?>
 <div class="school-workspace" data-school-workspace>
@@ -467,7 +470,9 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
  </p>
 </section>
 <?php endif; ?>
-<?php if (!$school): ?><section class="card"><?php if ($teacher): ?><h1 class="title"><?= workspaceIcon('school') ?> พื้นที่ครู</h1><?php endif; ?><p><?= $teacher?'บัญชีนี้ยังไม่ได้ผูกกับโรงเรียน ติดต่อผู้ประสานงานโรงเรียนเพื่อตรวจสอบสิทธิ์':($province===''?'เลือกจังหวัดแล้วกดแสดงโรงเรียน':'ยังไม่มีโรงเรียนในทะเบียนของจังหวัดนี้') ?></p></section>
+<?php if (!$school): ?>
+<?php if ($teacherBrand): ?><header class="teacher-header-shell"><?php $teacherBrand(); ?></header><?php endif; ?>
+<section class="card"><?php if ($teacher): ?><h1 class="title"><?= workspaceIcon('school') ?> พื้นที่ครู</h1><?php endif; ?><p><?= $teacher?'บัญชีนี้ยังไม่ได้ผูกกับโรงเรียน ติดต่อผู้ประสานงานโรงเรียนเพื่อตรวจสอบสิทธิ์':($province===''?'เลือกจังหวัดแล้วกดแสดงโรงเรียน':'ยังไม่มีโรงเรียนในทะเบียนของจังหวัดนี้') ?></p></section>
 <?php else: ?>
 <?php if ($teacher): ?>
  <?php
@@ -476,7 +481,16 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
      foreach ($teacherTotals as $metric=>$total) $teacherTotals[$metric]+=(int)$room[$metric];
  }
  $today=date('Y-m-d');
+ $roomFilters=['school'=>(int)$school['id'],'room_year'=>$roomYear,'unassigned'=>$unassigned?'1':'0'];
+ $roomMetrics=[
+  ''=>['book','ห้องทั้งหมด',count($visibleCohorts)],
+  'members'=>['users','นักเรียนเข้าร่วม',$teacherTotals['members']],
+  'started'=>['layout','ส่งแบบประเมินก่อนเรียน',$teacherTotals['started']],
+  'completed'=>['ready','ทำกิจกรรมครบ',$teacherTotals['completed']],
+ ];
  ?>
+ <header class="teacher-header-shell">
+ <?php if ($teacherBrand) $teacherBrand(); ?>
  <section class="teacher-intro" aria-labelledby="teacher-school-title">
   <span class="teacher-intro-icon"><?= workspaceIcon('school') ?></span>
   <div><span class="teacher-eyebrow"><?= $manage?'ผู้ประสานงานโรงเรียน':'ครูประจำห้อง' ?> · <?= schoolEscape($school['province']) ?></span>
@@ -484,18 +498,19 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
    <p>กิจกรรมเรียนรู้ 12 สัปดาห์<?php if (!$school['enabled']): ?> · หยุดรับนักเรียนใหม่<?php endif; ?></p>
   </div>
   <nav aria-label="ทางลัดพื้นที่ครู">
-   <a href="#teacher-rooms"><?= workspaceIcon('book') ?> ห้องเรียน</a>
+   <a href="<?= schoolEscape($schoolLocation($roomFilters)) ?>#teacher-rooms"><?= workspaceIcon('book') ?> ห้องเรียน</a>
    <?php if ($school['enabled'] && !$preview): ?><a href="#school-activities"><?= workspaceIcon($manage?'users':'person') ?> <?= $manage?'จัดการโรงเรียน':'ข้อมูลครู' ?></a><?php endif; ?>
   </nav>
  </section>
- <dl class="teacher-metrics" aria-label="<?= $roomYear?'สรุปปีการศึกษา '.$roomYear:'สรุปห้องที่แสดง' ?>">
-  <?php foreach ([
-   ['book','ห้องที่แสดง',count($visibleCohorts)],['users','นักเรียนเข้าร่วม',$teacherTotals['members']],
-   ['layout','ส่งแบบประเมินก่อนเรียน',$teacherTotals['started']],['ready','ทำกิจกรรมครบ',$teacherTotals['completed']]
-  ] as [$icon,$label,$total]): ?>
-   <div><span class="teacher-metric-icon"><?= workspaceIcon($icon) ?></span><dt><?= $label ?></dt><dd><?= number_format($total) ?></dd></div>
+ </header>
+ <nav class="teacher-metrics" aria-label="<?= $roomYear?'กรองห้องปีการศึกษา '.$roomYear:'กรองห้องตามความคืบหน้า' ?>">
+  <?php foreach ($roomMetrics as $key=>[$icon,$label,$total]): ?>
+   <a class="teacher-metric" href="<?= schoolEscape($schoolLocation($roomFilters+($key!==''?['room_metric'=>$key]:[]))) ?>#teacher-rooms" <?= $roomMetric===$key?'aria-current="true"':'' ?>>
+    <span class="teacher-metric-icon"><?= workspaceIcon($icon) ?></span><span class="teacher-metric-label"><?= $label ?></span>
+    <strong><?= number_format($total) ?></strong><span class="teacher-metric-arrow"><?= workspaceIcon('next') ?></span>
+   </a>
   <?php endforeach; ?>
- </dl>
+ </nav>
 <?php endif; ?>
 <?php if (!$teacher): ?>
 <section class="card" id="school-activities" aria-labelledby="school-activities-title">
@@ -541,6 +556,7 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
   <?php foreach ($schoolRoute+$areaFilters+['school'=>$school['id']] as $key=>$value): ?>
    <input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>">
   <?php endforeach; ?>
+  <?php if ($roomMetric!==''): ?><input type="hidden" name="room_metric" value="<?= schoolEscape($roomMetric) ?>"><?php endif; ?>
   <label>ปีการศึกษา<select name="room_year"><option value="0">ทุกปี</option>
    <?php foreach ($roomYears as $year): ?><option value="<?= $year ?>" <?= $roomYear===$year?'selected':'' ?>><?= $year ?></option><?php endforeach; ?>
   </select></label>
@@ -548,8 +564,9 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
   <button class="action">กรองห้อง</button>
  </form>
  <?php endif; ?>
- <?php if (!$visibleCohorts): ?><p><?= $cohorts?'ไม่พบห้องตามตัวกรอง':($teacher?($manage?'ยังไม่มีห้องเรียน เริ่มได้จากเมนูจัดการโรงเรียน':'ยังไม่มีห้องที่มอบหมายให้บัญชีนี้'):'ยังไม่มีรุ่นกิจกรรม') ?></p><?php endif; ?>
- <?php foreach($visibleCohorts as $item): ?>
+ <?php if ($roomMetric!==''): ?><p class="teacher-room-filter">ตัวกรอง <strong><?= $roomMetrics[$roomMetric][1] ?></strong> · <?= number_format(count($roomRows)) ?> ห้อง</p><?php endif; ?>
+ <?php if (!$roomRows): ?><p><?= $cohorts?'ไม่พบห้องตามตัวกรอง':($teacher?($manage?'ยังไม่มีห้องเรียน เริ่มได้จากเมนูจัดการโรงเรียน':'ยังไม่มีห้องที่มอบหมายให้บัญชีนี้'):'ยังไม่มีรุ่นกิจกรรม') ?></p><?php endif; ?>
+ <?php foreach($roomRows as $item): ?>
   <details class="school-cohort school-disclosure" id="school-room-<?= (int)$item['id'] ?>" <?= (int)$item['id']===($cohortId??null)?'open':'' ?>>
    <?php if ($teacher):
       $roomOpen=$school['enabled'] && $item['accepting'] && $today >= $item['opens_on'] && $today <= $item['closes_on'];
@@ -558,7 +575,7 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
     <summary class="teacher-room-heading">
      <span class="teacher-metric-icon"><?= workspaceIcon('book') ?></span>
      <span class="teacher-room-name"><strong><?= schoolEscape($item['classroom']) ?></strong><small><?= $item['academic_year']?'ปีการศึกษา '.(int)$item['academic_year']:schoolEscape($item['title']) ?></small></span>
-     <span class="teacher-room-counts"><span><b><?= number_format((int)$item['members']) ?></b> เข้าร่วม</span><span><b><?= number_format((int)$item['completed']) ?></b> ทำครบ</span></span>
+     <span class="teacher-room-counts"><span><b><?= number_format((int)$item['members']) ?></b> เข้าร่วม</span><?php if ($roomMetric==='started'): ?><span><b><?= number_format((int)$item['started']) ?></b> ส่งก่อนเรียน</span><?php endif; ?><span><b><?= number_format((int)$item['completed']) ?></b> ทำครบ</span></span>
      <span class="teacher-room-status<?= $roomOpen?' is-open':'' ?>"><?= $roomStatus ?></span>
      <span class="teacher-chevron"><?= workspaceIcon('next') ?></span>
     </summary>
@@ -579,7 +596,7 @@ return static function (PDO $db,array $identity,?int $previewSchool=null): void 
    </form>
    <?php endif; ?>
    <?php if ($admin||$teacher): ?>
-    <a class="action<?= $teacher?' primary':'' ?>" href="<?= schoolEscape($schoolLocation(['school'=>(int)$school['id'],'cohort'=>(int)$item['id']]+($teacher?['room_year'=>$roomYear,'unassigned'=>$unassigned?'1':'0']:[]))) ?><?= $teacher?'#school-room-'.(int)$item['id']:'' ?>"><?= $teacher?workspaceIcon('chart'):'' ?>ดูความคืบหน้ารายคน</a>
+    <a class="action<?= $teacher?' primary':'' ?>" href="<?= schoolEscape($schoolLocation(['school'=>(int)$school['id'],'cohort'=>(int)$item['id']]+($teacher?$roomFilters+['room_metric'=>$roomMetric]:[]))) ?><?= $teacher?'#school-room-'.(int)$item['id']:'' ?>"><?= $teacher?workspaceIcon('chart'):'' ?>ดูความคืบหน้ารายคน</a>
     <?php if (!$preview): ?><details class="school-disclosure"><?php schoolDisclosureHeading('ลิงก์และ QR เข้าร่วม','scan'); ?><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div><button type="button" class="action" data-copy-school-link>คัดลอกลิงก์</button></details><?php endif; ?>
     <?php if (!$preview && $school['enabled'] && ($manage || !$item['academic_year'])): ?>
     <details class="school-disclosure"><?php schoolDisclosureHeading('แก้ไขรุ่น','edit'); ?><form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">

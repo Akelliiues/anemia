@@ -1,15 +1,21 @@
 .teacher-page .teacher-workspace {max-width:74rem;gap:1rem;}
 .teacher-preview-banner {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;border-inline-start:4px solid var(--violet);}
 .teacher-preview-banner p {margin:.15rem 0 0;}
-.teacher-intro {
- position:relative;isolation:isolate;overflow:hidden;
- display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:1rem;
- padding:clamp(1rem,3vw,2rem);border-radius:22px;color:#fff;
- background:linear-gradient(115deg,#25183e 12%,#44285c 72%,#624775);
+.teacher-header-shell {
+ position:relative;isolation:isolate;overflow:hidden;border-radius:22px;border:1px solid #ffffff26;
+ background:linear-gradient(115deg,#25183e 12%,#44285c 72%,#624775);color:#fff;
 }
-.teacher-intro::before {
+.teacher-header-shell::before {
  position:absolute;inset:0;z-index:-1;content:"";pointer-events:none;
  background:repeating-radial-gradient(circle at 92% 20%,transparent 0 24px,#fff1 25px 26px);
+}
+.teacher-workspace .admin-top-main.teacher-brand-row {
+ margin:0;padding:clamp(.65rem,2vw,1rem) clamp(1rem,3vw,2rem);gap:.5rem;
+}
+.teacher-brand-row + .teacher-intro {border-top:1px solid #ffffff26;}
+.teacher-intro {
+ display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:1rem;
+ padding:clamp(.85rem,2.5vw,1.55rem) clamp(1rem,3vw,2rem);
 }
 .teacher-intro-icon,.teacher-metric-icon {
  display:grid;place-items:center;flex:none;border-radius:13px;width:42px;height:42px;
@@ -29,14 +35,17 @@
 .teacher-intro nav a:hover {background:#fff3;}
 .teacher-intro nav svg,.teacher-chevron svg {width:17px;height:17px;}
 .teacher-metrics {margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;}
-.teacher-metrics > div {
- display:grid;grid-template-columns:auto minmax(0,1fr);align-content:center;align-items:center;
+.teacher-metric {
+ display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-content:center;align-items:center;
  gap:0 .65rem;border:1px solid var(--line);border-radius:16px;padding:.75rem;
- background:color-mix(in srgb,var(--violet) 5%,transparent);
+ background:light-dark(#faf7ff,#2c2437);color:var(--ink);text-decoration:none;
 }
-.teacher-metrics .teacher-metric-icon {grid-row:span 2;}
-.teacher-metrics dt,.teacher-room-name small,.teacher-room-counts {color:var(--muted);font-size:.875rem;line-height:1.35;}
-.teacher-metrics dd {margin:0;color:var(--ink);font-size:1.55rem;font-weight:770;line-height:1.2;font-variant-numeric:tabular-nums;}
+.teacher-metric:hover,.teacher-metric[aria-current] {border-color:var(--violet);background:light-dark(#eee7fb,#3b2c4f);}
+.teacher-metrics .teacher-metric-icon,.teacher-metric-arrow {grid-row:span 2;}
+.teacher-metric-arrow {grid-column:3;grid-row:1/3;color:var(--violet);}
+.teacher-metric-arrow svg {width:16px;height:16px;}
+.teacher-metric-label,.teacher-room-name small,.teacher-room-counts {color:var(--muted);font-size:.875rem;line-height:1.35;}
+.teacher-metric strong {grid-column:2;font-size:1.55rem;font-weight:770;line-height:1.2;font-variant-numeric:tabular-nums;}
 .teacher-rooms,.teacher-tools,.teacher-rooms details {scroll-margin-top:1rem;}
 .teacher-rooms h2,.teacher-tools h2 {margin:.1rem 0 .65rem;line-height:1.35;}
 .teacher-rooms .school-cohort {padding:0;overflow:hidden;}
@@ -65,7 +74,8 @@
  .teacher-intro {gap:.65rem;}
  .teacher-intro-icon {width:44px;height:44px;}
  .teacher-intro-icon svg {width:23px;height:23px;}
- .teacher-metrics > div {padding:.55rem;gap:0 .4rem;}
+ .teacher-metric {padding:.55rem;gap:0 .4rem;}
+ .teacher-metric-label {font-size:.75rem;}
  .teacher-metrics .teacher-metric-icon,.teacher-room-heading .teacher-metric-icon {width:30px;height:30px;}
  .teacher-metric-icon svg {width:17px;height:17px;}
  .teacher-room-heading {grid-template-columns:auto minmax(0,1fr) auto auto;gap:.3rem .45rem;padding:.55rem;}

@@ -44,8 +44,17 @@ try {
     }
     $renderSchools=require __DIR__.'/_private/school-view.php';
     $csrf=$_SESSION['csrf']??=bin2hex(random_bytes(32));
+    $teacherBrand=static function () use ($actor,$preview,$csrf): void { ?>
+     <div class="admin-top-main teacher-brand-row">
+      <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">พื้นที่ครู</span></div></div>
+      <div class="workspace-account">
+       <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('person') ?></span><span><strong><?= schoolEscape($actor['username']) ?></strong><small><?= $preview?'บัญชีผู้ดูแล':'บัญชีครู' ?></small></span></div>
+       <form class="hosted-logout" method="post" action="login.php"><input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
+      </div>
+     </div>
+    <?php };
     ob_start();
-    $renderSchools($db,$identity,$preview?(int)$schoolId:null);
+    $renderSchools($db,$identity,$preview?(int)$schoolId:null,$teacherBrand);
     $schoolContent=ob_get_clean();
 } catch(Throwable $error) {
     http_response_code(503); error_log('Anemia schools unavailable: '.get_class($error)); exit('ยังเปิดกิจกรรมโรงเรียนไม่ได้ กรุณาลองอีกครั้ง');
@@ -55,19 +64,9 @@ try {
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>พื้นที่ครู · Anemia Portal</title>
 <script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v7">
-<link rel="stylesheet" href="teacher-workspace.css?v=1">
+<link rel="stylesheet" href="teacher-workspace.css?v=2">
 <script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=7"></script>
 <body class="staff-dashboard-page teacher-page"><main class="school-workspace hosted-workspace teacher-workspace">
-<header class="admin-top no-print">
- <div class="workspace-header-art" aria-hidden="true"></div>
- <div class="admin-top-main">
-  <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">พื้นที่ครู</span></div></div>
-  <div class="workspace-account">
-   <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('person') ?></span><span><strong><?= schoolEscape($actor['username']) ?></strong><small><?= $preview?'บัญชีผู้ดูแล':'บัญชีครู' ?></small></span></div>
-   <form class="hosted-logout" method="post" action="login.php"><input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
-  </div>
- </div>
-</header>
 <?php if ($preview): ?>
 <section class="card teacher-preview-banner" aria-label="สถานะมุมมองครู">
  <div><strong><?= workspaceIcon('eye') ?> กำลังดูในมุมมองครู</strong><p><?= schoolEscape($identity['username']) ?> · อ่านอย่างเดียว</p></div>

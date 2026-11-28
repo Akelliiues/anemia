@@ -540,6 +540,17 @@ try {
         $provinces = anemiaSampleProvinces($provinces,$sampleAllRegions);
         $stats['province_enabled'] = array_sum(array_column($provinces,'enabled'));
     }
+    if ($isAdmin && $view==='overview') {
+        $overviewData=['region'=>$region,'rows'=>null,'periods'=>null,'year'=>$_GET['overview_year']??null,'month'=>$_GET['overview_month']??null];
+        if (!$sampleMode) {
+            require_once __DIR__.'/_private/overview-counts.php';
+            $now=new DateTimeImmutable('first day of this month');
+            $from=$now->setDate((int)$now->format('Y')-2,1,1);
+            $until=$now->modify('+1 month');
+            $overviewData['periods']=array_map(static fn(DateTimeInterface $month): string => $month->format('Y-m'),iterator_to_array(new DatePeriod($from,new DateInterval('P1M'),$until),false));
+            $overviewData['rows']=anemiaOverviewCounts($db,$from->format('Y-m-d'),$until->format('Y-m-d'));
+        }
+    }
     if ($view==='reports') {
         require_once __DIR__.'/_private/province-report.php';
         $reportMonth=$evaluationMonth ?: date('Y-m');
@@ -733,7 +744,7 @@ if ($isAdmin) $tabs['programme-report']='ผลการเรียนรู้
 if ($canNetwork) $tabs['network']='เครือข่ายหน่วยบริการ';
 if ($isAdmin) $tabs['members']='สมาชิก';
 if ($isAdmin) $tabs['voice-coach']='Voice Coach';
-$showSample = $isAdmin && $view === 'overview' && $sampleMode;
+$showOverviewCharts = isset($overviewData);
 $tabIcons = ['overview'=>'chart','reports'=>'map','evaluation'=>'ready','activity'=>'chart','assessment'=>'report','access'=>'users','audit'=>'history','team'=>'users','guide'=>'book','staff-features'=>'spark','about'=>'info','release'=>'history','sample-settings'=>'chart','services'=>'spark','contact-queue'=>'phone','scan-request'=>'scan'];
 $tabIcons['network']='hospital';
 $tabIcons['members']='users';
@@ -839,11 +850,11 @@ function workspaceInfo(string $page, ?array $release = null): void
 <title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v184">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
-<?php if ($showSample): ?>
+<?php if ($showOverviewCharts): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=staff-details-v20"></script>
-<script defer src="hosted-dashboard.js?v=scroll-v4"></script>
+<script defer src="admin.js?v=staff-details-v21"></script>
+<script defer src="hosted-dashboard.js?v=scroll-v5"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
 <?php if ($view==='schools'): ?><script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=7"></script><?php endif; ?>
@@ -928,6 +939,10 @@ function workspaceInfo(string $page, ?array $release = null): void
    <input type="hidden" name="view" value="<?= esc($view) ?>">
    <input type="hidden" name="region" value="<?= $region ?>">
    <input type="hidden" name="month" value="<?= esc($evaluationMonth) ?>">
+   <?php if ($showOverviewCharts): ?>
+    <input type="hidden" name="overview_year">
+    <input type="hidden" name="overview_month">
+   <?php endif; ?>
    <?php if ($view==='evaluation'): ?>
     <input type="hidden" name="audience" value="<?= esc($evaluationAudience) ?>">
     <input type="hidden" name="version" value="<?= esc($selectedVersion) ?>">
@@ -946,8 +961,9 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php if ($view==='scan-request'): ?><a class="action no-print" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a><?php endif; ?>
   </div>
   <?php endif; ?>
-  <?php if ($showSample): ?>
-  <section class="hosted-sample" aria-label="แดชบอร์ดข้อมูลจำลอง">
+  <?php if ($showOverviewCharts): ?>
+  <section class="hosted-sample" aria-label="แดชบอร์ดการคัดกรองและติดตาม">
+   <script type="application/json" id="hosted-overview-data"><?= json_encode($overviewData,JSON_HEX_TAG|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR) ?></script>
    <div id="hosted-sample-dashboard"><noscript>เปิด JavaScript เพื่อดูกราฟ แผนที่ และตัวกรอง</noscript></div>
    <script>
    (() => {

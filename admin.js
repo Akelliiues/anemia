@@ -3,11 +3,17 @@ const regionLabel = region => region === 13 ? 'เขตสุขภาพที
 const adminRegions = Array.from({length:13}, (_, index) => index + 1);
 const demoMonthNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const adminPeriods = Array.from({length:36},(_,index)=>{
+const overviewData=JSON.parse(document.getElementById('hosted-overview-data')?.textContent||'null');
+const liveOverview=Array.isArray(overviewData?.rows);
+const overviewPeriodLabel=period=>demoMonthNames[Number(period.slice(5))-1]+' '+(Number(period.slice(0,4))+543);
+const adminPeriods = liveOverview?overviewData.periods.map(overviewPeriodLabel):Array.from({length:36},(_,index)=>{
  const monthIndex=index+11;
  return demoMonthNames[monthIndex%12]+' '+(2566+Math.floor(monthIndex/12));
 });
 const latestAdminPeriod=adminPeriods.at(-1);
+const overviewYears=new Set(adminPeriods.map(period=>period.slice(-4)));
+const overviewSelectedYear=overviewData?.year===''||overviewYears.has(overviewData?.year)?overviewData.year:latestAdminPeriod.slice(-4);
+const overviewSelectedMonth=adminPeriods.includes(overviewData?.month)&&overviewData.month.slice(-4)===overviewSelectedYear?overviewData.month:'';
 const adminFacilities = ['รพ.สต. ตัวอย่างประชาร่วมใจ', 'โรงพยาบาลชุมชนตัวอย่าง'];
 const roles = {
  central:{label:'ผู้บริหารส่วนกลาง',region:null,description:'ดูยอดรวมและรายงานครบ 13 เขต'},
@@ -25,7 +31,7 @@ const accounts = [
  {id:'DEMO-05',name:'บัญชีโรงพยาบาล',role:'hospital',region:10,active:true},
  {id:'DEMO-06',name:'บัญชีผู้ดูแลสิทธิ์',role:'administrator',active:true}
 ];
-let adminAccount='DEMO-01', adminView='overview', adminRegion='', adminPeriod='', adminYear=latestAdminPeriod.slice(-4), adminMessage='';
+let adminAccount='DEMO-01', adminView='overview', adminRegion=overviewData?.region?String(overviewData.region):'', adminPeriod=overviewSelectedMonth, adminYear=overviewSelectedYear, adminMessage='';
 // Synthetic monthly aggregates for chart and report testing.
 const demoRegionVolumes = [4150, 2360, 2840, 5460, 3660, 4710, 3380, 3140, 3820, 3020, 3440, 2880, 6050];
 const demoMonthFactors = [.76, .94, .85, 1.04, .97, 1.12];
@@ -39,9 +45,10 @@ function createDemoAggregate(region,period,index,baseline){
  const tested=Math.round(referred*(.59+((region*2+index)%5)*.065));
  return {region,period,screened,high,referred,tested,unknown,medium,low:screened-high-unknown-medium};
 }
-const demoAggregates = adminRegions.flatMap(region=>adminPeriods.map((period,index)=>
+const demoAggregates = liveOverview?[]:adminRegions.flatMap(region=>adminPeriods.map((period,index)=>
  createDemoAggregate(region,period,index,demoRegionVolumes[region-1])
 ));
+const liveOverviewRows=liveOverview?overviewData.rows.map(row=>({...row,period:overviewPeriodLabel(row.period)})):[];
 const demoProvinceAggregates = adminPeriods.map((period,index)=>createDemoAggregate(10,period,index,110));
 const adminAccountInfo=()=>accounts.find(account=>account.id===adminAccount&&account.active);
 function adminScope(){
@@ -53,7 +60,7 @@ function adminScope(){
 const canReport=scope=>scope&&['central','regional','provincial'].includes(scope.key);
 function reportRows(scope,period=adminPeriod){
  if(!canReport(scope))return [];
- const dataset=scope.key==='provincial'?demoProvinceAggregates:demoAggregates;
+ const dataset=liveOverview?liveOverviewRows:scope.key==='provincial'?demoProvinceAggregates:demoAggregates;
  return dataset.filter(row=>(scope.region==null?(!adminRegion||row.region===Number(adminRegion)):row.region===scope.region)&&(period?row.period===period:(!adminYear||demoPeriodYear(row.period)===adminYear)));
 }
 const countLabel=value=>value.toLocaleString('th-TH');
@@ -119,7 +126,7 @@ function adminStats(rows){
 }
 function adminTable(rows,scope){
  return `<div class="tablewrap"><table class="admin-table"><thead><tr><th>พื้นที่</th><th>เดือน</th><th>ประเมิน</th><th>เสี่ยงสูง</th><th>ขอประสาน</th><th>ตรวจแล้ว</th></tr></thead>
- <tbody>${rows.map(row=>`<tr><th scope="row">${scope.key==='provincial'?scopeLabel(scope):regionLabel(row.region)}</th><td>${row.period}</td><td>${row.screened}</td><td>${row.high}</td><td>${row.referred}</td><td>${row.tested}</td></tr>`).join('')}</tbody></table></div>`;
+ <tbody>${rows.length?rows.map(row=>`<tr><th scope="row">${scope.key==='provincial'?scopeLabel(scope):regionLabel(row.region)}</th><td>${row.period}</td><td>${row.screened}</td><td>${row.high}</td><td>${row.referred}</td><td>${row.tested}</td></tr>`).join(''):'<tr><td colspan="6">ยังไม่มีข้อมูลในช่วงที่เลือก</td></tr>'}</tbody></table></div>`;
 }
 function printDemoReport(scope){
  const report=window.open('','_blank');
@@ -138,7 +145,7 @@ function printDemoReport(scope){
 </div>
  <main class="report-paper"><header class="report-paper-header">
  <h1>รายงานการคัดกรองและติดตาม</h1><p>พื้นที่ ${area} · ช่วงเวลา ${adminPeriod||(adminYear?'ทุกเดือน ปี '+adminYear:'ทุกเดือน')}</p>
- <p>แหล่งข้อมูล ข้อมูลจำลอง · จัดทำ ${issued} น.</p></header>
+ <p>แหล่งข้อมูล ${liveOverview?'ข้อมูลจากระบบ':'ข้อมูลจำลอง'} · จัดทำ ${issued} น.</p></header>
  ${adminTable(reportRows(scope),scope)}
  <p class="report-note">ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ</p>
  <footer class="report-paper-footer">
@@ -248,12 +255,15 @@ function monthlyTrend(months){
  ${adminPeriod?'':'<p class="notice">แสดง 4 เดือนล่าสุดในชุดข้อมูล</p>'}</section>`;
 }
 function adminChartMonths(scope){
- const end=adminPeriods.indexOf(adminPeriod||latestDemoPeriodForYear(adminYear)||latestAdminPeriod);
- return [end-3,end-2,end-1,end].map(index=>{
-  const date=new Date(Date.UTC(2023,11+index,1));
+ const end=adminPeriod||latestDemoPeriodForYear(adminYear)||latestAdminPeriod;
+ const endMonth=demoMonthNames.indexOf(end.slice(0,-5));
+ const endYear=Number(demoPeriodYear(end))-543;
+ return [-3,-2,-1,0].map(offset=>{
+  const date=new Date(Date.UTC(endYear,endMonth+offset,1));
   const period=demoMonthNames[date.getUTCMonth()]+' '+(date.getUTCFullYear()+543);
   const rows=reportRows(scope,period);
-  return {period,screened:rows.length?metricTotal(rows,'screened'):null,high:rows.length?metricTotal(rows,'high'):null};
+  const screened=metricTotal(rows,'screened');
+  return {period,screened:screened||null,high:screened?metricTotal(rows,'high'):null};
  });
 }
 function regionMapPanel(scope){
@@ -296,7 +306,8 @@ function adminCharts(rows,scope){
  const requests=metricTotal(rows,'referred'), completed=metricTotal(rows,'tested');
  const completion=requests?completed/requests*100:0;
  const caption=requests?percent(completed,requests):'—';
- const areaTotals=[...new Set(rows.map(row=>row.region))].map(region=>({
+ const chartRegions=scope.key==='central'&&!adminRegion?adminRegions:[...new Set(rows.map(row=>row.region))];
+ const areaTotals=chartRegions.map(region=>({
   region,count:metricTotal(rows.filter(row=>row.region===region),'screened')
  }));
  const areaMax=Math.max(1,...areaTotals.map(area=>area.count));
@@ -348,7 +359,7 @@ function reportView(scope,showHeading=true){
  <div class="admin-report-controls no-print">${adminMonthFilter('admin-table-period','เลือกเดือน')}
  ${exporting?`<div class="actions no-print">${button('ดาวน์โหลด CSV','admin-csv','download')}${button('พิมพ์ / บันทึก PDF','admin-print','history',true)}</div>`:button('เปิดรายงาน','admin-reports','history')}</div></div>
  ${adminTable(rows,scope)}
- <p class="notice">ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ</p></section>`;
+ <p class="notice">${liveOverview?'ยอดประเมินนับรอบแรกที่ระบุจังหวัด ยอดคำขอและการตรวจนับรายการที่จับคู่กับทะเบียนหน่วยบริการ':'ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ'}</p></section>`;
 }
 const canUpdateQueue=scope=>!!(scope?.facility&&facilityDirectory.some(site=>site.id===requestFacilityId&&site.name===scope.facility));
 function queueView(scope){
@@ -436,9 +447,9 @@ function adminExport(){
  const scope=adminScope();
  if(!canReport(scope))return;
  const rows=reportRows(scope);
- const lines=['พื้นที่,เดือน,ประเมิน,เสี่ยงสูง,ขอประสาน,ตรวจแล้ว,ประเภทข้อมูล',...rows.map(row=>[scope.key==='provincial'?scopeLabel(scope):regionLabel(row.region),row.period,row.screened,row.high,row.referred,row.tested,'จำลอง'].join(','))];
+ const lines=['พื้นที่,เดือน,ประเมิน,เสี่ยงสูง,ขอประสาน,ตรวจแล้ว,ประเภทข้อมูล',...rows.map(row=>[scope.key==='provincial'?scopeLabel(scope):regionLabel(row.region),row.period,row.screened,row.high,row.referred,row.tested,liveOverview?'จริง':'จำลอง'].join(','))];
  const href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
- const link=document.createElement('a');link.href=href;link.download='anemia-regional-demo-report.csv';link.click();
+ const link=document.createElement('a');link.href=href;link.download=liveOverview?'anemia-regional-report.csv':'anemia-regional-demo-report.csv';link.click();
  setTimeout(()=>URL.revokeObjectURL(href),1000);
 }
 document.addEventListener('submit',event=>{

@@ -43,6 +43,12 @@ const percent=(count,total)=>total?(count/total*100).toLocaleString('th-TH',{max
 
 function renderHostedSample(scope){
  const y=window.scrollY;
+ const mode=document.querySelector('.workspace-data-mode');
+ if(mode?.elements.overview_year){
+  mode.elements.region.value=adminRegion;
+  mode.elements.overview_year.value=adminYear;
+  mode.elements.overview_month.value=adminPeriod;
+ }
  main.innerHTML=(adminView==='reports'?'<div class="actions no-print">'+button('กลับแดชบอร์ดตัวอย่าง','hosted-overview','refresh')+'</div>':'')+reportView(scope,false);
  if(window.scrollY!==y)window.scrollTo({top:y,behavior:'instant'});
  main.setAttribute('aria-busy','false');

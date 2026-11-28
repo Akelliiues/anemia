@@ -2815,11 +2815,18 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));
  gap:.45rem;margin-bottom:1rem;
 }
-.voice-coach-topics .action {
- justify-content:flex-start;min-height:44px;padding:.45rem .65rem;border-radius:10px;
- font-size:.875rem;line-height:1.35;text-decoration:none;
+.voice-coach-topics a {
+ display:flex;align-items:center;min-height:44px;padding:.45rem .7rem;
+ border:1px solid var(--line);border-radius:10px;
+ color:var(--ink);font-size:.875rem;font-weight:650;line-height:1.35;text-decoration:none;
 }
-.voice-coach-topics .action[aria-current] {border-color:var(--violet);background:light-dark(#563398,#ddc8ff);color:light-dark(#fff,#291646);}
+.voice-coach-topics a:hover {background:color-mix(in srgb,var(--violet) 7%,transparent);}
+.voice-coach-topics a[aria-current] {
+ border-color:var(--violet);background:color-mix(in srgb,var(--violet) 14%,transparent);color:var(--ink);
+}
+.voice-article-picker {grid-template-columns:minmax(0,25rem) auto;align-items:end;justify-content:start;gap:.55rem;margin:0 0 1rem;}
+.voice-article-picker select {min-width:0;margin:0;}
+.voice-article-picker button {min-height:44px;white-space:nowrap;}
 .voice-coach-tabs a:focus-visible,.voice-coach-topics a:focus-visible {outline:2px solid var(--violet);outline-offset:-3px;}
 .voice-coach-slot-heading {margin:.15rem 0 .8rem;font-size:1.2rem;}
 .voice-coach-editor {display:grid;grid-template-columns:1.15fr 1fr;gap:1rem;}
@@ -2831,4 +2838,8 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 @media(max-width:720px) {.voice-coach-editor {grid-template-columns:1fr;}}
 
 .voice-coach[hidden],.voice-coach [data-voice-copy][hidden] {display:none;}
-@media(max-width:500px) {.voice-coach-tabs a {font-size:.825rem;padding-inline:.2rem;}}
+@media(max-width:500px) {
+ .voice-coach-tabs a {font-size:.825rem;padding-inline:.2rem;}
+ .voice-article-picker {grid-template-columns:minmax(0,1fr);}
+ .voice-article-picker button {justify-self:start;}
+}

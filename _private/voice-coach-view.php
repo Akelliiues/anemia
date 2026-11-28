@@ -17,13 +17,25 @@ $resultLabels=['low'=>'ดูแลต่อเนื่อง','medium'=>'ม�
    <a href="dashboard.php?view=voice-coach&amp;slot=<?= esc($group===$key?$slot:$first) ?>" <?= $group===$key?'aria-current="page"':'' ?>><?= workspaceIcon($icon) ?> <?= esc($label) ?></a>
   <?php endforeach; ?>
  </nav>
- <?php if ($group!=='home'): ?>
- <?php $subtabs=$group==='results'?$resultLabels:array_intersect_key($slots,$articles); ?>
- <nav class="voice-coach-topics" aria-label="<?= $group==='results'?'เลือกผลประเมิน':'เลือกบทความ' ?>">
-  <?php foreach ($subtabs as $key=>$label): ?>
-   <a class="action" href="dashboard.php?view=voice-coach&amp;slot=<?= esc($key) ?>" <?= $slot===$key?'aria-current="page"':'' ?>><?= esc($label) ?></a>
+ <?php if ($group==='results'): ?>
+ <nav class="voice-coach-topics" aria-label="เลือกผลประเมิน">
+  <?php foreach ($resultLabels as $key=>$label): ?>
+   <a href="dashboard.php?view=voice-coach&amp;slot=<?= esc($key) ?>" <?= $slot===$key?'aria-current="page"':'' ?>><?= esc($label) ?></a>
   <?php endforeach; ?>
  </nav>
+ <?php elseif ($group==='knowledge'):
+  $categories=[];
+  foreach ($articles as $key=>[$title,,$category]) $categories[$category][$key]=$title;
+ ?>
+ <form method="get" class="network-form voice-article-picker">
+  <input type="hidden" name="view" value="voice-coach">
+  <label>บทความ<select name="slot">
+   <?php foreach ($categories as $category=>$topics): ?><optgroup label="<?= esc($category) ?>">
+    <?php foreach ($topics as $key=>$title): ?><option value="<?= esc($key) ?>" <?= $slot===$key?'selected':'' ?>><?= esc($title) ?></option><?php endforeach; ?>
+   </optgroup><?php endforeach; ?>
+  </select></label>
+  <button type="submit" class="action"><?= workspaceIcon('book') ?> เปิดบทความ</button>
+ </form>
  <?php endif; ?>
  <h2 class="voice-coach-slot-heading"><?= esc($slots[$slot]) ?></h2>
  <?php if ($voiceNotice!==''): ?><p class="notice" role="status"><?= esc($voiceNotice) ?></p><?php endif; ?>

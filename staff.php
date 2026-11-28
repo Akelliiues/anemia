@@ -132,7 +132,7 @@ function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES
         <?php if (($_GET['entry'] ?? '') === 'portal'): ?>
           <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
             <a href="participant-account.php?return=portal">PIN สมาชิก</a>
-            <a href="login.php?entry=portal" aria-current="page">รหัสผ่านครู / เจ้าหน้าที่</a>
+            <a href="login.php?entry=portal" aria-current="page">รหัสผ่าน</a>
           </nav>
         <?php endif; ?>
         <?php if ($fault !== ''): ?>

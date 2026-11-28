@@ -272,7 +272,7 @@ if ($account) {
  ?>
  <nav class="participant-account-tabs" aria-label="เลือกวิธีเข้าสู่ระบบ">
   <a data-pin-mode href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
-  <a data-staff-mode href="login.php?entry=portal<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>"><?= workspaceIcon('lock') ?> รหัสผ่านครู / เจ้าหน้าที่</a>
+  <a data-staff-mode href="login.php?entry=portal<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>"><?= workspaceIcon('lock') ?> รหัสผ่าน</a>
  </nav>
  <div class="participant-login-fields">
  <div data-member-login>
@@ -304,7 +304,7 @@ if ($account) {
  </div>
  <div data-staff-login hidden>
   <div class="participant-entry-card">
-   <form method="post" action="login.php?entry=inline<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>" aria-label="เข้าสู่ระบบครูหรือเจ้าหน้าที่">
+   <form method="post" action="login.php?entry=inline<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>" aria-label="เข้าสู่ระบบด้วยรหัสผ่าน">
     <input type="hidden" name="action" value="login">
     <label><span><?= workspaceIcon('person') ?> ชื่อผู้ใช้</span><input name="username" autocomplete="username" maxlength="40" required autocapitalize="none" spellcheck="false"></label>
     <div class="participant-password-field">
@@ -421,7 +421,7 @@ if(staffMode&&pinMode){
   event.preventDefault();
   const body=new FormData(form);
   submit.disabled=true;
-  message('กำลังตรวจบัญชีเจ้าหน้าที่…');
+  message('กำลังตรวจสอบบัญชี…');
   try{
    const load=await fetch(endpoint,{cache:'no-store'});
    const session=await load.json();

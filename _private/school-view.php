@@ -24,6 +24,17 @@ function schoolCohortFields(array $cohort=[]): void
     <?php
 }
 
+function schoolDisclosureHeading(string $label,string $icon): void
+{
+    ?>
+    <summary class="school-disclosure-heading">
+     <span class="school-heading-icon" aria-hidden="true"><?= workspaceIcon($icon) ?></span>
+     <span><?= schoolEscape($label) ?></span>
+     <span class="school-heading-chevron" aria-hidden="true"><?= workspaceIcon('next') ?></span>
+    </summary>
+    <?php
+}
+
 function schoolParticipationButton(int $id,string $name,bool $enabled,array $summary,bool $inDirectory=false): void
 {
     $action=$enabled?($summary['hasData']?'school-archive':'school-withdraw'):'school-reopen';
@@ -297,7 +308,7 @@ return static function (PDO $db,array $identity): void {
 </nav>
 <?php endif; ?>
 <?php if ($schoolTab==='tracking' && $province!==''): ?>
-<section class="card"><h2>ติดตามกิจกรรมรายโรงเรียน</h2>
+<section class="card"><h2><?= workspaceIcon('chart') ?> ติดตามกิจกรรมรายโรงเรียน</h2>
  <div class="admin-kpis hosted-kpis">
   <div class="card"><span>โรงเรียนในทะเบียน</span><strong><?= count($tracking) ?></strong></div>
   <div class="card"><span>โรงเรียนที่มีห้องกิจกรรม</span><strong><?= count(array_filter(array_column($tracking,'rooms'))) ?></strong></div>
@@ -413,7 +424,7 @@ return static function (PDO $db,array $identity): void {
 <section class="card" id="school-activities" aria-labelledby="school-activities-title">
  <header class="school-selected-heading">
   <div>
-   <h2 id="school-activities-title"><?= schoolEscape($school['name']) ?></h2>
+   <h2 id="school-activities-title"><?= workspaceIcon('school') ?> <?= schoolEscape($school['name']) ?></h2>
    <p><?= schoolEscape($school['province']) ?> · <?= $school['enabled']?'เข้าร่วมโครงการ':'หยุดเข้าร่วมโครงการ' ?></p>
   </div>
   <?php if ($admin): ?>
@@ -424,12 +435,12 @@ return static function (PDO $db,array $identity): void {
  <form method="get" action="#school-activities" class="network-form school-fields">
   <?php if (!$teacher): ?><input type="hidden" name="view" value="schools"><?php endif; ?>
   <?php foreach ($areaFilters+array_filter($directoryFilters+['directory_page'=>$directoryPage>1?$directoryPage:null]) as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
-  <label>โรงเรียน<select name="school"><?php foreach($schools as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $item['id']===$school['id']?'selected':'' ?>><?= schoolEscape($item['name'].' · '.$item['province']) ?></option><?php endforeach; ?></select></label>
+  <label><span><?= workspaceIcon('school') ?> โรงเรียน</span><select name="school"><?php foreach($schools as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $item['id']===$school['id']?'selected':'' ?>><?= schoolEscape($item['name'].' · '.$item['province']) ?></option><?php endforeach; ?></select></label>
   <button class="action">แสดงโรงเรียน</button>
  </form>
  <?php require __DIR__.'/school-controls.php'; ?>
 </section>
-<section class="card"><h2><?= $teacher && !$manage ? 'ห้องของฉัน' : 'ห้องเรียนและรุ่นกิจกรรม' ?></h2>
+<section class="card"><h2><?= workspaceIcon('book') ?> <?= $teacher && !$manage ? 'ห้องของฉัน' : 'ห้องเรียนและรุ่นกิจกรรม' ?></h2>
  <?php if ($roomYears): ?>
  <form method="get" class="network-form school-directory-filters">
   <?php foreach ($schoolRoute+$areaFilters+['school'=>$school['id']] as $key=>$value): ?>
@@ -444,23 +455,24 @@ return static function (PDO $db,array $identity): void {
  <?php endif; ?>
  <?php if (!$visibleCohorts): ?><p><?= $cohorts?'ไม่พบห้องตามตัวกรอง':'ยังไม่มีรุ่นกิจกรรม' ?></p><?php endif; ?>
  <?php foreach($visibleCohorts as $item): ?>
-  <details class="school-cohort" <?= (int)$item['id']===($cohortId??null)?'open':'' ?>>
-   <summary><?= schoolEscape(($item['academic_year']?'ปี '.$item['academic_year'].' · ':'').$item['title'].' · '.$item['classroom']) ?> · เข้าร่วม <?= (int)$item['members'] ?> · ทำครบ <?= (int)$item['completed'] ?></summary>
+  <details class="school-cohort school-disclosure" <?= (int)$item['id']===($cohortId??null)?'open':'' ?>>
+   <?php schoolDisclosureHeading(($item['academic_year']?'ปี '.$item['academic_year'].' · ':'').$item['title'].' · '.$item['classroom']
+    .' · เข้าร่วม '.(int)$item['members'].' · ทำครบ '.(int)$item['completed'],'book'); ?>
    <p><?= schoolEscape($item['opens_on'].' ถึง '.$item['closes_on']) ?> · <?= $item['accepting'] && $school['enabled']?'เปิดรับตามช่วงวันที่':'ปิดรับ' ?></p>
    <?php if ($manage && $item['academic_year']): ?>
     <p>ครูหลัก <?= schoolEscape($roomTeachers[$item['id']]['primary']['full_name']??'ยังไม่ได้มอบหมาย') ?> · ครูร่วม <?= schoolEscape($roomTeachers[$item['id']]['assistant']['full_name']??'ยังไม่ได้มอบหมาย') ?></p>
    <?php endif; ?>
    <?php if ($admin||$teacher): ?>
     <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$school['id'],'cohort'=>(int)$item['id']])) ?>">ดูความคืบหน้ารายคน</a>
-    <details><summary>ลิงก์และ QR เข้าร่วม</summary><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div><button type="button" class="action" data-copy-school-link>คัดลอกลิงก์</button></details>
+    <details class="school-disclosure"><?php schoolDisclosureHeading('ลิงก์และ QR เข้าร่วม','scan'); ?><a data-school-qr href="school-join.php?code=<?= schoolEscape($item['invite']) ?>">เปิดลิงก์สำหรับนักเรียน</a><div class="school-qr"></div><button type="button" class="action" data-copy-school-link>คัดลอกลิงก์</button></details>
     <?php if ($school['enabled'] && ($manage || !$item['academic_year'])): ?>
-    <details><summary>แก้ไขรุ่น</summary><form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
+    <details class="school-disclosure"><?php schoolDisclosureHeading('แก้ไขรุ่น','edit'); ?><form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
      <?php schoolFields($csrf,'cohort-edit',(int)$school['id'],(int)$item['id']); schoolCohortFields($item); ?><button class="action primary">บันทึก</button>
     </form></details>
     <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'cohort-toggle',(int)$school['id'],(int)$item['id']); ?><button class="action"><?= $item['accepting']?'ปิดรับเพิ่ม':'เปิดรับเพิ่ม' ?></button></form>
     <?php endif; ?>
     <?php if ((int)$item['id']===($cohortId??null)): ?>
-     <?php if ($roomHistory): ?><details><summary>ประวัติเปลี่ยนครูประจำห้อง</summary><ul>
+     <?php if ($roomHistory): ?><details class="school-disclosure"><?php schoolDisclosureHeading('ประวัติเปลี่ยนครูประจำห้อง','history'); ?><ul>
       <?php foreach ($roomHistory as $entry): ?><li><?= schoolEscape($entry['full_name'].' · '.($entry['duty']==='primary'?'ครูหลัก':'ครูร่วม').' · '.$entry['started_at'].' ถึง '.$entry['ended_at'].' · เปลี่ยนโดย '.$entry['ended_by']) ?></li><?php endforeach; ?>
      </ul></details><?php endif; ?>
      <?php if (!$members): ?><p>ยังไม่มีผู้เข้าร่วมในห้องนี้</p><?php else: ?>
@@ -472,7 +484,7 @@ return static function (PDO $db,array $identity): void {
   </details>
  <?php endforeach; ?>
 </section>
-<?php if ($audit): ?><details class="card"><summary>ประวัติการจัดการล่าสุด</summary><ul><?php foreach($audit as $entry): ?><li><?= schoolEscape(implode(' · ',$entry)) ?></li><?php endforeach; ?></ul></details><?php endif; ?>
+<?php if ($audit): ?><details class="card school-disclosure"><?php schoolDisclosureHeading('ประวัติการจัดการล่าสุด','history'); ?><ul><?php foreach($audit as $entry): ?><li><?= schoolEscape(implode(' · ',$entry)) ?></li><?php endforeach; ?></ul></details><?php endif; ?>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($admin && $participation): ?>

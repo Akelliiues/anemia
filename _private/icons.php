@@ -23,6 +23,8 @@ function workspaceIcon(string $name): string
         'print' => '<path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7z"/>',
         'download' => '<path d="M12 3v12m-4-4 4 4 4-4M5 17v4h14v-4"/>',
         'close' => '<path d="m6 6 12 12M18 6 6 18"/>',
+        'school' => '<path d="M3 10l9-6 9 6M5 9v11h14V9M3 20h18m-11 0v-5h4v5"/><circle cx="12" cy="10" r="1"/>',
+        'copy' => '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
         'school-add' => '<path d="M2 10l7-5 7 5M4 9v11h10V9M2 20h14M7 20v-5h4v5M17 6h6m-3-3v6"/><circle cx="9" cy="11" r="1"/>',
         'home' => '<path d="m3 10 9-7 9 7M5 9v12h14V9m-9 12v-6h4v6"/>',
         'send' => '<path d="m3 4 18 8-18 8 3-8-3-8Zm3 8h15"/>',

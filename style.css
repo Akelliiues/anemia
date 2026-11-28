@@ -2616,6 +2616,23 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .school-selected-heading :is(h2,p) {margin:0;}
 .school-selected-heading p {font-size:.875rem;}
 .school-selected-heading .action {white-space:nowrap;}
+.school-workspace .school-disclosure {margin-block:.45rem;}
+.school-disclosure > .school-disclosure-heading {
+ display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.6rem;
+ padding:.38rem .55rem;min-height:2.75rem;border:1px solid var(--line);border-radius:.7rem;list-style:none;
+}
+.school-disclosure-heading::-webkit-details-marker {display:none;}
+.school-disclosure[open] > .school-disclosure-heading,
+.school-disclosure-heading:is(:hover,:focus-visible) {background-color:var(--soft-active,#eee8fa);border-color:var(--soft-edge,var(--line));}
+.school-heading-icon {
+ display:grid;place-items:center;inline-size:1.8rem;block-size:1.8rem;border-radius:.5rem;
+ color:var(--violet);background-color:var(--soft-active,#ebe3f8);
+}
+.school-heading-icon svg,.school-heading-chevron svg {inline-size:1rem;block-size:1rem;}
+.school-heading-chevron {color:var(--muted);}
+.school-heading-chevron svg {rotate:90deg;}
+.school-disclosure[open] > .school-disclosure-heading .school-heading-chevron svg {rotate:-90deg;}
+.school-selected-heading h2 svg,#school-activities label > span > svg {color:var(--violet);width:1em;height:1em;}
 .school-directory-name {color:var(--ink);text-decoration:underline;text-underline-offset:.16em;}
 .school-directory-name:is(:hover,:focus-visible) {color:var(--violet);}
 .school-directory-table .school-row-toggle {min-inline-size:11rem;min-block-size:2.75rem;white-space:nowrap;flex-wrap:nowrap;}

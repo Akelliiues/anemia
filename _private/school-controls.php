@@ -1,6 +1,6 @@
 <?php if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; } ?>
 <?php if ($canAppoint): ?>
-<details><summary>แต่งตั้งผู้ประสานงานโรงเรียน</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('แต่งตั้งผู้ประสานงานโรงเรียน','person'); ?>
  <p>บัญชีปัจจุบัน <?= schoolEscape($school['coordinator']??'ยังไม่ได้แต่งตั้ง') ?></p>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'coordinator',(int)$school['id']); ?>
@@ -10,7 +10,7 @@
 </details>
 <?php endif; ?>
 <?php if ($admin): ?>
-<details><summary>แก้ไขทะเบียนโรงเรียน</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('แก้ไขทะเบียนโรงเรียน','edit'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'school-edit',(int)$school['id']); ?>
   <label>ชื่อโรงเรียน<input name="name" maxlength="160" value="<?= schoolEscape($school['name']) ?>" required></label>
@@ -19,7 +19,7 @@
 </details>
 <?php endif; ?>
 <?php if ($teacher && $school['enabled']): ?>
-<details><summary>ข้อมูลครูของฉัน</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('ข้อมูลครูของฉัน','person'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'teacher-profile',(int)$school['id']); ?>
   <label>ชื่อและนามสกุล<input name="full_name" maxlength="160" value="<?= schoolEscape($profile['full_name']??'') ?>" required></label>
@@ -29,7 +29,7 @@
 </details>
 <?php endif; ?>
 <?php if ($manage && ($school['enabled'] || $admin)): ?>
-<details><summary>ครูผู้รับผิดชอบ</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('ครูผู้รับผิดชอบ','users'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'grant',(int)$school['id']); ?>
   <label>ชื่อบัญชีครู<input name="teacher" maxlength="40" required></label>
@@ -60,7 +60,7 @@
  <?php endif; ?>
 </details>
 <?php if ($school['enabled']): ?>
-<details><summary>สร้างห้องเรียนตามปีการศึกษา</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('สร้างห้องเรียนตามปีการศึกษา','calendar'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'rooms-create',(int)$school['id']); ?>
   <label>ปีการศึกษา พ.ศ.<input type="number" name="year" min="2500" max="2642" value="<?= (int)date('Y')+543 ?>" required></label>
@@ -75,7 +75,7 @@
 </details>
 <?php $years=array_values(array_unique(array_filter(array_column($cohorts,'academic_year')))); ?>
 <?php if ($years): ?>
-<details><summary>คัดลอกโครงสร้างห้องจากปีก่อน</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('คัดลอกโครงสร้างห้องจากปีก่อน','copy'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'rooms-copy',(int)$school['id']); ?>
   <label>คัดลอกจากปี<select name="from_year"><?php foreach ($years as $year): ?><option><?= (int)$year ?></option><?php endforeach; ?></select></label>
@@ -86,7 +86,7 @@
   <button class="action primary">คัดลอกห้อง</button>
  </form>
 </details>
-<details><summary>มอบหมายครูประจำห้อง</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('มอบหมายครูประจำห้อง','users'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'room-assign',(int)$school['id']); ?>
   <label>บทบาท<select name="duty"><option value="primary">ครูหลัก</option><option value="assistant">ครูร่วม</option></select></label>
@@ -105,7 +105,7 @@
   <button class="action primary">บันทึกการมอบหมาย</button>
  </form>
 </details>
-<details><summary>เปิดหรือปิดรับนักเรียนหลายห้อง</summary>
+<details class="school-disclosure"><?php schoolDisclosureHeading('เปิดหรือปิดรับนักเรียนหลายห้อง','power'); ?>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
   <?php schoolFields($csrf,'rooms-accept',(int)$school['id']); ?>
   <fieldset><legend>เลือกห้องเรียน</legend>

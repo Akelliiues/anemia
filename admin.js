@@ -117,8 +117,6 @@ function animateAdminCounters(){
  window.requestAnimationFrame(frame);
 }
 let selectedOverviewMetric=null;
-let overviewReportPage=1;
-const overviewReportPageSize=7;
 const overviewMetrics=[['screened','ครั้งที่ประเมิน','check'],['high','ครั้งที่ได้ผลเสี่ยงสูง','alert'],['referred','คำขอประสาน','phone'],['tested','ยืนยันการตรวจ','hospital']];
 function adminStats(rows){
  const hosted=Boolean(document.getElementById('hosted-sample-dashboard'));
@@ -364,18 +362,12 @@ function adminCharts(rows,scope){
 function selectChartRegion(region){
  if(adminScope()?.key!=='central'||!adminRegions.includes(region))return;
  adminRegion=String(region);
- overviewReportPage=1;
  staff(true);
  document.querySelector('#admin-region')?.focus({preventScroll:true});
 }
 function reportView(scope,showHeading=true){
  const rows=reportRows(scope);
  const tableRows=reportTableRows(rows,scope);
- const paginated=!showHeading;
- const pageCount=Math.max(1,Math.ceil(tableRows.length/overviewReportPageSize));
- overviewReportPage=Math.min(overviewReportPage,pageCount);
- const offset=(overviewReportPage-1)*overviewReportPageSize;
- const visibleRows=paginated?tableRows.slice(offset,offset+overviewReportPageSize):tableRows;
  const exporting=adminView==='reports';
  const metricLabel=exporting?overviewMetrics.find(([key])=>key===selectedOverviewMetric)?.[1]:null;
  const area=scope.region?scopeLabel(scope):adminRegion?regionLabel(Number(adminRegion)):'ครบ 13 เขต';
@@ -386,13 +378,7 @@ function reportView(scope,showHeading=true){
  <section class="card admin-report"><div class="admin-report-top"><h2>${metricLabel|| (exporting?'รายละเอียดตามพื้นที่และเดือน':'ผลการดำเนินงานรายพื้นที่')}</h2>
  <div class="admin-report-controls no-print">${adminMonthFilter('admin-table-period','เลือกเดือน')}
  ${exporting?`<div class="actions no-print">${button('ดาวน์โหลด CSV','admin-csv','download')}${button('พิมพ์ / บันทึก PDF','admin-print','history',true)}</div>`:button('เปิดรายงาน','admin-reports','history')}</div></div>
- ${adminTable(visibleRows,scope,exporting?selectedOverviewMetric:null)}
- ${paginated&&pageCount>1?`<nav class="overview-report-pages no-print" aria-label="แบ่งหน้ารายงาน">
-  <span role="status">แสดง ${offset+1}–${offset+visibleRows.length} จาก ${tableRows.length} รายการ</span>
-  <button type="button" class="action" data-overview-page="-1" ${overviewReportPage===1?'disabled':''}>ก่อนหน้า</button>
-  <span>หน้า ${overviewReportPage} / ${pageCount}</span>
-  <button type="button" class="action" data-overview-page="1" ${overviewReportPage===pageCount?'disabled':''}>ถัดไป</button>
- </nav>`:''}
+ ${adminTable(tableRows,scope,exporting?selectedOverviewMetric:null)}
  <p class="notice">${liveOverview?'ยอดประเมินนับรอบแรกที่ระบุจังหวัด ยอดคำขอและการตรวจนับรายการที่จับคู่กับทะเบียนหน่วยบริการ':'ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ'}</p></section>`;
 }
 const canUpdateQueue=scope=>!!(scope?.facility&&facilityDirectory.some(site=>site.id===requestFacilityId&&site.name===scope.facility));
@@ -506,9 +492,9 @@ document.addEventListener('change',event=>{
  if(id==='admin-account'){
   if(!accounts.some(account=>account.id===value&&account.active))return;
   adminAccount=value;adminRegion='';adminPeriod='';adminYear=demoPeriodYear(latestAdminPeriod);adminMessage='';
- }else if(id==='admin-region'){adminRegion=value;overviewReportPage=1;}
- else if(id==='admin-period-year'||id==='admin-table-period-year'){adminYear=value;adminPeriod='';overviewReportPage=1;}
- else if(id==='admin-period'||id==='admin-table-period'){adminPeriod=value;overviewReportPage=1;}
+ }else if(id==='admin-region'){adminRegion=value;}
+ else if(id==='admin-period-year'||id==='admin-table-period-year'){adminYear=value;adminPeriod='';}
+ else if(id==='admin-period'||id==='admin-table-period'){adminPeriod=value;}
  else return;
  staff();
  document.querySelector('#'+id)?.focus();

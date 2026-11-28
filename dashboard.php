@@ -847,7 +847,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v194">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v195">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showOverviewCharts): ?>
@@ -879,7 +879,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="admin-top-main">
    <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
    <div class="workspace-account">
-    <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="เปลี่ยนรหัสผ่าน"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
+    <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="บัญชีเจ้าหน้าที่"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
     <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
    </div>
   </div>
@@ -1589,16 +1589,29 @@ function workspaceInfo(string $page, ?array $release = null): void
 <?php if (!$staffAppView) require __DIR__ . '/_private/staff-footer.php'; ?>
 <dialog id="workspace-account" class="workspace-dialog no-print" aria-labelledby="workspace-account-title">
  <header class="workspace-dialog-heading">
-  <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> <?= $staffWorkDock?'บัญชีเจ้าหน้าที่':'เปลี่ยนรหัสผ่าน' ?></h2>
+  <h2 id="workspace-account-title"><?= workspaceIcon('users') ?> บัญชีเจ้าหน้าที่</h2>
   <form method="dialog"><button class="action"><?= workspaceIcon('close') ?>ปิด</button></form>
  </header>
- <p>บัญชี <?= esc($staff) ?> · <?= esc($roleLabel) ?></p>
+ <section class="workspace-account-summary" aria-label="ข้อมูลบัญชี">
+  <span class="workspace-account-avatar"><?= workspaceIcon('person') ?></span>
+  <div><strong><?= esc($staff) ?></strong><span><?= esc($roleLabel) ?></span></div>
+  <span class="workspace-account-scope"><?= workspaceIcon('map') ?> <?= esc($canChooseRegion?'ทุกเขตสุขภาพ':$scopeName) ?></span>
+ </section>
+ <?php if (!$staffWorkDock): ?>
+ <nav class="workspace-account-links" aria-label="ทางลัดบัญชีเจ้าหน้าที่">
+  <a href="dashboard.php?view=guide"><?= workspaceIcon('book') ?><span>คู่มือการใช้งาน</span><?= workspaceIcon('next') ?></a>
+  <?php if ($canUsageAudit): ?><a href="dashboard.php?view=usage-audit"><?= workspaceIcon('history') ?><span>ประวัติการใช้งาน</span><?= workspaceIcon('next') ?></a><?php endif; ?>
+  <a href="index.html" target="_blank" rel="noopener"><?= workspaceIcon('home') ?><span>เปิดหน้าบ้านในแท็บใหม่</span><?= workspaceIcon('next') ?></a>
+ </nav>
+ <?php endif; ?>
  <?php if ($staffWorkDock): ?>
  <div class="actions staff-app-account-actions">
   <a class="action" href="dashboard.php?view=overview"><?= workspaceIcon('chart') ?>เปิดแดชบอร์ด</a>
   <form method="post" action="<?= $unitScanner?'login?next=unit-scan':'login?next=mobile' ?>"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action" name="action" value="logout"><?= workspaceIcon('logout') ?>ออกจากระบบ</button></form>
  </div>
  <?php endif; ?>
+ <details class="workspace-account-security">
+  <summary><?= workspaceIcon('lock') ?><span><strong>ความปลอดภัย</strong><small>เปลี่ยนรหัสผ่าน</small></span><span class="hosted-menu-caret" aria-hidden="true"></span></summary>
  <form id="account-password-form" method="post">
   <input type="hidden" name="csrf" value="<?= esc($token) ?>">
   <input type="hidden" name="account_action" value="change_password">
@@ -1609,6 +1622,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <p role="status" data-password-message></p>
   <button type="submit" class="action primary"><?= workspaceIcon('save') ?>บันทึกรหัสผ่าน</button>
  </form>
+ </details>
 </dialog>
 <?php foreach (['about','team'] as $infoPage): ?>
 <dialog id="workspace-<?= esc($infoPage) ?>" class="workspace-dialog no-print" aria-labelledby="workspace-title-<?= esc($infoPage) ?>">
@@ -1763,6 +1777,7 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
  });
  form.closest('dialog').addEventListener('close',()=>{
   form.reset();
+  form.closest('details').open=false;
   message.textContent='';
  });
 })();

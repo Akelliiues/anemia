@@ -2955,3 +2955,20 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 
 #hosted-sample-dashboard [data-overview-metric][aria-pressed=true] {border-color:var(--violet);background:color-mix(in srgb,var(--violet) 11%,transparent);}
 #hosted-sample-dashboard .admin-table .overview-metric-column {background:color-mix(in srgb,var(--violet) 14%,transparent);font-weight:700;}
+
+.workspace-account-summary {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:.4rem .7rem;padding:.75rem;border:1px solid var(--line);border-radius:.8rem;background:color-mix(in srgb,var(--violet) 9%,transparent);}
+.workspace-account-summary div {display:grid;overflow-wrap:anywhere;}
+.workspace-account-summary div > span,.workspace-account-scope,.workspace-account-security small {color:var(--muted);font-size:.86rem;}
+.workspace-account-avatar {display:grid;place-items:center;width:2.65rem;aspect-ratio:1;border-radius:.75rem;background:color-mix(in srgb,var(--violet) 17%,transparent);color:var(--violet);}
+.workspace-account-scope {grid-column:2;display:flex;align-items:center;gap:.35rem;}
+.workspace-account-summary svg,.workspace-account-links svg,.workspace-account-security summary svg {width:1rem;height:1rem;flex:none;}
+.workspace-account-links {display:grid;gap:.35rem;margin:.7rem 0;}
+.workspace-account-links a,.workspace-account-security summary {display:flex;align-items:center;gap:.6rem;padding:.55rem .65rem;border:1px solid var(--line);border-radius:.65rem;text-decoration:none;color:var(--ink);}
+.workspace-account-links a > svg:last-child,.workspace-account-security .hosted-menu-caret {margin-inline-start:auto;}
+.workspace-account-security {margin-top:.7rem;}
+.workspace-account-security summary {list-style:none;cursor:pointer;}
+.workspace-account-security summary::-webkit-details-marker {display:none;}
+.workspace-account-security summary > span:first-of-type {display:grid;}
+.workspace-account-security[open] .hosted-menu-caret {transform:rotate(225deg);}
+.workspace-account-links a:hover,.workspace-account-security summary:hover {background:color-mix(in srgb,var(--violet) 10%,transparent);}
+.workspace-account-security form {margin-top:.65rem;}

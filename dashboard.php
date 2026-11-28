@@ -66,6 +66,44 @@ try {
         exit;
     }
     $staff = $identity['username'];
+    $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
+    $token = $_SESSION['csrf'];
+    if (($_GET['account_photo']??'')==='1' && $_SERVER['REQUEST_METHOD']==='GET') {
+        $photoQuery=$db->prepare('SELECT photo FROM anemia_staff_photo WHERE username=?');
+        $photoQuery->execute([$staff]);
+        $photo=$photoQuery->fetchColumn();
+        if (!is_string($photo)) { http_response_code(404); exit; }
+        header('Content-Type: image/jpeg');
+        header('Cross-Origin-Resource-Policy: same-origin');
+        echo $photo;
+        exit;
+    }
+    if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['account_action']??'')==='save_photo') {
+        header('Content-Type: application/json; charset=UTF-8');
+        $status=200;
+        try {
+            if (!is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) {
+                $status=403;
+                throw new DomainException('กรุณาเปิดหน้าใหม่แล้วลองอีกครั้ง');
+            }
+            require_once __DIR__.'/_private/profile-photo.php';
+            $photo=anemiaProfilePhoto($_FILES['profile_photo']??[]);
+            if ($photo===null) throw new DomainException('กรุณาเลือกรูปโปรไฟล์');
+            $save=$db->prepare('INSERT INTO anemia_staff_photo(username,photo) VALUES (?,?) ON DUPLICATE KEY UPDATE photo=VALUES(photo)');
+            $save->execute([$staff,$photo]);
+            $message='บันทึกรูปโปรไฟล์แล้ว';
+        } catch (DomainException $error) {
+            if ($status===200) $status=422;
+            $message=$error->getMessage();
+        } catch (Throwable $error) {
+            error_log('Anemia staff photo: '.get_class($error));
+            $status=503;
+            $message='บันทึกรูปไม่ได้ กรุณาลองอีกครั้ง';
+        }
+        http_response_code($status);
+        echo json_encode(['message'=>$message],JSON_THROW_ON_ERROR);
+        exit;
+    }
     $isAdmin = $identity['role'] === 'account_admin';
     $canChooseRegion = $isAdmin || $identity['role'] === 'central_report';
     $roleLabel = $isAdmin ? 'ผู้ดูแลระบบ' : ANEMIA_REPORT_ROLES[$identity['role']];
@@ -154,8 +192,6 @@ try {
     $sampleMode = $sampleEnabled && ($_SESSION['preview_sample'] ?? true) && in_array($view,$sampleViews,true);
     if ($sampleMode) require __DIR__ . '/_private/sample-reports.php';
     if (!$canChooseRegion) $region = (int)($identity['province_region'] ?? $identity['region']);
-    $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
-    $token = $_SESSION['csrf'];
     if ($view==='voice-coach') {
         require_once __DIR__.'/_private/voice-coach.php';
         anemiaEnsureVoiceCoach($db);
@@ -811,6 +847,16 @@ if (($_GET['format']??'')==='print' && in_array($view,['reports','evaluation'],t
     require __DIR__.'/_private/report-print-view.php';
     exit;
 }
+$photoQuery=$db->prepare('SELECT 1 FROM anemia_staff_photo WHERE username=?');
+$photoQuery->execute([$staff]);
+$hasStaffPhoto=(bool)$photoQuery->fetchColumn();
+function workspaceAccountAvatar(bool $hasPhoto,string $fallback): void
+{
+    ?>
+    <img data-staff-photo alt="" width="48" height="48" <?= $hasPhoto?'src="dashboard.php?account_photo=1"':'hidden' ?>>
+    <span data-staff-photo-fallback <?= $hasPhoto?'hidden':'' ?>><?= workspaceIcon($fallback) ?></span>
+    <?php
+}
 if ($view==='schools') {
     ob_start();
     try {
@@ -847,7 +893,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v195">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v196">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showOverviewCharts): ?>
@@ -879,7 +925,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="admin-top-main">
    <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">ศูนย์จัดการสำหรับเจ้าหน้าที่</span></div></div>
    <div class="workspace-account">
-    <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="บัญชีเจ้าหน้าที่"><span class="workspace-account-icon"><?= workspaceIcon('users') ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
+    <button type="button" class="workspace-identity" data-workspace-dialog="account" aria-haspopup="dialog" aria-label="จัดการบัญชี <?= esc($staff) ?>" title="บัญชีเจ้าหน้าที่"><span class="workspace-account-icon"><?php workspaceAccountAvatar($hasStaffPhoto,'users'); ?></span><span><strong><?= esc($staff) ?></strong><small><?= esc($roleLabel) ?></small></span><span class="hosted-menu-caret" aria-hidden="true"></span></button>
     <form class="hosted-logout" method="post" action="login"><input type="hidden" name="csrf" value="<?= esc($token) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>
    </div>
   </div>
@@ -1593,10 +1639,17 @@ function workspaceInfo(string $page, ?array $release = null): void
   <form method="dialog"><button class="action"><?= workspaceIcon('close') ?>ปิด</button></form>
  </header>
  <section class="workspace-account-summary" aria-label="ข้อมูลบัญชี">
-  <span class="workspace-account-avatar"><?= workspaceIcon('person') ?></span>
+  <span class="workspace-account-avatar"><?php workspaceAccountAvatar($hasStaffPhoto,'person'); ?></span>
   <div><strong><?= esc($staff) ?></strong><span><?= esc($roleLabel) ?></span></div>
   <span class="workspace-account-scope"><?= workspaceIcon('map') ?> <?= esc($canChooseRegion?'ทุกเขตสุขภาพ':$scopeName) ?></span>
  </section>
+ <form id="staff-photo-form" class="workspace-photo-form" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf" value="<?= esc($token) ?>">
+  <input type="hidden" name="account_action" value="save_photo">
+  <label>รูปโปรไฟล์ <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/webp" required><small>JPG, PNG หรือ WebP ไม่เกิน 5 MB</small></label>
+  <button type="submit" class="action"><?= workspaceIcon('save') ?>บันทึกรูป</button>
+  <p data-photo-message role="status"></p>
+ </form>
  <?php if (!$staffWorkDock): ?>
  <nav class="workspace-account-links" aria-label="ทางลัดบัญชีเจ้าหน้าที่">
   <a href="dashboard.php?view=guide"><?= workspaceIcon('book') ?><span>คู่มือการใช้งาน</span><?= workspaceIcon('next') ?></a>
@@ -1755,6 +1808,30 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
 </script>
 <script>
 (() => {
+ const photoForm=document.querySelector('#staff-photo-form');
+ const photoMessage=photoForm.querySelector('[data-photo-message]');
+ const photoSubmit=photoForm.querySelector('button[type=submit]');
+ photoForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(photoSubmit.disabled)return;
+  photoSubmit.disabled=true;
+  photoMessage.textContent='กำลังบันทึกรูป';
+  try{
+   const response=await fetch('dashboard.php',{method:'POST',body:new FormData(photoForm),cache:'no-store'});
+   if(response.redirected)throw new Error('กรุณาเข้าสู่ระบบใหม่');
+   const result=await response.json();
+   photoMessage.textContent=result.message;
+   if(!response.ok)return;
+   const photoUrl='dashboard.php?account_photo=1&saved='+Date.now();
+   document.querySelectorAll('[data-staff-photo]').forEach(image=>{image.src=photoUrl;image.hidden=false;});
+   document.querySelectorAll('[data-staff-photo-fallback]').forEach(icon=>{icon.hidden=true;});
+   photoForm.reset();
+  }catch(error){
+   photoMessage.textContent=error instanceof SyntaxError?'บันทึกรูปไม่ได้ กรุณาลองอีกครั้ง':error.message;
+  }finally{
+   photoSubmit.disabled=false;
+  }
+ });
  const form=document.querySelector('#account-password-form');
  const message=form.querySelector('[data-password-message]');
  const submit=form.querySelector('button[type=submit]');

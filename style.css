@@ -2972,3 +2972,13 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .workspace-account-security[open] .hosted-menu-caret {transform:rotate(225deg);}
 .workspace-account-links a:hover,.workspace-account-security summary:hover {background:color-mix(in srgb,var(--violet) 10%,transparent);}
 .workspace-account-security form {margin-top:.65rem;}
+
+.workspace-account-icon,.workspace-account-avatar {position:relative;overflow:hidden;}
+:is(.workspace-account-icon,.workspace-account-avatar) img[data-staff-photo] {display:block;width:100%;height:100%;object-fit:cover;}
+:is(.workspace-account-icon,.workspace-account-avatar) [hidden] {display:none!important;}
+.workspace-photo-form {display:flex;align-items:end;flex-wrap:wrap;gap:.4rem .65rem;margin:.65rem 0;}
+.workspace-photo-form label {display:grid;flex:1;min-width:min(100%,12rem);gap:.2rem;}
+.workspace-photo-form input {max-width:100%;}
+.workspace-photo-form small {font-size:.8rem;color:var(--muted);}
+.workspace-photo-form p {flex-basis:100%;margin:0;font-size:.86rem;}
+.workspace-photo-form p:empty {display:none;}

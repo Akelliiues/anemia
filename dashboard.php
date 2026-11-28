@@ -1451,6 +1451,12 @@ for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group
    opening ? [{opacity: 0}, {opacity: 1}] : [{opacity: 1}, {opacity: 0}],
    {duration: 150, delay: (opening ? index : items.length - 1 - index) * 42, easing: 'ease-out', fill: 'both'}
   ));
+  const rolled = {clipPath: 'inset(0 0 100% 0 round .7rem)'};
+  const unrolled = {clipPath: 'inset(0 0 0 0 round .7rem)'};
+  animations.push(links.animate(
+   opening ? [rolled, unrolled] : [unrolled, rolled],
+   {duration: 190 + Math.max(0, items.length - 1) * 42, easing: opening ? 'cubic-bezier(.22,.72,.25,1)' : 'ease-in-out', fill: 'both'}
+  ));
   return Promise.all(animations.map(animation => animation.finished));
  }
 

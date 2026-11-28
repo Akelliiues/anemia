@@ -19,20 +19,11 @@ $resultLabels=['low'=>'ดูแลต่อเนื่อง','medium'=>'ม�
  </nav>
  <?php if ($group!=='home'): ?>
  <?php $subtabs=$group==='results'?$resultLabels:array_intersect_key($slots,$articles); ?>
- <nav class="voice-coach-subtabs" aria-label="<?= $group==='results'?'เลือกผลประเมิน':'เลือกบทความ' ?>">
+ <nav class="voice-coach-topics" aria-label="<?= $group==='results'?'เลือกผลประเมิน':'เลือกบทความ' ?>">
   <?php foreach ($subtabs as $key=>$label): ?>
-   <a href="dashboard.php?view=voice-coach&amp;slot=<?= esc($key) ?>" <?= $slot===$key?'aria-current="page"':'' ?>><?= esc($label) ?></a>
+   <a class="action" href="dashboard.php?view=voice-coach&amp;slot=<?= esc($key) ?>" <?= $slot===$key?'aria-current="page"':'' ?>><?= esc($label) ?></a>
   <?php endforeach; ?>
  </nav>
- <script>
- requestAnimationFrame(()=>{
-  const strip=document.querySelector('.voice-coach-subtabs');
-  const selected=strip?.querySelector('[aria-current]');
-  if(!selected)return;
-  const bounds=strip.getBoundingClientRect(),tab=selected.getBoundingClientRect();
-  if(tab.right>bounds.right)strip.scrollLeft+=tab.left-bounds.left;
- });
- </script>
  <?php endif; ?>
  <h2 class="voice-coach-slot-heading"><?= esc($slots[$slot]) ?></h2>
  <?php if ($voiceNotice!==''): ?><p class="notice" role="status"><?= esc($voiceNotice) ?></p><?php endif; ?>

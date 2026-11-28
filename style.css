@@ -2803,21 +2803,24 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-bottom:.8rem;
  border-bottom:1px solid var(--line);
 }
-.voice-coach-tabs a,.voice-coach-subtabs a {
+.voice-coach-tabs a {
  display:flex;align-items:center;justify-content:center;gap:.4rem;min-height:44px;padding:.5rem .65rem;
  text-decoration:none;color:var(--muted);font-weight:650;
 }
 .voice-coach-tabs a {border-bottom:3px solid transparent;margin-bottom:-1px;border-radius:8px 8px 0 0;}
 .voice-coach-tabs a svg {width:17px;height:17px;flex:none;}
-.voice-coach-tabs a:hover,.voice-coach-subtabs a:hover {background:color-mix(in srgb,var(--violet) 8%,transparent);}
+.voice-coach-tabs a:hover {background:color-mix(in srgb,var(--violet) 8%,transparent);}
 .voice-coach-tabs [aria-current] {color:var(--violet);border-bottom-color:var(--violet);}
-.voice-coach-subtabs {
- display:flex;gap:.3rem;overflow-x:auto;overscroll-behavior-x:contain;
- padding:.3rem;margin-bottom:1rem;border-radius:12px;background:color-mix(in srgb,var(--violet) 8%,transparent);
+.voice-coach-topics {
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));
+ gap:.45rem;margin-bottom:1rem;
 }
-.voice-coach-subtabs a {flex:none;white-space:nowrap;border-radius:8px;font-size:.875rem;}
-.voice-coach-subtabs [aria-current] {background:light-dark(#563398,#ddc8ff);color:light-dark(#fff,#291646);}
-.voice-coach-tabs a:focus-visible,.voice-coach-subtabs a:focus-visible {outline:2px solid var(--violet);outline-offset:-3px;}
+.voice-coach-topics .action {
+ justify-content:flex-start;min-height:44px;padding:.45rem .65rem;border-radius:10px;
+ font-size:.875rem;line-height:1.35;text-decoration:none;
+}
+.voice-coach-topics .action[aria-current] {border-color:var(--violet);background:light-dark(#563398,#ddc8ff);color:light-dark(#fff,#291646);}
+.voice-coach-tabs a:focus-visible,.voice-coach-topics a:focus-visible {outline:2px solid var(--violet);outline-offset:-3px;}
 .voice-coach-slot-heading {margin:.15rem 0 .8rem;font-size:1.2rem;}
 .voice-coach-editor {display:grid;grid-template-columns:1.15fr 1fr;gap:1rem;}
 .voice-coach-editor > section {min-width:0;border:1px solid var(--line);border-radius:14px;padding:1rem;}

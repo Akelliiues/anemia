@@ -189,6 +189,13 @@ try {
             $return['view']='members';
             header('Location: dashboard.php?'.http_build_query($return),true,303); exit;
         }
+        if ($_SERVER['REQUEST_METHOD']==='GET' && ($_SERVER['HTTP_X_MEMBER_DIRECTORY']??'')==='1') {
+            require_once __DIR__.'/_private/icons.php';
+            $memberDirectoryFragment=true;
+            header('Content-Type: text/html; charset=UTF-8');
+            require __DIR__.'/_private/members-view.php';
+            exit;
+        }
         $memberNotice=$_SESSION['member_notice']??'';
         unset($_SESSION['member_notice']);
     }

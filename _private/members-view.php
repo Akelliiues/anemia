@@ -58,7 +58,7 @@ $member=filter_input(INPUT_GET,'member')??'';
 $task=filter_input(INPUT_GET,'member_task')??'';
 $detail=null;
 $audit=[];
-if (is_string($member)&&preg_match('/^[a-f0-9]{32}$/D',$member)) {
+if (empty($memberDirectoryFragment) && is_string($member)&&preg_match('/^[a-f0-9]{32}$/D',$member)) {
     $query=$db->prepare('SELECT a.id,a.connected_at,a.suspended_at,p.username,m.completed_at,
         EXISTS(SELECT 1 FROM anemia_demo_member_network d WHERE d.account_id=a.id) AS has_demo_network,
         (SELECT GROUP_CONCAT(i.provider ORDER BY i.provider) FROM anemia_participant_identity i WHERE i.account_id=a.id) AS providers,
@@ -89,7 +89,7 @@ $methods=static function(array $row) use ($providerLabels): string {
     ['ready','ใช้งานได้',(int)$summary['total']-(int)$summary['suspended'],'active'],
     ['lock','ระงับ',(int)$summary['suspended'],'suspended'],
   ] as [$icon,$label,$count,$cardStatus]): ?>
-   <a class="member-summary-item member-summary-<?= $icon ?>" href="<?= esc($memberUrl(['member_status'=>$cardStatus,'member_cursor'=>''])) ?>" <?= $status===$cardStatus?'aria-current="true"':'' ?>>
+   <a class="member-summary-item member-summary-<?= $icon ?>" data-member-filter="<?= esc($cardStatus) ?>" href="<?= esc($memberUrl(['member_status'=>$cardStatus,'member_cursor'=>''])) ?>" <?= $status===$cardStatus?'aria-current="true"':'' ?>>
     <span class="member-summary-icon"><?= workspaceIcon($icon) ?></span>
     <span class="member-summary-label"><?= $label ?></span><strong><?= number_format($count) ?></strong>
    </a>
@@ -130,6 +130,8 @@ $methods=static function(array $row) use ($providerLabels): string {
   <?php if ($rows && $hasOlder): ?><a class="action" href="<?= esc($memberUrl(['member_cursor'=>$memberCursor('older',end($rows))])) ?>">เก่ากว่า <?= workspaceIcon('next') ?></a><?php endif; ?>
  </nav><?php endif; ?>
 </section>
+<?php if (!empty($memberDirectoryFragment)) return; ?>
+<p class="notice" id="member-directory-status" role="status"></p>
 <?php if ($detail): ?>
 <dialog id="member-details" class="workspace-dialog" open aria-labelledby="member-details-title">
  <header class="workspace-dialog-heading"><h2 id="member-details-title"><?= $task==='rename'?'แก้ไขชื่อบัญชี':($task==='status'?($detail['suspended_at']?'เปิดบัญชีคืน':'ระงับบัญชี'):'รายละเอียดสมาชิก') ?></h2><a class="action" href="<?= esc($memberUrl()) ?>" aria-label="ปิด"><?= workspaceIcon('close') ?></a></header>
@@ -171,21 +173,4 @@ if(typeof memberDialog.showModal==='function'){
 }
 </script>
 <?php endif; ?>
-<script>
-for(const trigger of document.querySelectorAll('[data-member-menu]')){
- const menu=document.getElementById(trigger.dataset.memberMenu);
- if(typeof menu.showPopover!=='function')continue;
- menu.hidden=false;
- trigger.setAttribute('aria-expanded','false');
- trigger.addEventListener('click',event=>{
-  if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
-  event.preventDefault();
-  if(menu.matches(':popover-open')){menu.hidePopover();return;}
-  menu.showPopover();
-  const rect=trigger.getBoundingClientRect();
-  menu.style.left=Math.max(8,Math.min(rect.right-menu.offsetWidth,innerWidth-menu.offsetWidth-8))+'px';
-  menu.style.top=(rect.bottom+menu.offsetHeight+8<innerHeight?rect.bottom+4:Math.max(8,rect.top-menu.offsetHeight-4))+'px';
- });
- menu.addEventListener('toggle',()=>trigger.setAttribute('aria-expanded',String(menu.matches(':popover-open'))));
-}
-</script>
+<script defer src="member-directory.js?v=1"></script>

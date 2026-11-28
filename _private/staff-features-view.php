@@ -17,6 +17,10 @@ $featureHighlights = [
   <p>Anemia Portal รวมข้อมูลที่ใช้ประสานงาน ติดตามผล และออกรายงานไว้ในหลังบ้านตามสิทธิ์ของแต่ละบัญชี</p>
  </div>
  <div class="feature-grid feature-orbit">
+  <svg class="feature-orbit-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+   <path d="M20 25L50 50L80 25M20 75L50 50" vector-effect="non-scaling-stroke"/>
+   <path class="feature-orbit-link-fourth" d="M80 75L50 50" vector-effect="non-scaling-stroke"/>
+  </svg>
   <div class="feature-hub"><?= workspaceIcon('drop') ?><strong>Anemia Portal</strong><span>ประสานงาน · ติดตาม · รายงาน</span></div>
  <?php foreach ($featureHighlights as [$destination,$title,$description]):
     if (!isset($tabs[$destination])) continue;

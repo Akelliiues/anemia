@@ -9,7 +9,7 @@ if (!$provinceDocument && !$region && $identity['role']!=='provincial_report') $
 <!doctype html><html lang="th"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= esc($reportTitle) ?> · Anemia Portal</title>
-<link rel="stylesheet" href="report-print.css?v=4">
+<link rel="stylesheet" href="report-print.css?v=5">
 </head><body<?= $provinceDocument?' class="report-landscape"':'' ?>>
 <div class="report-print-toolbar">
  <button type="button" aria-label="พิมพ์รายงาน" title="พิมพ์รายงาน" onclick="document.fonts.ready.then(()=>window.print())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8V3h12v5M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM6 11h1"/></svg></button>
@@ -61,7 +61,7 @@ if (!$provinceDocument && !$region && $identity['role']!=='provincial_report') $
   <?php else: ?><p>ยังไม่มีข้อเสนอแนะเพิ่มเติมในตัวกรองนี้</p><?php endif; ?>
  <?php endif; ?>
 <footer class="report-paper-footer">
-  <img src="portal-heart-clear.png" alt="" width="16" height="16">
+  <img src="portal-heart-clear.png" alt="" width="23" height="23">
   <div><p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</p><p>Anemia Portal</p></div>
  </footer>
- </main><script src="report-pdf/download.js?v=1"></script></body></html>
+ </main><script src="report-pdf/download.js?v=2"></script></body></html>

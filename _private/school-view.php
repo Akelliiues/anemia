@@ -140,7 +140,7 @@ return static function (PDO $db,array $identity): void {
 <div class="school-workspace">
 <?php if ($notice!==''): ?><p class="notice" role="status"><?= schoolEscape($notice) ?></p><?php endif; ?>
 <?php if (!$teacher): ?>
-<section class="card" aria-labelledby="school-area-title">
+<section class="card school-area" aria-labelledby="school-area-title">
  <h2 id="school-area-title"><?= workspaceIcon('map') ?> พื้นที่กิจกรรมโรงเรียน</h2>
  <form method="get" class="network-form school-directory-filters">
   <?php if (!$teacher): ?><input type="hidden" name="view" value="schools"><?php endif; ?>
@@ -154,16 +154,17 @@ return static function (PDO $db,array $identity): void {
   </select></label>
   <button class="action primary"><?= workspaceIcon('filter') ?>แสดงโรงเรียน</button>
  </form>
-</section>
-<?php endif; ?>
 <?php if ($admin): ?>
-<details class="card"><summary>เพิ่มโรงเรียน</summary>
+<details class="school-create">
+ <summary class="action school-create-toggle" aria-label="เพิ่มโรงเรียน" title="เพิ่มโรงเรียน"><?= workspaceIcon('school-add') ?></summary>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields"><?php schoolFields($csrf,'school-create'); ?>
   <label>ชื่อโรงเรียน<input name="name" maxlength="160" required></label>
   <label>จังหวัด<select name="province" required><?php foreach($provinces as $code=>$name): ?><option value="<?= schoolEscape((string)$code) ?>"><?= schoolEscape($name) ?></option><?php endforeach; ?></select></label>
   <button class="action primary">เพิ่มโรงเรียน</button>
  </form>
 </details>
+<?php endif; ?>
+</section>
 <?php endif; ?>
 <?php if ($directory['schools']): ?>
 <section class="card school-directory" id="school-directory" aria-labelledby="school-directory-title">

@@ -100,14 +100,27 @@ function schoolSave(PDO $db,array $identity,array $input): int
             $province=$input['province']??null;
             if ($action==='directory-add') {
                 $code=$input['directory_code']??null;
-                $entry=is_string($code)?(array_column(schoolUbonDirectory()['schools'],null,'code')[$code]??null):null;
-                if (!$entry) throw new DomainException('ไม่พบโรงเรียนในข้อมูลอ้างอิง');
+                $province=$input['directory_province']??'34';
+                $entry=is_string($province) && is_string($code)?schoolDirectoryEntry($province,$code):null;
+                if (!$entry) throw new DomainException('ไม่พบโรงเรียนในข้อมูลอ้างอิงของจังหวัดที่เลือก');
                 $name=$entry['name'];
-                $province='34';
             }
             if (!is_string($province) || !schoolValue($db,'SELECT 1 FROM anemia_province WHERE code=?',[$province])) throw new DomainException('กรุณาเลือกจังหวัด');
-            $db->prepare('INSERT INTO anemia_school (name,province_code) VALUES (?,?)')->execute([schoolText($name,160),$province]);
-            $school=(int)$db->lastInsertId();
+            $school=0;
+            if ($action==='directory-add') {
+                $school=(int)schoolValue($db,'SELECT school_id FROM anemia_school_directory_link WHERE code=? FOR UPDATE',[$entry['code']]);
+                if (!$school) {
+                    $school=(int)schoolValue($db,'SELECT id FROM anemia_school WHERE province_code=? AND name IN (?,?) ORDER BY name=? DESC,id LIMIT 1 FOR UPDATE',
+                        [$province,$name,$entry['legacy_name']??$name,$name]);
+                }
+            }
+            if (!$school) {
+                $db->prepare('INSERT INTO anemia_school (name,province_code) VALUES (?,?)')->execute([schoolText($name,160),$province]);
+                $school=(int)$db->lastInsertId();
+            }
+            if ($action==='directory-add') {
+                $db->prepare('INSERT IGNORE INTO anemia_school_directory_link (code,school_id) VALUES (?,?)')->execute([$entry['code'],$school]);
+            }
         } else {
             $record=schoolSchoolRecord($db,$school);
             if ($teacher && (!(int)$record['enabled'] || !schoolValue($db,'SELECT 1 FROM anemia_school_teacher WHERE school_id=? AND username=?',[$school,$actor]))) {

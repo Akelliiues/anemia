@@ -58,6 +58,9 @@ return static function (PDO $db,array $identity): void {
             $cohort=filter_input(INPUT_POST,'cohort',FILTER_VALIDATE_INT);
             if ($cohort) $redirect['cohort']=$cohort;
         }
+        if (($_POST['school_action']??'')==='directory-add' && isset($savedSchool)) {
+            $redirect['province']=$_POST['directory_province']??'34';
+        }
         $redirect=$schoolRoute+$redirect;
         header('Location: '.$schoolUrl.($redirect?'?'.http_build_query($redirect):''),true,303); exit;
     }
@@ -177,17 +180,25 @@ return static function (PDO $db,array $identity): void {
         default=>true,
     });
     $provinces=$admin?$db->query('SELECT code,name FROM anemia_province ORDER BY name')->fetchAll(PDO::FETCH_KEY_PAIR):[];
-    $directory=$schoolTab==='registry' && $province==='34'?schoolUbonDirectory():['districts'=>[],'schools'=>[]];
+    $directory=$schoolTab==='registry' && $province!==''?schoolDirectory($province):['districts'=>[],'schools'=>[]];
+    $districts=$directory['districts'];
     $district=$_GET['district']??'';
-    if (!in_array($district,$directory['districts'],true)) $district='';
+    if (!in_array($district,$districts,true)) $district='';
     $keyword=$_GET['q']??'';
     $keyword=is_string($keyword)&&strlen($keyword)<=180?trim($keyword):'';
     $listedSchools=array_values(array_filter($directory['schools'],static fn(array $row): bool =>
         ($district==='' || $row['district']===$district) &&
-        ($keyword==='' || stripos($row['name'].' '.$row['code'],$keyword)!==false)));
-    $registeredUbon=[];
-    foreach ($schools as $registeredSchool) {
-        if ($registeredSchool['province_code']==='34') $registeredUbon[$registeredSchool['name']]=$registeredSchool['id'];
+        ($keyword==='' || stripos($row['name'].' '.$row['code'].' '.($row['smis']??'').' '.($row['alternate_code']??'').' '.($row['legacy_name']??''),$keyword)!==false)));
+    $directoryPageSize=30;
+    $directoryPages=max(1,(int)ceil(count($listedSchools)/$directoryPageSize));
+    $directoryPage=max(1,min($directoryPages,filter_input(INPUT_GET,'directory_page',FILTER_VALIDATE_INT)?:1));
+    $directoryFilters=['district'=>$district,'q'=>$keyword];
+    $registeredSchools=array_column($schools,'id','name');
+    $registeredCodes=[];
+    if ($registeredSchools && $directory['schools']) {
+        $query=$db->prepare('SELECT d.code,d.school_id FROM anemia_school_directory_link d JOIN anemia_school s ON s.id=d.school_id WHERE s.province_code=?');
+        $query->execute([$province]);
+        $registeredCodes=$query->fetchAll(PDO::FETCH_KEY_PAIR);
     }
     $audit=[];
     if(($manage || $canAppoint) && $school && $schoolTab!=='tracking') {
@@ -271,36 +282,51 @@ return static function (PDO $db,array $identity): void {
  </tbody></table></div>
 </section>
 <?php else: ?>
-<?php if ($directory['schools']): ?>
+<?php if ($province!==''): ?>
 <section class="card school-directory" id="school-directory" aria-labelledby="school-directory-title">
- <h2 id="school-directory-title"><?= workspaceIcon('book') ?> โรงเรียนมัธยมปลาย จังหวัดอุบลราชธานี</h2>
- <p><?= count($directory['schools']) ?> แห่งใน <?= count($directory['districts']) ?> อำเภอ · ปีการศึกษา 2569</p>
+ <h2 id="school-directory-title"><?= workspaceIcon('book') ?> โรงเรียนมัธยมปลาย · <?= schoolEscape($areaProvinces[$province]) ?></h2>
+ <p><?= count($directory['schools']) ?> แห่ง · ตัวกรอง <?= count($districts) ?> <?= $province==='10'?'เขต':'อำเภอ' ?></p>
  <form method="get" action="#school-directory" class="network-form school-directory-filters">
   <?php if (!$teacher): ?><input type="hidden" name="view" value="schools"><?php endif; ?>
   <?php foreach ($areaFilters as $key=>$value): ?><input type="hidden" name="<?= schoolEscape($key) ?>" value="<?= schoolEscape((string)$value) ?>"><?php endforeach; ?>
   <?php if ($school): ?><input type="hidden" name="school" value="<?= (int)$school['id'] ?>"><?php endif; ?>
-  <label>อำเภอ<select name="district"><option value="">ทุกอำเภอ</option><?php foreach ($directory['districts'] as $name): ?><option <?= $name===$district?'selected':'' ?>><?= schoolEscape($name) ?></option><?php endforeach; ?></select></label>
+  <label><?= $province==='10'?'เขต':'อำเภอ' ?><select name="district"><option value="">ทุก<?= $province==='10'?'เขต':'อำเภอ' ?></option><?php foreach ($districts as $name): ?><option <?= $name===$district?'selected':'' ?>><?= schoolEscape($name) ?></option><?php endforeach; ?></select></label>
   <label>ชื่อหรือรหัสโรงเรียน<input type="search" name="q" maxlength="60" value="<?= schoolEscape($keyword) ?>"></label>
   <button class="action primary"><?= workspaceIcon('filter') ?>ค้นหา</button>
  </form>
  <p role="status">พบ <?= count($listedSchools) ?> แห่ง</p>
  <div class="tablewrap school-directory-table" tabindex="0" aria-label="รายชื่อโรงเรียน">
  <table class="admin-table">
-  <thead><tr><th scope="col">โรงเรียน</th><th scope="col">อำเภอ</th><th scope="col">ระดับชั้น</th><th scope="col">จัดการ</th></tr></thead>
-  <tbody><?php foreach ($listedSchools as $row): ?><tr>
-   <th scope="row"><?= schoolEscape($row['name']) ?><br><small><?= schoolEscape($row['code'].' · '.$row['agency']) ?></small></th>
+  <thead><tr><th scope="col">โรงเรียน</th><th scope="col"><?= $province==='10'?'เขต':'อำเภอ' ?></th><th scope="col">ระดับชั้น</th><th scope="col">จัดการ</th></tr></thead>
+  <tbody><?php foreach (array_slice($listedSchools,($directoryPage-1)*$directoryPageSize,$directoryPageSize) as $row): ?>
+   <?php $registeredId=$registeredCodes[$row['code']]??$registeredSchools[$row['name']]??$registeredSchools[$row['legacy_name']??'']??null; ?><tr>
+   <th scope="row"><?= schoolEscape($row['name']) ?><br><small><?= schoolEscape(($row['source']==='dla'?'อ้างอิง ':'').$row['code'].' · '.$row['agency']) ?></small></th>
    <td><?= schoolEscape($row['district']) ?></td>
-   <td><?= schoolEscape(implode(', ',str_replace('M','ม.',$row['grades']))) ?></td>
-   <td><?php if (isset($registeredUbon[$row['name']])): ?>
-    <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredUbon[$row['name']]])) ?>#school-activities">จัดการโรงเรียน</a>
+   <td><?= schoolEscape($row['grades']?implode(', ',str_replace('M','ม.',$row['grades'])):'มัธยมปลาย (ไม่ระบุชั้น)') ?></td>
+   <td><?php if ($registeredId): ?>
+    <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities">จัดการโรงเรียน</a>
    <?php elseif ($admin): ?>
-    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าทะเบียน</button></form>
+    <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>"><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>"><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าทะเบียน</button></form>
    <?php else: ?>ยังไม่เข้าทะเบียน<?php endif; ?></td>
   </tr><?php endforeach; ?>
-  <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนตามตัวกรอง</td></tr><?php endif; ?>
+  <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนในข้อมูลอ้างอิงตามตัวกรอง</td></tr><?php endif; ?>
   </tbody>
  </table></div>
- <p class="notice">แสดงโรงเรียนที่มีผู้เรียน ม.4–ม.6 อย่างน้อยหนึ่งชั้น ณ 10 มิ.ย. 2569 ไม่นับศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอ <a href="https://www.ubnpeo.go.th/eis/" target="_blank" rel="noopener">สำนักงานศึกษาธิการจังหวัดอุบลราชธานี</a></p>
+ <?php if ($directoryPages>1): ?>
+ <nav class="actions" aria-label="หน้ารายชื่อโรงเรียน">
+  <?php if ($directoryPage>1): ?><a class="action" href="<?= schoolEscape($schoolLocation($directoryFilters+['directory_page'=>$directoryPage-1])) ?>#school-directory">ก่อนหน้า</a><?php endif; ?>
+  <span>หน้า <?= $directoryPage ?> / <?= $directoryPages ?></span>
+  <?php if ($directoryPage<$directoryPages): ?><a class="action" href="<?= schoolEscape($schoolLocation($directoryFilters+['directory_page'=>$directoryPage+1])) ?>#school-directory">ถัดไป</a><?php endif; ?>
+ </nav>
+ <?php endif; ?>
+ <p class="notice">เกณฑ์คือพบผู้เรียน ม.4–ม.6 อย่างน้อยหนึ่งชั้น หรือมีข้อมูลว่าเปิดสอนมัธยมปลาย
+  <a href="https://web2.bopp.go.th/?page_id=878" target="_blank" rel="noopener">สพฐ. 10 มิ.ย. 2569</a>
+  · <a href="https://school.opec.go.th/" target="_blank" rel="noopener">ทะเบียนโรงเรียนเอกชน สช.</a>
+  · <a href="https://opendata.dla.go.th/dataset/school" target="_blank" rel="noopener">ทะเบียนโรงเรียนท้องถิ่น ปี 2569</a>
+  · <a href="https://www.dla.go.th/download/upload/document/type2/2567/9/32235_2_1726126055127.pdf?notDownload=Y" target="_blank" rel="noopener">หลักฐานระดับมัธยมปลายของท้องถิ่น ปี 2567</a>
+  <?php if ($province==='10'): ?> · <a href="https://data.go.th/th/dataset/student2568" target="_blank" rel="noopener">ข้อมูลโรงเรียนสังกัดกรุงเทพมหานคร ปี 2568</a><?php endif; ?>
+  <?php if ($province==='34'): ?> · <a href="https://www.ubnpeo.go.th/eis/" target="_blank" rel="noopener">ข้อมูลเพิ่มเติมจากศึกษาธิการจังหวัดอุบลราชธานี</a><?php endif; ?>
+ </p>
 </section>
 <?php endif; ?>
 <?php if (!$school): ?><section class="card"><p><?= $teacher?'ยังไม่มีโรงเรียนที่บัญชีนี้ดูแล':($province===''?'เลือกจังหวัดแล้วกดแสดงโรงเรียน':'ยังไม่มีโรงเรียนในทะเบียนของจังหวัดนี้') ?></p></section>

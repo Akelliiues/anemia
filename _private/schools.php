@@ -4,9 +4,10 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 
 function anemiaEnsureSchools(PDO $db): void
 {
-    if ($db->query('SELECT version FROM anemia_schema WHERE version=26')->fetchColumn()) return;
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=27')->fetchColumn()) return;
     $definitions=[
         'school'=>'id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(160) NOT NULL, province_code CHAR(2) NOT NULL, enabled TINYINT NOT NULL DEFAULT 1, UNIQUE(province_code,name)',
+        'school_directory_link'=>'code VARCHAR(12) CHARACTER SET ascii PRIMARY KEY, school_id INT UNSIGNED NOT NULL, INDEX(school_id)',
         'school_teacher'=>'username VARCHAR(40) PRIMARY KEY, school_id INT UNSIGNED NOT NULL',
         'school_cohort'=>'id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, school_id INT UNSIGNED NOT NULL, teacher VARCHAR(40) NOT NULL, title VARCHAR(100) NOT NULL, classroom VARCHAR(80) NOT NULL, opens_on DATE NOT NULL, closes_on DATE NOT NULL, invite CHAR(32) CHARACTER SET ascii NOT NULL UNIQUE, programme_version VARCHAR(40) NOT NULL, accepting TINYINT NOT NULL DEFAULT 1, INDEX(school_id,teacher)',
         'school_member'=>'cohort_id INT UNSIGNED NOT NULL, account_id CHAR(32) CHARACTER SET ascii NOT NULL, joined_at DATETIME NOT NULL, PRIMARY KEY(cohort_id,account_id)',
@@ -18,7 +19,7 @@ function anemiaEnsureSchools(PDO $db): void
         'school_audit'=>'id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, actor VARCHAR(40) NOT NULL, action_name VARCHAR(72) NOT NULL, school_id INT UNSIGNED NOT NULL, cohort_id INT UNSIGNED NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
     ];
     foreach ($definitions as $table=>$columns) $db->exec("CREATE TABLE IF NOT EXISTS anemia_$table ($columns) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (25),(26)');
+    $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (25),(26),(27)');
 }
 
 function schoolEscape(string $value): string
@@ -51,9 +52,19 @@ function schoolScope(array $identity): array
     };
 }
 
-function schoolUbonDirectory(): array
+function schoolDirectory(string $province): array
 {
-    return json_decode((string)file_get_contents(__DIR__.'/ubon-upper-secondary-2569.json'),true,512,JSON_THROW_ON_ERROR);
+    static $national;
+    $national??=json_decode((string)file_get_contents(__DIR__.'/upper-secondary-2569.json'),true,512,JSON_THROW_ON_ERROR);
+    return $national[$province]??['districts'=>[],'schools'=>[]];
+}
+
+function schoolDirectoryEntry(string $province,string $code): ?array
+{
+    foreach (schoolDirectory($province)['schools'] as $row) {
+        if (in_array($code,[$row['code'],$row['smis']??null,$row['alternate_code']??null],true)) return $row;
+    }
+    return null;
 }
 
 require_once __DIR__.'/school-management.php';

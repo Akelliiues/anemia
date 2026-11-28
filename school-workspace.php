@@ -25,7 +25,7 @@ try {
     $identity=anemiaStaffIdentity($db,$_SESSION['username']);
     if (!$identity) { http_response_code(403); exit('บัญชีนี้เข้าใช้งานไม่ได้'); }
     if ($identity['role']!=='school_teacher' && $_SERVER['REQUEST_METHOD']!=='POST') {
-        $query=['view'=>'schools']+array_intersect_key($_GET,array_flip(['region','province','school','cohort','district','q','school_tab','year','school_status','room_year','unassigned']));
+        $query=['view'=>'schools']+array_intersect_key($_GET,array_flip(['region','province','school','cohort','district','q','school_tab','year','school_status','room_year','unassigned','directory_page']));
         header('Location: dashboard.php?'.http_build_query($query),true,303); exit;
     }
     $renderSchools=require __DIR__.'/_private/school-view.php';

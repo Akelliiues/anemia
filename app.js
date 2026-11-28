@@ -178,8 +178,9 @@ function publicFeatures(){
  set(panel(`<div class="feature-pitch">${pageHeading('check','รู้ความเสี่ยง แล้ววางแผนดูแลตัวเองต่อ','Anemia Portal เชื่อมการคัดกรองภาวะโลหิตจาง การเรียนรู้ และการเข้าถึงหน่วยบริการไว้ในที่เดียว')}</div>
  <div class="feature-grid feature-orbit">
   <svg class="feature-orbit-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-   <path d="M20 25L50 50L80 25M20 75L50 50" vector-effect="non-scaling-stroke"/>
-   <path class="feature-orbit-link-fourth" d="M80 75L50 50" vector-effect="non-scaling-stroke"/>
+   <path d="M0 16.67L50 50L100 16.67M0 50H50" vector-effect="non-scaling-stroke"/>
+   <path class="feature-orbit-link-fourth" d="M100 83.33L50 50" vector-effect="non-scaling-stroke"/>
+   <path class="feature-orbit-link-fifth" d="M0 83.33L50 50" vector-effect="non-scaling-stroke"/>
   </svg>
   <div class="feature-hub">${icon('drop')}<strong>Anemia Portal</strong><span>คัดกรอง · เรียนรู้ · ติดตาม</span></div>
   ${entries.map(([symbol,title,description,label,url])=>`

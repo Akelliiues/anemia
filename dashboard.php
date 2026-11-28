@@ -847,7 +847,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v187">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=8"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v188">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showOverviewCharts): ?>
@@ -934,6 +934,9 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php endif; endforeach; ?>
   </nav>
  </header>
+ <?php endif; ?>
+ <div class="admin-content" id="staff-report-content">
+  <?php if (!$staffAppView): ?><div class="admin-heading"><div class="workspace-heading-row"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
  <?php if ($sampleEnabled && in_array($view,$sampleViews,true)): ?>
   <form class="workspace-data-mode no-print" action="dashboard.php" method="get" aria-label="แหล่งข้อมูล">
    <input type="hidden" name="view" value="<?= esc($view) ?>">
@@ -954,9 +957,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    </button>
   </form>
  <?php endif; ?>
- <?php endif; ?>
- <div class="admin-content" id="staff-report-content">
-  <?php if (!$staffAppView): ?><div class="admin-heading"><h1 class="title"><?= esc($view === 'overview' ? 'ภาพรวมการคัดกรองและติดตาม' : $tabs[$view]) ?></h1>
+   </div>
    <?php if ($view !== 'overview'): ?><p><?= esc($scopeName) ?></p><?php endif; ?>
    <?php if ($view==='scan-request'): ?><a class="action no-print" href="dashboard.php?view=mobile"><?= workspaceIcon('back') ?>งานเจ้าหน้าที่</a><?php endif; ?>
   </div>

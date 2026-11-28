@@ -2936,7 +2936,9 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  .feature-orbit .feature-voice-preview .voice-coach {text-align:start;}
 }
 
-.workspace-data-mode {display:flex;justify-content:flex-end;padding:.35rem clamp(.65rem,2.4vw,1.5rem);border-bottom:1px solid var(--line);}
+.workspace-heading-row {display:flex;align-items:center;justify-content:space-between;gap:clamp(.45rem,2vw,1rem);}
+.workspace-heading-row h1 {min-width:0;}
+.workspace-data-mode {display:flex;flex:none;margin:0;white-space:nowrap;}
 .workspace-data-mode button {display:inline-flex;align-items:center;gap:.5rem;min-height:36px;padding:.2rem .4rem;font-size:.83rem;color:var(--muted);}
 .workspace-data-mode button:hover {background:color-mix(in srgb,var(--violet) 10%,transparent);}
 .workspace-data-mode button[aria-checked=false] .workspace-data-live,

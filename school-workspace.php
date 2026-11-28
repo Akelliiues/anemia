@@ -83,6 +83,18 @@ try {
         }
     }
     $provinces=$admin?$db->query('SELECT code,name FROM anemia_province ORDER BY name')->fetchAll(PDO::FETCH_KEY_PAIR):[];
+    $directory=$admin?schoolUbonDirectory():['districts'=>[],'schools'=>[]];
+    $district=$_GET['district']??'';
+    if (!in_array($district,$directory['districts'],true)) $district='';
+    $keyword=$_GET['q']??'';
+    $keyword=is_string($keyword)&&strlen($keyword)<=180?trim($keyword):'';
+    $listedSchools=array_values(array_filter($directory['schools'],static fn(array $row): bool =>
+        ($district==='' || $row['district']===$district) &&
+        ($keyword==='' || stripos($row['name'].' '.$row['code'],$keyword)!==false)));
+    $registeredUbon=[];
+    foreach ($schools as $registeredSchool) {
+        if ($registeredSchool['province_code']==='34') $registeredUbon[$registeredSchool['name']]=$registeredSchool['id'];
+    }
     $audit=[];
     if($admin && $school) {
         $query=$db->prepare('SELECT actor,action_name,created_at FROM anemia_school_audit WHERE school_id=? ORDER BY id DESC LIMIT 20');
@@ -114,7 +126,7 @@ function schoolCohortFields(array $cohort=[]): void
 ?>
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>กิจกรรมโรงเรียน · Anemia Portal</title>
-<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v1">
+<script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=school-v2">
 <script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=1"></script>
 <body class="staff-dashboard-page"><main class="school-workspace">
 <header class="card">
@@ -133,9 +145,39 @@ function schoolCohortFields(array $cohort=[]): void
  </form>
 </details>
 <?php endif; ?>
+<?php if ($admin): ?>
+<section class="card school-directory" id="school-directory" aria-labelledby="school-directory-title">
+ <h2 id="school-directory-title"><?= workspaceIcon('book') ?> โรงเรียนมัธยมปลาย จังหวัดอุบลราชธานี</h2>
+ <p><?= count($directory['schools']) ?> แห่งใน <?= count($directory['districts']) ?> อำเภอ · ปีการศึกษา 2569</p>
+ <form method="get" action="school-workspace.php#school-directory" class="network-form school-directory-filters">
+  <?php if ($school): ?><input type="hidden" name="school" value="<?= (int)$school['id'] ?>"><?php endif; ?>
+  <label>อำเภอ<select name="district"><option value="">ทุกอำเภอ</option><?php foreach ($directory['districts'] as $name): ?><option <?= $name===$district?'selected':'' ?>><?= schoolEscape($name) ?></option><?php endforeach; ?></select></label>
+  <label>ชื่อหรือรหัสโรงเรียน<input type="search" name="q" maxlength="60" value="<?= schoolEscape($keyword) ?>"></label>
+  <button class="action primary"><?= workspaceIcon('filter') ?>ค้นหา</button>
+ </form>
+ <p role="status">พบ <?= count($listedSchools) ?> แห่ง</p>
+ <div class="tablewrap school-directory-table" tabindex="0" aria-label="รายชื่อโรงเรียน">
+ <table class="admin-table">
+  <thead><tr><th scope="col">โรงเรียน</th><th scope="col">อำเภอ</th><th scope="col">ระดับชั้น</th><th scope="col">จัดการ</th></tr></thead>
+  <tbody><?php foreach ($listedSchools as $row): ?><tr>
+   <th scope="row"><?= schoolEscape($row['name']) ?><br><small><?= schoolEscape($row['code'].' · '.$row['agency']) ?></small></th>
+   <td><?= schoolEscape($row['district']) ?></td>
+   <td><?= schoolEscape(implode(', ',str_replace('M','ม.',$row['grades']))) ?></td>
+   <td><?php if (isset($registeredUbon[$row['name']])): ?>
+    <a class="action" href="?school=<?= (int)$registeredUbon[$row['name']] ?>#school-activities">จัดการโรงเรียน</a>
+   <?php else: ?>
+    <form method="post"><?php schoolFields($csrf,'directory-add'); ?><input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>"><button class="action"><?= workspaceIcon('ready') ?>เพิ่มเข้าทะเบียน</button></form>
+   <?php endif; ?></td>
+  </tr><?php endforeach; ?>
+  <?php if (!$listedSchools): ?><tr><td colspan="4">ไม่พบโรงเรียนตามตัวกรอง</td></tr><?php endif; ?>
+  </tbody>
+ </table></div>
+ <p class="notice">แสดงโรงเรียนที่มีผู้เรียน ม.4–ม.6 อย่างน้อยหนึ่งชั้น ณ 10 มิ.ย. 2569 ไม่นับศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอ <a href="https://www.ubnpeo.go.th/eis/" target="_blank" rel="noopener">สำนักงานศึกษาธิการจังหวัดอุบลราชธานี</a></p>
+</section>
+<?php endif; ?>
 <?php if (!$school): ?><section class="card"><p>ยังไม่มีโรงเรียนที่บัญชีนี้ดูแล</p></section>
 <?php else: ?>
-<section class="card">
+<section class="card" id="school-activities">
  <form method="get" class="network-form school-fields">
   <label>โรงเรียน<select name="school"><?php foreach($schools as $item): ?><option value="<?= (int)$item['id'] ?>" <?= $item['id']===$school['id']?'selected':'' ?>><?= schoolEscape($item['name'].' · '.$item['province']) ?></option><?php endforeach; ?></select></label>
   <button class="action">แสดงโรงเรียน</button>

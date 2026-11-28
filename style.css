@@ -2543,3 +2543,16 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .school-cohort :is(form,details,.tablewrap) {margin-top:.55rem;}
 .school-qr img {display:block;max-width:100%;height:auto;margin-top:.5rem;}
 @media(max-width:520px) {.school-workspace .school-fields {grid-template-columns:minmax(0,1fr);}}
+
+.staff-dashboard-page > .school-workspace {min-height:0;align-content:start;max-width:76rem;}
+.school-workspace > .card {padding:clamp(.8rem,2vw,1.25rem);}
+.school-directory h2,.school-workspace > header h1 {margin:.25rem 0;}
+.school-directory p,.school-workspace > header p {margin:.35rem 0;}
+.school-directory-filters {grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto;align-items:end;margin:.75rem 0;}
+.school-directory-filters button {min-height:2.6rem;}
+.school-directory-table {max-height:25rem;overflow:auto;}
+.school-directory-table thead th {position:sticky;top:0;z-index:1;}
+.school-directory-table th small {font-weight:400;color:var(--muted);}
+.school-directory-table :is(th,td) {padding:.45rem .65rem;}
+.school-directory-table td:last-child {white-space:nowrap;}
+@media(max-width:600px) {.school-directory-filters {grid-template-columns:minmax(0,1fr);}}

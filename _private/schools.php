@@ -46,7 +46,12 @@ function schoolScope(array $identity): array
     };
 }
 
-function schoolSave(PDO $db,array $identity,array $input): void
+function schoolUbonDirectory(): array
+{
+    return json_decode((string)file_get_contents(__DIR__.'/ubon-upper-secondary-2569.json'),true,512,JSON_THROW_ON_ERROR);
+}
+
+function schoolSave(PDO $db,array $identity,array $input): int
 {
     $actor=$identity['username'];
     $admin=$identity['role']==='account_admin';
@@ -59,12 +64,21 @@ function schoolSave(PDO $db,array $identity,array $input): void
     $cohort=filter_var($input['cohort']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
     $db->beginTransaction();
     try {
-        if ($action==='school-create') {
+        if (in_array($action,['school-create','directory-add'],true)) {
+            $name=$input['name']??null;
             $province=$input['province']??'';
+            if ($action==='directory-add') {
+                $code=$input['directory_code']??null;
+                $directory=array_column(schoolUbonDirectory()['schools'],null,'code');
+                $entry=is_string($code)?($directory[$code]??null):null;
+                if (!$entry) throw new DomainException('ไม่พบโรงเรียนในข้อมูลอ้างอิง');
+                $name=$entry['name'];
+                $province='34';
+            }
             $check=$db->prepare('SELECT code FROM anemia_province WHERE code=?');
             $check->execute([is_string($province)?$province:'']);
             if (!$check->fetchColumn()) throw new DomainException('กรุณาเลือกจังหวัด');
-            $db->prepare('INSERT INTO anemia_school (name,province_code) VALUES (?,?)')->execute([schoolText($input['name']??null,160),$province]);
+            $db->prepare('INSERT INTO anemia_school (name,province_code) VALUES (?,?)')->execute([schoolText($name,160),$province]);
             $school=(int)$db->lastInsertId();
         } else {
             $check=$db->prepare('SELECT enabled FROM anemia_school WHERE id=? FOR UPDATE');

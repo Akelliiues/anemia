@@ -146,7 +146,7 @@ return static function (PDO $db,array $identity): void {
   <?php if (!$teacher): ?><input type="hidden" name="view" value="schools"><?php endif; ?>
   <label>เขตสุขภาพ<select name="region" onchange="this.form.elements.province.value='';this.form.submit()">
    <?php if (count($regions)>1): ?><option value="0">ทุกเขตตามสิทธิ์</option><?php endif; ?>
-   <?php foreach ($regions as $zone): ?><option value="<?= $zone ?>" <?= $region===$zone?'selected':'' ?>><?= $zone===13?'เขต 13 · กรุงเทพมหานคร':'เขตสุขภาพที่ '.$zone ?></option><?php endforeach; ?>
+   <?php foreach ($regions as $zone): ?><option value="<?= $zone ?>" <?= $region===$zone?'selected':'' ?>><?= 'เขตสุขภาพที่ '.$zone ?></option><?php endforeach; ?>
   </select></label>
   <label>จังหวัด<select name="province" required>
    <option value="">เลือกจังหวัด</option>
@@ -156,7 +156,7 @@ return static function (PDO $db,array $identity): void {
  </form>
 <?php if ($admin): ?>
 <details class="school-create">
- <summary class="action school-create-toggle" aria-label="เพิ่มโรงเรียน" title="เพิ่มโรงเรียน"><?= workspaceIcon('school-add') ?></summary>
+ <summary class="action primary school-create-toggle" aria-label="เพิ่มโรงเรียน" title="เพิ่มโรงเรียน"><?= workspaceIcon('school-add') ?></summary>
  <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields"><?php schoolFields($csrf,'school-create'); ?>
   <label>ชื่อโรงเรียน<input name="name" maxlength="160" required></label>
   <label>จังหวัด<select name="province" required><?php foreach($provinces as $code=>$name): ?><option value="<?= schoolEscape((string)$code) ?>"><?= schoolEscape($name) ?></option><?php endforeach; ?></select></label>

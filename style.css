@@ -2549,10 +2549,12 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .school-directory h2,.school-workspace > header h1 {margin:.25rem 0;}
 .school-directory p,.school-workspace > header p {margin:.35rem 0;}
 .school-area {--school-area-padding:clamp(.8rem,2vw,1.25rem);position:relative;}
-.school-area:has(.school-create) > h2 {display:flex;align-items:center;gap:.4rem;min-height:2.75rem;margin:0;padding-inline-end:3.35rem;}
-.school-create > .school-create-toggle {position:absolute;inset-block-start:var(--school-area-padding);inset-inline-end:var(--school-area-padding);display:grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;list-style:none;color:var(--violet);}
+.school-area:has(.school-create) > h2 {display:flex;align-items:center;gap:.4rem;min-height:3rem;margin:0;padding-inline-end:3.6rem;}
+.school-create > .school-create-toggle {position:absolute;inset-block-start:var(--school-area-padding);inset-inline-end:var(--school-area-padding);display:grid;place-items:center;width:3rem;height:3rem;padding:0;list-style:none;border-radius:.85rem;background:var(--soft-accent,#55359f);color:#fff;}
 .school-create > .school-create-toggle::-webkit-details-marker {display:none;}
-.school-create > .school-create-toggle svg {width:1.35rem;height:1.35rem;}
+.school-create > .school-create-toggle svg {width:1.65rem;height:1.65rem;}
+.school-create > .school-create-toggle:hover {filter:brightness(1.16);}
+.school-create > .school-create-toggle:focus-visible {outline:2px solid var(--violet);outline-offset:3px;}
 .school-create[open] {border-block-start:1px solid var(--line);padding-block-start:.4rem;}
 .school-directory-filters {grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto;align-items:end;margin:.75rem 0;}
 .school-directory-filters button {min-height:2.6rem;}

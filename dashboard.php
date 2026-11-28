@@ -750,9 +750,9 @@ function workspaceInfo(string $page, ?array $release = null): void
     $groups = [
         ['ภาพรวม','chart',['overview']],
         ['รายงาน','map',['reports','activity','evaluation','programme-report','schools']],
-        ['แบบประเมิน','ready',['assessment']],
         ['นัดหมาย','calendar',['contact-queue','scan-request']],
         ['ระบบ','users',['members','access','audit','sample-settings','network','services']],
+        ['แบบประเมิน','ready',['assessment']],
         ['ช่วยเหลือ','book',['guide','about','team','release']],
     ];
     foreach ($groups as [$groupLabel,$groupIcon,$keys]):

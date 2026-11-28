@@ -712,7 +712,6 @@ function workspaceInfo(string $page, ?array $release = null): void
 <title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v139">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
-<?php if (!$staffAppView): ?><script defer src="staff-navigation.js?v=1"></script><?php endif; ?>
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
@@ -1428,6 +1427,51 @@ function workspaceInfo(string $page, ?array $release = null): void
  <?php workspaceInfo($infoPage, $localRelease); ?>
 </dialog>
 <?php endforeach; ?>
+<?php if (!$staffAppView): ?>
+<script>
+for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group')) {
+ const summary = menu.querySelector('summary');
+ const links = menu.querySelector('.hosted-menu-links');
+ let closeTimer;
+ let mouseLeft = false;
+
+ function scheduleClose() {
+  clearTimeout(closeTimer);
+  closeTimer = setTimeout(() => {
+   if (mouseLeft && !links.contains(document.activeElement)) {
+    menu.open = false;
+   }
+  }, 300);
+ }
+
+ menu.addEventListener('pointerenter', event => {
+  if (event.pointerType !== 'mouse') return;
+  mouseLeft = false;
+  clearTimeout(closeTimer);
+  menu.open = true;
+ });
+ menu.addEventListener('pointerleave', event => {
+  if (event.pointerType !== 'mouse') return;
+  mouseLeft = true;
+  if (menu.open) scheduleClose();
+ });
+ links.addEventListener('focusout', () => {
+  if (menu.open && mouseLeft) scheduleClose();
+ });
+ menu.addEventListener('toggle', () => {
+  if (!menu.open) {
+   clearTimeout(closeTimer);
+  }
+ });
+ menu.addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || !menu.open) return;
+  event.preventDefault();
+  menu.open = false;
+  summary.focus();
+ });
+}
+</script>
+<?php endif; ?>
 <script>
 document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
  const dialog = document.getElementById('workspace-' + link.dataset.workspaceDialog);

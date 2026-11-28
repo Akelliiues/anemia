@@ -41,9 +41,9 @@ $events=$tabs+[
     'room-target'=>'ตั้งเป้าหมาย','cohort-edit'=>'แก้ไขรุ่น','cohort-toggle'=>'เปลี่ยนสถานะรับสมัคร','school-join'=>'ยืนยันเข้าร่วมห้องเรียน'
 ];
 ?>
-<section class="card admin-report" aria-labelledby="usage-audit-heading">
+<section class="card admin-report usage-audit" aria-labelledby="usage-audit-heading">
  <h2 id="usage-audit-heading"><?= workspaceIcon('history') ?> บันทึกตามสิทธิ์ของบัญชี</h2>
- <form method="get" class="network-form">
+ <form method="get" class="network-form usage-audit-filters">
   <input type="hidden" name="view" value="usage-audit">
   <label>ประเภทเหตุการณ์<select name="event_kind"><option value="">ทุกประเภท</option><?php foreach ($kinds as $key=>$label): ?>
    <option value="<?= esc($key) ?>" <?= $key===($filters['event_kind']??'')?'selected':'' ?>><?= esc($label) ?></option>
@@ -57,20 +57,26 @@ $events=$tabs+[
   <button class="action"><?= workspaceIcon('filter') ?> แสดงประวัติ</button>
  </form>
  <?php if (!$rows): ?><p>ไม่พบเหตุการณ์ตามตัวกรอง</p><?php else: ?>
- <div class="tablewrap"><table class="admin-table">
+ <div class="tablewrap usage-audit-scroll" tabindex="0" role="region" aria-label="ตารางประวัติการใช้งาน"><table class="admin-table usage-audit-table">
+  <colgroup><col class="usage-audit-time"><col><col class="usage-audit-actor"><col class="usage-audit-area"><col></colgroup>
   <thead><tr><th scope="col">เวลา</th><th scope="col">เหตุการณ์</th><th scope="col">ผู้ดำเนินการ</th><th scope="col">พื้นที่</th><th scope="col">โรงเรียน / ครู</th></tr></thead>
   <tbody><?php foreach ($rows as $row):
       $localTime=(new DateTimeImmutable($row['created_at'],new DateTimeZone('UTC')))
           ->setTimezone(new DateTimeZone('Asia/Bangkok'))->format('Y-m-d H:i:s');
+      $cells=[
+          workspaceThaiShortDate($localTime).' '.substr($localTime,11,8),
+          ($kinds[$row['event_kind']]??$row['event_kind']).' · '.($events[$row['event_name']]??$row['event_name']),
+          ($row['actor_role']==='participant'?'ผู้เข้าร่วม':$row['actor']).' · '.
+              (ANEMIA_REPORT_ROLES[$row['actor_role']]??($row['actor_role']==='participant'?'สมาชิก':'ผู้ดูแลระบบ')),
+          implode(' · ',array_filter([$row['region']?zoneLabel((int)$row['region']):null,$row['province']]))?:'—',
+          implode(' · ',array_filter([$row['school'],$row['target_teacher'],$row['cohort_id']?'รหัสห้อง '.(int)$row['cohort_id']:null]))?:'—',
+      ];
   ?><tr>
-   <td><?= esc(workspaceThaiShortDate($localTime).' '.substr($localTime,11,8)) ?></td>
-   <td><?= esc($kinds[$row['event_kind']]??$row['event_kind']) ?><br><small><?= esc($events[$row['event_name']]??$row['event_name']) ?></small></td>
-   <td><?= esc($row['actor_role']==='participant'?'ผู้เข้าร่วม':$row['actor']) ?><br><small><?= esc(ANEMIA_REPORT_ROLES[$row['actor_role']]??($row['actor_role']==='participant'?'สมาชิก':'ผู้ดูแลระบบ')) ?></small></td>
-   <td><?= $row['region']?esc(zoneLabel((int)$row['region'])):'—' ?><?php if ($row['province']): ?><br><small><?= esc($row['province']) ?></small><?php endif; ?></td>
-   <td><?= esc($row['school']??'—') ?><?php if ($row['target_teacher']): ?><br><small><?= esc($row['target_teacher']) ?></small><?php endif; ?>
-   <?php if ($row['cohort_id']): ?><br><small>รหัสห้อง <?= (int)$row['cohort_id'] ?></small><?php endif; ?></td>
+   <?php foreach ($cells as $cell): ?><td><button type="button" class="usage-audit-cell" tabindex="-1" title="<?= esc($cell) ?>"><?= esc($cell) ?></button></td><?php endforeach; ?>
   </tr><?php endforeach; ?></tbody>
  </table></div>
+ <div class="usage-audit-tooltip" popover="auto" aria-hidden="true"></div>
+ <script defer src="usage-audit.js?v=1"></script>
  <?php endif; ?>
  <?php if ($before || $next): ?><nav class="actions" aria-label="แบ่งหน้าประวัติ">
   <?php if ($before): ?><a class="action" href="dashboard.php?<?= esc(http_build_query($filters)) ?>">กลับไปล่าสุด</a><?php endif; ?>

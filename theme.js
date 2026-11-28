@@ -33,7 +33,7 @@
    return samples;
   });
   function paint(scene,time){
-   const {canvas,context,width,height,dark}=scene;
+   const {canvas,context,width,height,dark,header}=scene;
    if(!width||!height)return;
    context.clearRect(0,0,canvas.width,canvas.height);
    const columns=Math.ceil(width/460), rows=Math.ceil(height/290);
@@ -46,20 +46,20 @@
      if((row+column)%2){context.translate(1000,0);context.scale(-1,1);}
      if(row%2){context.translate(0,400);context.scale(1,-1);}
      context.lineWidth=1.4;
-     context.strokeStyle=dark?'#91c8ff75':'#7353ad59';
+     context.strokeStyle=header?'#cab6ff70':dark?'#91c8ff75':'#7353ad59';
      for(const samples of traces){
       context.beginPath();
       samples.forEach(([x,y],i)=>i?context.lineTo(x,y):context.moveTo(x,y));
       context.stroke();
      }
      function dot([x,y],radius){context.beginPath();context.arc(x,y,radius,0,2*Math.PI);context.fill();}
-     context.fillStyle=dark?'#b7ddf8a0':'#8650b988';
+     context.fillStyle=header?'#dbc9ff9c':dark?'#b7ddf8a0':'#8650b988';
      nodes.forEach(node=>dot(node,3));
      if(!reducedMotion.matches){
       for(const [i,samples] of traces.entries()){
        if((i+row+column)%3!==0)continue;
        const position=((time/(3700+i*520)+i*.17+row*.23+column*.31)%1)*(samples.length+8);
-       context.fillStyle=i%3===0?(dark?'#ffb7f4':'#ad459c'):(dark?'#c6f3ff':'#4c64bd');
+       context.fillStyle=header?(i%3===0?'#e9bbff':'#a8e5ff'):i%3===0?(dark?'#ffb7f4':'#ad459c'):(dark?'#c6f3ff':'#4c64bd');
        context.shadowColor=context.fillStyle;
        context.shadowBlur=3;
        for(let tail=0;tail<5;tail++){
@@ -77,38 +77,48 @@
     }
    }
   }
-  const canvas=document.createElement('canvas');
-  const context=canvas.getContext('2d');
-  if(context){
-   const scene={canvas,context};
-   canvas.className='portal-neural portal-neural-page';
+  const scenes=[];
+  function addScene(parent,header=false){
+   const canvas=document.createElement('canvas');
+   const context=canvas.getContext('2d');
+   if(!context)return;
+   const scene={canvas,context,header};
+   canvas.className='portal-neural '+(header?'portal-neural-header':'portal-neural-page');
    canvas.setAttribute('aria-hidden','true');
-   document.body.append(canvas);
-   const refresh=()=>{
-    scene.dark=root.dataset.anemiaTheme==='dark';
-    paint(scene,performance.now());
-   };
+   parent.append(canvas);
+   scenes.push(scene);
    new ResizeObserver(([{contentRect:{width,height}}])=>{
     const ratio=Math.min(devicePixelRatio||1,1.5);
     scene.width=width;scene.height=height;
     canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);
-    refresh();
+    refreshScene(scene,performance.now());
    }).observe(canvas);
-   let last=0,frame=0;
-   function animate(time){
-    frame=0;
-    if(document.hidden||reducedMotion.matches)return;
-    if(time-last>=40){paint(scene,time);last=time;}
-    startMotion();
-   }
-   function startMotion(){
-    if(!frame&&!document.hidden&&!reducedMotion.matches)frame=requestAnimationFrame(animate);
-   }
-   document.addEventListener('visibilitychange',startMotion);
-   reducedMotion.addEventListener('change',()=>{refresh();startMotion();});
-   new MutationObserver(refresh).observe(root,{attributes:true,attributeFilter:['data-anemia-theme']});
+  }
+  function refreshScene(scene,time){
+   scene.dark=root.dataset.anemiaTheme==='dark';
+   paint(scene,time);
+  }
+  function refresh(){
+   const time=performance.now();
+   scenes.forEach(scene=>refreshScene(scene,time));
+  }
+  addScene(document.body);
+  const headerArt=document.querySelector('.workspace-header-art');
+  if(headerArt)addScene(headerArt,true);
+  let last=0,frame=0;
+  function animate(time){
+   frame=0;
+   if(document.hidden||reducedMotion.matches)return;
+   if(time-last>=40){scenes.forEach(scene=>paint(scene,time));last=time;}
    startMotion();
   }
+  function startMotion(){
+   if(scenes.length&&!frame&&!document.hidden&&!reducedMotion.matches)frame=requestAnimationFrame(animate);
+  }
+  document.addEventListener('visibilitychange',startMotion);
+  reducedMotion.addEventListener('change',()=>{refresh();startMotion();});
+  new MutationObserver(refresh).observe(root,{attributes:true,attributeFilter:['data-anemia-theme']});
+  startMotion();
   control = document.createElement('button');
   control.type = 'button';
   control.className = 'theme-float';

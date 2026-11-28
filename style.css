@@ -2455,9 +2455,9 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .hosted-workspace .admin-top-tabs :is(.admin-tab[aria-current=page],[data-current] > summary.admin-tab) {
  background:transparent;
  border-color:transparent;
- border-bottom-color:#dcc0ff;
+ border-bottom:2px solid #f7ce6d;
  box-shadow:none;
- color:#fff;
+ color:#f7ce6d;
  font-weight:800;
 }
 

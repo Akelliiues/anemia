@@ -5,6 +5,7 @@ $query->execute([$slot]);
 $editions=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'edition');
 $draft=$editions['draft']??null;
 $published=$editions['published']??null;
+$example=anemiaVoiceExamples()[$slot];
 ?>
 <section class="card voice-coach-admin">
  <nav class="actions voice-coach-tabs" aria-label="จุดใช้งาน Voice Coach">
@@ -18,7 +19,7 @@ $published=$editions['published']??null;
    <h2><?= workspaceIcon('edit') ?> ฉบับร่าง</h2>
    <form method="post" enctype="multipart/form-data" class="network-form">
     <input type="hidden" name="csrf" value="<?= esc($token) ?>">
-    <label>ข้อความที่แสดง<textarea name="display_text" rows="5" maxlength="1500" required><?= esc($draft['display_text']??'') ?></textarea></label>
+    <label>ข้อความที่แสดง<textarea name="display_text" rows="5" maxlength="1500" required><?= esc($draft['display_text']??$published['display_text']??$example) ?></textarea></label>
     <label>ไฟล์เสียง MP3 (ไม่เกิน 2 MB)<input type="file" name="audio" accept="audio/mpeg,.mp3"></label>
     <?php if (!empty($draft['has_audio'])): ?>
      <audio controls preload="none" src="dashboard.php?view=voice-coach&amp;slot=<?= esc($slot) ?>&amp;draft_audio=1" aria-label="ฟังไฟล์ฉบับร่าง"></audio>
@@ -40,7 +41,11 @@ $published=$editions['published']??null;
     <?php if ($published['has_audio']): ?><audio controls preload="none" src="voice-coach.php?audio=<?= esc($slot) ?>" aria-label="ฟังเสียงที่เผยแพร่"></audio>
     <?php else: ?><p class="notice">แสดงข้อความอย่างเดียว</p><?php endif; ?>
     <p class="notice">เผยแพร่ <?= esc(workspaceThaiShortDate($published['updated_at'])) ?> โดย <?= esc($published['updated_by']) ?></p>
-   <?php else: ?><p class="notice">ยังไม่มีฉบับเผยแพร่</p><?php endif; ?>
+    <details><summary>ดูข้อความตัวอย่างเดิม</summary><p class="voice-coach-copy"><?= esc($example) ?></p></details>
+   <?php else: ?>
+    <p class="notice">หน้าบ้านใช้ข้อความเดิมจนกว่าจะมีฉบับเผยแพร่</p>
+    <p class="voice-coach-copy"><?= esc($example) ?></p>
+   <?php endif; ?>
   </section>
  </div>
 </section>

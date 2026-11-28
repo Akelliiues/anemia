@@ -2868,16 +2868,12 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  .voice-article-picker button {justify-self:start;}
 }
 
-.feature-faq {display:grid;gap:.55rem;}
-.feature-faq-item {border:1px solid var(--line);border-radius:.85rem;background:color-mix(in srgb,var(--violet) 5%,transparent);}
-.feature-faq-item[open] {background:color-mix(in srgb,var(--violet) 10%,transparent);}
-.feature-faq-item summary {display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;cursor:pointer;font-weight:700;list-style:none;border-radius:inherit;}
-.feature-faq-item summary::-webkit-details-marker {display:none;}
-.feature-faq-item summary::after {content:"";width:.45rem;height:.45rem;margin-inline-start:auto;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);flex:none;}
-.feature-faq-item[open] summary::after {transform:rotate(225deg);}
-.feature-faq-item summary:hover {background:color-mix(in srgb,var(--violet) 10%,transparent);}
-.feature-faq-item summary svg {width:1.15rem;height:1.15rem;flex:none;}
-.feature-faq-item > div {padding:0 .85rem .75rem;}
-.feature-faq-item p {margin:0 0 .35rem;color:var(--muted);}
-.feature-faq-item a {display:inline-flex;align-items:center;gap:.35rem;font-weight:700;color:inherit;text-underline-offset:.2em;}
-.feature-faq-item a svg {width:1rem;height:1rem;}
+.feature-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:.8rem;}
+.feature-card {display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;padding:1rem;border:1px solid var(--line);border-radius:.9rem;background:color-mix(in srgb,var(--violet) 5%,transparent);}
+.feature-card:is(:hover,:focus-within) {background:color-mix(in srgb,var(--violet) 10%,transparent);}
+.feature-card-icon {display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:.65rem;background:color-mix(in srgb,var(--violet) 13%,transparent);color:var(--violet);}
+.feature-card h2,.feature-card h3,.feature-card p {margin:0;}
+.feature-card h2,.feature-card h3 {font-size:1.1rem;}
+.feature-card p {color:var(--muted);}
+.feature-card a {display:inline-flex;align-items:center;gap:.35rem;margin-top:auto;padding-top:.2rem;font-weight:700;color:inherit;text-underline-offset:.2em;}
+.feature-card a svg,.feature-card-icon svg {width:1rem;height:1rem;}

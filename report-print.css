@@ -12,10 +12,14 @@ body {margin:0;color:#111;background:#ebe9ef;font:16pt/1.15 "TH Sarabun New",san
 .report-paper {max-width:210mm;margin:0 auto 16px;padding:13mm;background:#fff;}
 .report-landscape .report-paper {max-width:297mm;}
 .report-print-toolbar {max-width:297mm;margin:0 auto;padding:12px;text-align:center;}
-.report-print-toolbar button {padding:6px 20px;border:0;border-radius:8px;background:#4c318b;color:#fff;font:700 16pt "TH Sarabun New",sans-serif;cursor:pointer;}
+.report-print-toolbar button {display:inline-grid;place-items:center;vertical-align:middle;width:44px;height:44px;margin:0 3px;border:1px solid #dbd0ed;border-radius:10px;background:#fff;color:#4c318b;cursor:pointer;}
+.report-print-toolbar button:hover {background:#ebe2fa;}
+.report-print-toolbar button:focus-visible {outline:2px solid #4c318b;outline-offset:2px;}
+.report-print-toolbar svg {width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.report-print-toolbar p {margin:5px 0 0;color:#4c318b;}
 .report-paper-header {text-align:center;border-bottom:1px solid #35333b;padding-bottom:3mm;margin-bottom:4mm;break-inside:avoid;}
-.report-paper-footer {margin-top:6mm;padding-top:3mm;border-top:1px solid #bfbcc5;text-align:center;font-size:14pt;break-inside:avoid;}
-.report-paper-footer img {display:block;margin:0 auto 1mm;}
+.report-paper-footer {display:flex;align-items:center;justify-content:center;gap:1.5mm;margin-top:3mm;text-align:center;color:#737078;font-size:10pt;line-height:1.1;break-inside:avoid;}
+.report-paper-footer img {display:block;width:4mm;height:4mm;opacity:.65;}
 .report-paper-footer p {margin:0;}
 .report-paper-header h1 {margin:1mm 0;font-size:24pt;line-height:1.08;}
 .report-paper-header p {margin:0;}

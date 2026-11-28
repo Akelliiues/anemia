@@ -49,7 +49,7 @@ function renderHostedSample(scope){
   mode.elements.overview_year.value=adminYear;
   mode.elements.overview_month.value=adminPeriod;
  }
- main.innerHTML=(adminView==='reports'?'<div class="actions no-print">'+button('กลับแดชบอร์ดตัวอย่าง','hosted-overview','refresh')+'</div>':'')+reportView(scope,false);
+ main.innerHTML=reportView(scope,false);
  if(window.scrollY!==y)window.scrollTo({top:y,behavior:'instant'});
  main.setAttribute('aria-busy','false');
  observeBarCharts();
@@ -63,9 +63,15 @@ main.addEventListener('click',event=>{
  switch(control.dataset.go){
  case 'admin-clear-region':adminRegion='';staff();document.querySelector('#admin-region')?.focus({preventScroll:true});break;
  case 'admin-reports':adminView='reports';staff();break;
- case 'hosted-overview':adminView='overview';staff();break;
  case 'admin-csv':adminExport();break;
  case 'admin-print':if(canReport(adminScope())&&adminView==='reports')printDemoReport(adminScope());break;
  }
 });
+document.querySelector('[data-page-back]')?.addEventListener('click',event=>{
+ if(adminView!=='reports'||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+ event.preventDefault();
+ event.stopImmediatePropagation();
+ adminView='overview';
+ staff();
+},{capture:true});
 staff();

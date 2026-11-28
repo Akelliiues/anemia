@@ -9,12 +9,12 @@ if (!$provinceDocument && !$region && $identity['role']!=='provincial_report') $
 <!doctype html><html lang="th"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= esc($reportTitle) ?> · Anemia Portal</title>
-<link rel="stylesheet" href="report-print.css?v=3">
+<link rel="stylesheet" href="report-print.css?v=4">
 </head><body<?= $provinceDocument?' class="report-landscape"':'' ?>>
 <div class="report-print-toolbar">
- <button type="button" aria-label="พิมพ์รายงาน" title="พิมพ์รายงาน" onclick="document.getElementById('report-pdf-hint').hidden=true;document.fonts.ready.then(()=>window.print())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8V3h12v5M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM6 11h1"/></svg></button>
- <button type="button" aria-label="บันทึก PDF" title="บันทึก PDF" onclick="document.getElementById('report-pdf-hint').hidden=false;document.fonts.ready.then(()=>window.print())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v6m-3-3 3 3 3-3"/></svg></button>
- <p id="report-pdf-hint" role="status" hidden>เลือก “บันทึกเป็น PDF” ในช่องปลายทางของหน้าต่างพิมพ์</p>
+ <button type="button" aria-label="พิมพ์รายงาน" title="พิมพ์รายงาน" onclick="document.fonts.ready.then(()=>window.print())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8V3h12v5M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM6 11h1"/></svg></button>
+ <button type="button" aria-label="บันทึก PDF" title="บันทึก PDF" data-report-pdf><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v6m-3-3 3 3 3-3"/></svg></button>
+ <p id="report-pdf-hint" role="status" hidden></p>
 </div>
 <main class="report-paper">
  <header class="report-paper-header">
@@ -62,6 +62,6 @@ if (!$provinceDocument && !$region && $identity['role']!=='provincial_report') $
  <?php endif; ?>
 <footer class="report-paper-footer">
   <img src="portal-heart-clear.png" alt="" width="16" height="16">
-  <p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี · Anemia Portal</p>
+  <div><p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</p><p>Anemia Portal</p></div>
  </footer>
- </main></body></html>
+ </main><script src="report-pdf/download.js?v=1"></script></body></html>

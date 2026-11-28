@@ -126,15 +126,16 @@ function printDemoReport(scope){
  const report=window.open('','_blank');
  if(!report)return;
  report.opener=null;
- const sheet=new URL('report-print.css?v=3',location.href).href;
+ const sheet=new URL('report-print.css?v=4',location.href).href;
+ const pdfScript=new URL('report-pdf/download.js?v=1',location.href).href;
  const logo=new URL('portal-heart-clear.png',location.href).href;
  const area=scope.region?scopeLabel(scope):adminRegion?regionLabel(Number(adminRegion)):'ครบ 13 เขต';
  const issued=new Intl.DateTimeFormat('th-TH',{dateStyle:'long',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date());
  report.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>รายงานการคัดกรองและติดตาม · Anemia Portal</title><link rel="stylesheet" href="${sheet}"></head><body class="report-landscape">
  <div class="report-print-toolbar">
- <button type="button" aria-label="พิมพ์รายงาน" title="พิมพ์รายงาน" onclick="document.getElementById('report-pdf-hint').hidden=true;document.fonts.ready.then(()=>window.print())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8V3h12v5M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM6 11h1"/></svg></button>
- <button type="button" aria-label="บันทึก PDF" title="บันทึก PDF" onclick="document.getElementById('report-pdf-hint').hidden=false;document.fonts.ready.then(()=>window.print())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v6m-3-3 3 3 3-3"/></svg></button>
- <p id="report-pdf-hint" role="status" hidden>เลือก “บันทึกเป็น PDF” ในช่องปลายทางของหน้าต่างพิมพ์</p>
+ <button type="button" aria-label="พิมพ์รายงาน" title="พิมพ์รายงาน" onclick="document.fonts.ready.then(()=>window.print())"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8V3h12v5M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM6 11h1"/></svg></button>
+ <button type="button" aria-label="บันทึก PDF" title="บันทึก PDF" data-report-pdf><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v6m-3-3 3 3 3-3"/></svg></button>
+ <p id="report-pdf-hint" role="status" hidden></p>
 </div>
  <main class="report-paper"><header class="report-paper-header">
  <h1>รายงานการคัดกรองและติดตาม</h1><p>พื้นที่ ${area} · ช่วงเวลา ${adminPeriod||'ทุกเดือน'}</p>
@@ -143,9 +144,9 @@ function printDemoReport(scope){
  <p class="report-note">ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ</p>
  <footer class="report-paper-footer">
   <img src="${logo}" alt="" width="16" height="16">
-  <p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี · Anemia Portal</p>
+  <div><p>ศูนย์อนามัยที่ ๑๐ จังหวัดอุบลราชธานี</p><p>Anemia Portal</p></div>
  </footer>
- </main></body></html>`);
+ </main><script src="${pdfScript}"></script></body></html>`);
  report.document.close();
 }
 function metricTotal(rows,key){

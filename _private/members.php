@@ -3,6 +3,23 @@ declare(strict_types=1);
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 require_once __DIR__.'/participant-account.php';
 
+function anemiaEnsureMemberListIndex(PDO $db): void
+{
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=30')->fetchColumn()) return;
+    if ((int)$db->query("SELECT GET_LOCK(CONCAT(DATABASE(), ':anemia-schema'), 10)")->fetchColumn()!==1) {
+        throw new RuntimeException('Member index migration lock unavailable');
+    }
+    try {
+        if ($db->query('SELECT version FROM anemia_schema WHERE version=30')->fetchColumn()) return;
+        if (!$db->query("SHOW INDEX FROM anemia_participant_account WHERE Key_name='member_connected_at'")->fetchColumn()) {
+            $db->exec('ALTER TABLE anemia_participant_account ADD INDEX member_connected_at (connected_at,id)');
+        }
+        $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (30)');
+    } finally {
+        $db->query("SELECT RELEASE_LOCK(CONCAT(DATABASE(), ':anemia-schema'))")->closeCursor();
+    }
+}
+
 function anemiaSetDemoMemberNetwork(PDO $db,string $id,string $staff,bool $create): bool
 {
     if (!preg_match('/^[a-f0-9]{32}$/D',$id)) throw new DomainException('ไม่พบรหัสสมาชิก');

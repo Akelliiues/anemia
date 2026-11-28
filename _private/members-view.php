@@ -1,39 +1,59 @@
 <?php
 if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 require_once __DIR__.'/members.php';
-$search=filter_input(INPUT_GET,'member_search')??'';
+$search=$_GET['member_search']??'';
 $search=is_string($search)?substr(strtolower(trim($search)),0,40):'';
 if (!preg_match('/^[a-z0-9._-]*$/D',$search)) $search='';
-$status=filter_input(INPUT_GET,'member_status')??'';
+$status=$_GET['member_status']??'';
 if (!in_array($status,['active','suspended'],true)) $status='';
 $providerLabels=['line'=>'LINE','google'=>'Google','facebook'=>'Facebook'];
 $provider=$_GET['member_provider']??'';
 if (!is_string($provider) || !isset($providerLabels[$provider])) $provider='';
-$page=filter_input(INPUT_GET,'member_page',FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>100000]])?:1;
-$offset=($page-1)*30;
+$cursor=$_GET['member_cursor']??'';
+if (!is_string($cursor) || !preg_match('/^(older|newer)\|(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\|([a-f0-9]{32})$/D',$cursor,$cursorParts)
+    || !checkdate((int)substr($cursorParts[2],5,2),(int)substr($cursorParts[2],8,2),(int)substr($cursorParts[2],0,4))) {
+    $cursor='';
+}
+$newer=$cursor!=='' && $cursorParts[1]==='newer';
+$order=$newer?'ASC':'DESC';
 $where=['1=1'];
 $params=[];
 if ($search!=='') {
-    $where[]="(a.id LIKE ? OR p.username LIKE ? ESCAPE '!')";
-    $params[]=$search.'%';
-    $params[]=str_replace('_','!_',$search).'%';
+    $where[]="(a.id LIKE ? ESCAPE '!' OR p.username LIKE ? ESCAPE '!')";
+    $pattern=str_replace('_','!_',$search).'%';
+    array_push($params,$pattern,$pattern);
 }
 if ($status!=='') $where[]=$status==='suspended'?'a.suspended_at IS NOT NULL':'a.suspended_at IS NULL';
 if ($provider!=='') {
     $where[]='EXISTS (SELECT 1 FROM anemia_participant_identity i WHERE i.account_id=a.id AND i.provider=?)';
     $params[]=$provider;
 }
+if ($cursor!=='') {
+    $operator=$newer?'>':'<';
+    $where[]="(a.connected_at $operator ? OR (a.connected_at=? AND a.id $operator ?))";
+    array_push($params,$cursorParts[2],$cursorParts[2],$cursorParts[3]);
+}
+anemiaEnsureMemberListIndex($db);
 $query=$db->prepare("SELECT a.id,a.connected_at,a.suspended_at,p.username,
     (SELECT GROUP_CONCAT(i.provider ORDER BY i.provider) FROM anemia_participant_identity i WHERE i.account_id=a.id) AS providers
     FROM anemia_participant_account a LEFT JOIN anemia_participant_password p ON p.account_id=a.id
-    WHERE ".implode(' AND ',$where)." ORDER BY a.connected_at DESC,a.id DESC LIMIT 31 OFFSET $offset");
+    WHERE ".implode(' AND ',$where)." ORDER BY a.connected_at $order,a.id $order LIMIT 31");
 $query->execute($params);
 $rows=$query->fetchAll(PDO::FETCH_ASSOC);
-$hasNext=count($rows)>30;
-if ($hasNext) array_pop($rows);
-$summary=$db->query('SELECT COUNT(*) AS total,COUNT(suspended_at) AS suspended FROM anemia_participant_account')->fetch(PDO::FETCH_ASSOC);
-$base=['view'=>'members','member_search'=>$search,'member_status'=>$status,'member_provider'=>$provider,'member_page'=>$page];
+$hasMore=count($rows)>30;
+if ($hasMore) array_pop($rows);
+if ($newer) $rows=array_reverse($rows);
+$hasNewer=$newer?$hasMore:$cursor!=='';
+$hasOlder=$newer || $hasMore;
+$cached=$_SESSION['member_summary']??null;
+if (!$cached || $cached['until']<time()) {
+    $cached=['until'=>time()+30,'counts'=>$db->query('SELECT COUNT(*) AS total,COUNT(suspended_at) AS suspended FROM anemia_participant_account')->fetch(PDO::FETCH_ASSOC)];
+    $_SESSION['member_summary']=$cached;
+}
+$summary=$cached['counts'];
+$base=['view'=>'members','member_search'=>$search,'member_status'=>$status,'member_provider'=>$provider,'member_cursor'=>$cursor];
 $memberUrl=static fn(array $add=[]): string=>'dashboard.php?'.http_build_query(array_replace($base,$add));
+$memberCursor=static fn(string $direction,array $row): string=>$direction.'|'.$row['connected_at'].'|'.$row['id'];
 $member=filter_input(INPUT_GET,'member')??'';
 $task=filter_input(INPUT_GET,'member_task')??'';
 $detail=null;
@@ -63,18 +83,18 @@ $methods=static function(array $row) use ($providerLabels): string {
 <section class="card admin-report member-directory" aria-labelledby="member-directory-title">
  <h2 id="member-directory-title"><?= workspaceIcon('users') ?> จัดการบัญชีผู้เข้าร่วม</h2>
  <?php if ($memberNotice!==''): ?><p class="status" role="status"><?= esc($memberNotice) ?></p><?php endif; ?>
- <dl class="member-summary" aria-label="ยอดรวมสมาชิกทุกสถานะ">
+ <nav class="member-summary" aria-label="กรองรายชื่อตามสถานะ สมาชิกทั้งหมดในระบบ">
   <?php foreach ([
-    ['users','สมาชิกทั้งหมด',(int)$summary['total']],
-    ['ready','ใช้งานได้',(int)$summary['total']-(int)$summary['suspended']],
-    ['lock','ระงับ',(int)$summary['suspended']],
-  ] as [$icon,$label,$count]): ?>
-   <div class="member-summary-item member-summary-<?= $icon ?>">
+    ['users','สมาชิกทั้งหมด',(int)$summary['total'],''],
+    ['ready','ใช้งานได้',(int)$summary['total']-(int)$summary['suspended'],'active'],
+    ['lock','ระงับ',(int)$summary['suspended'],'suspended'],
+  ] as [$icon,$label,$count,$cardStatus]): ?>
+   <a class="member-summary-item member-summary-<?= $icon ?>" href="<?= esc($memberUrl(['member_status'=>$cardStatus,'member_cursor'=>''])) ?>" <?= $status===$cardStatus?'aria-current="true"':'' ?>>
     <span class="member-summary-icon"><?= workspaceIcon($icon) ?></span>
-    <dt><?= $label ?></dt><dd><?= number_format($count) ?></dd>
-   </div>
+    <span class="member-summary-label"><?= $label ?></span><strong><?= number_format($count) ?></strong>
+   </a>
   <?php endforeach; ?>
- </dl>
+ </nav>
  <form method="get" class="network-form member-filters">
   <input type="hidden" name="view" value="members">
   <label>ค้นหาสมาชิก<input type="search" name="member_search" value="<?= esc($search) ?>" placeholder="ชื่อบัญชีหรือรหัสสมาชิก" maxlength="40"></label>
@@ -104,10 +124,10 @@ $methods=static function(array $row) use ($providerLabels): string {
   <?php endforeach; ?></tbody>
  </table></div>
  <?php else: ?><p class="member-empty"><?= workspaceIcon('users') ?> ไม่พบสมาชิกตามตัวกรอง</p><?php endif; ?>
- <?php if ($page>1||$hasNext): ?><nav class="actions member-pagination" aria-label="หน้ารายชื่อสมาชิก">
-  <?php if ($page>1): ?><a class="action" href="<?= esc($memberUrl(['member_page'=>$page-1])) ?>"><?= workspaceIcon('back') ?>ก่อนหน้า</a><?php endif; ?>
-  <span>หน้า <?= $page ?></span>
-  <?php if ($hasNext): ?><a class="action" href="<?= esc($memberUrl(['member_page'=>$page+1])) ?>">ถัดไป <?= workspaceIcon('next') ?></a><?php endif; ?>
+ <?php if ($cursor!==''||$hasOlder): ?><nav class="actions member-pagination" aria-label="หน้ารายชื่อสมาชิก">
+  <?php if ($cursor!==''): ?><a class="action" href="<?= esc($memberUrl(['member_cursor'=>''])) ?>">ล่าสุด</a><?php endif; ?>
+  <?php if ($rows && $hasNewer): ?><a class="action" href="<?= esc($memberUrl(['member_cursor'=>$memberCursor('newer',$rows[0])])) ?>"><?= workspaceIcon('back') ?>ใหม่กว่า</a><?php endif; ?>
+  <?php if ($rows && $hasOlder): ?><a class="action" href="<?= esc($memberUrl(['member_cursor'=>$memberCursor('older',end($rows))])) ?>">เก่ากว่า <?= workspaceIcon('next') ?></a><?php endif; ?>
  </nav><?php endif; ?>
 </section>
 <?php if ($detail): ?>

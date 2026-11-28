@@ -19,7 +19,9 @@ Object.assign(icons,{
  cup:'<path d="M4 9h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6V9Zm13 1h2a2 2 0 0 1 0 4h-2M3 21h16M8 3v3m5-3v3"/>',
  download:'<path d="M12 3v12m-4-4 4 4 4-4M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>',
  chart:'<path d="M4 20h16M7 16v-4m5 4V8m5 8V4" stroke-width="2.4"/>',
- next:'<path d="m10 6 6 6-6 6"/>'
+ next:'<path d="m10 6 6 6-6 6"/>',
+ info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>',
+ map:'<path d="M12 22s7-7 7-13a7 7 0 1 0-14 0c0 6 7 13 7 13Z"/><circle cx="12" cy="9" r="2.5"/>'
 });
 const illustrations={
  calendar:`<rect x="12" y="15" width="48" height="46" rx="11" fill="#b95083"/><rect x="10" y="12" width="48" height="45" rx="11" fill="#fff5fb"/><path d="M10 23a11 11 0 0 1 11-11h26a11 11 0 0 1 11 11v5H10z" fill="#e979a9"/><path d="M22 9v9m24-9v9" stroke="#823665" stroke-width="4" stroke-linecap="round"/><path d="M34 32s-7 8-7 12a7 7 0 0 0 14 0c0-4-7-12-7-12z" fill="#ce578a"/>`,
@@ -567,17 +569,24 @@ function directoryCard({site,km}){
 }
 function selectedFacility(site){
  const flags=bookingFlags(site);
+ const available=flags.appointment||flags.callback;
  main.querySelector('#facility-options')?.remove();
  main.insertAdjacentHTML('beforeend',`<dialog class="signal-dialog facility-options" id="facility-options" aria-labelledby="facility-options-title">
-  <div class="facility-options-heading">${box('hospital')}<div><h2 id="facility-options-title">${escapeDirectoryText(site.name)}</h2><p>${escapeDirectoryText(site.address)}</p></div></div>
-  <h3>${bookingLabel(site)}</h3>
-  <div class="actions">
+  <header class="facility-options-heading">
+   <form method="dialog" class="facility-options-close"><button type="submit" aria-label="ปิดรายละเอียดหน่วยบริการ" autofocus>${icon('close')}</button></form>
+   ${box('hospital')}
+   <h2 id="facility-options-title">${escapeDirectoryText(site.name)}</h2>
+   <p>${escapeDirectoryText(site.address)}</p>
+  </header>
+  <div class="facility-options-body">
+  <p class="facility-options-state" data-available="${Boolean(available)}">${icon(available?'check':'info')}${bookingLabel(site)}</p>
+  <div class="actions facility-options-actions">
    ${flags.appointment?`<button type="button" class="action primary" data-facility-request="appointment" data-facility-index="${site.index}">${icon('calendar')}ขอนัดเข้าตรวจ</button>`:''}
    ${flags.callback?`<button type="button" class="action" data-facility-request="callback" data-facility-index="${site.index}">${icon('phone')}ฝากเบอร์ให้ติดต่อกลับ</button>`:''}
-   <a class="action" href="${facilityDirections(site)}" target="_blank" rel="noopener noreferrer">${icon('next')}เปิดเส้นทางไปเอง</a>
-   <form method="dialog"><button class="action">${icon('close')}ปิด</button></form>
+   <a class="action${available?'':' primary'}" href="${facilityDirections(site)}" target="_blank" rel="noopener noreferrer">${icon('map')}เปิดเส้นทาง</a>
   </div>
-  ${flags.appointment||flags.callback?`<p class="notice">${testAppointmentOtp?'คำขอตัวอย่างจะเข้าคิวทดสอบ':'ส่งคำขอหลังยืนยันเบอร์โทร เจ้าหน้าที่จะประสานก่อนยืนยันวันนัด'}</p>`:''}
+  ${available?`<p class="notice">${testAppointmentOtp?'คำขอตัวอย่างจะเข้าคิวทดสอบ':'ส่งคำขอหลังยืนยันเบอร์โทร เจ้าหน้าที่จะประสานก่อนยืนยันวันนัด'}</p>`:''}
+  </div>
  </dialog>`);
  main.querySelector('#facility-options').showModal();
 }

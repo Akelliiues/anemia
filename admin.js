@@ -1,5 +1,5 @@
 const riskChartColors = {low:'#29b895',medium:'#f2b544',high:'#e85d96',unknown:'#9d88e4'};
-const regionLabel = region => region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' + region;
+const regionLabel = region => region === 13 ? 'เขตสุขภาพที่ 13 กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' + region;
 const adminRegions = Array.from({length:13}, (_, index) => index + 1);
 const demoMonthNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];

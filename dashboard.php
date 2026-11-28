@@ -29,7 +29,7 @@ require __DIR__ . '/_private/request-states.php';
 function esc(string $value): string { return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function zoneLabel(int $region): string
 {
-    return $region === 13 ? 'เขต 13 · กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
+    return $region === 13 ? 'เขตสุขภาพที่ 13 กรุงเทพมหานคร' : 'เขตสุขภาพที่ ' . $region;
 }
 $view = $_GET['view'] ?? 'overview';
 if (!in_array($view, ['overview', 'reports', 'assessment', 'access', 'evaluation', 'audit', 'sample', 'team', 'guide', 'about', 'release', 'activity', 'sample-settings', 'services', 'contact-queue', 'scan-request', 'scanner-install', 'mobile', 'network', 'members', 'programme-report', 'schools'], true)) $view = 'overview';
@@ -715,7 +715,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=staff-details-v15"></script>
+<script defer src="admin.js?v=staff-details-v16"></script>
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>

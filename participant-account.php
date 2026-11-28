@@ -274,6 +274,9 @@ if ($account) {
   <a data-pin-mode href="<?= participantEscape($accountModeUrl('password-login')) ?>" <?= $mode==='password-login'?'aria-current="page"':'' ?>><?= workspaceIcon('login') ?> PIN สมาชิก</a>
   <a data-staff-mode href="login.php?entry=portal<?= $staffNext!==''?'&amp;next='.participantEscape($staffNext):'' ?>"><?= workspaceIcon('lock') ?> รหัสผ่าน</a>
  </nav>
+ <?php if ($mode==='password-login'): ?>
+  <p class="participant-demo-entry"><a class="action" href="practice.php"><?= workspaceIcon('play') ?> ทดลองใช้งานตามบทบาท</a></p>
+ <?php endif; ?>
  <div class="participant-login-fields">
  <div data-member-login>
  <div class="participant-entry-card">

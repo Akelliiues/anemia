@@ -109,7 +109,7 @@ document.addEventListener('submit', async event => {
   if (newTable) newTable.scrollTo({...previousScroll,behavior:'instant'});
   window.scrollTo(pageScroll);
   const row = code && updated.querySelector('[data-school-code="' + CSS.escape(String(code)) + '"]');
-  const control = row ? row.querySelector('.school-row-menu-toggle, [data-school-participation], [data-school-update] button') :
+  const control = row ? row.querySelector('.school-row-toggle') :
    updated.querySelector('#school-activities [data-school-participation]');
   control?.focus({preventScroll:true});
  } catch (failure) {

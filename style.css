@@ -2612,16 +2612,12 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .school-directory-table thead th {position:sticky;top:0;z-index:1;}
 .school-directory-table th small {font-weight:400;color:var(--muted);}
 .school-directory-table :is(th,td) {padding:.45rem .65rem;}
-.school-row-actions {display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;}
-.school-row-menu .school-row-actions {margin-block-start:.45rem;}
-.school-directory-table .school-row-menu-toggle {
- display:inline-flex;align-items:center;min-height:2.75rem;padding:.45rem .65rem;list-style:none;
- border:1px solid var(--soft-edge,var(--line));border-radius:.68rem;color:var(--violet);background:var(--soft-active,#ebe3f8);
+.school-directory-name {color:var(--ink);text-decoration:underline;text-underline-offset:.16em;}
+.school-directory-name:is(:hover,:focus-visible) {color:var(--violet);}
+.school-directory-table .school-row-toggle {min-inline-size:11rem;min-block-size:2.75rem;white-space:nowrap;flex-wrap:nowrap;}
+.school-row-toggle svg {flex:none;inline-size:1rem;block-size:1rem;}
+.school-directory-table .school-row-toggle:is([data-school-participation=school-withdraw],[data-school-participation=school-archive]) {
+ color:var(--violet);background:var(--soft-active,#ebe3f8);
 }
-.school-row-menu-toggle:hover {border-color:var(--violet);}
-.school-row-menu-toggle::-webkit-details-marker {display:none;}
-.school-row-menu-toggle svg {width:1rem;height:1rem;}
-.school-row-menu-toggle svg:last-child {transform:rotate(90deg);}
-.school-row-menu[open] .school-row-menu-toggle svg:last-child {transform:rotate(-90deg);}
 .school-directory-table td:last-child {white-space:nowrap;}
 @media(max-width:600px) {.school-directory-filters {grid-template-columns:minmax(0,1fr);}}

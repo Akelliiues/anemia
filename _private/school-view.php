@@ -24,17 +24,19 @@ function schoolCohortFields(array $cohort=[]): void
     <?php
 }
 
-function schoolParticipationButton(int $id,string $name,bool $enabled,array $summary): void
+function schoolParticipationButton(int $id,string $name,bool $enabled,array $summary,bool $inDirectory=false): void
 {
     $action=$enabled?($summary['hasData']?'school-archive':'school-withdraw'):'school-reopen';
-    $label=$enabled?($summary['hasData']?'ยุติการเข้าร่วม':'ถอนออกจากโครงการ'):($summary['hasData']?'เปิดใช้งานอีกครั้ง':'เพิ่มเข้าร่วม');
+    $actionLabel=$enabled?($summary['hasData']?'ยุติการเข้าร่วม':'ถอนออกจากโครงการ'):($summary['hasData']?'เปิดใช้งานอีกครั้ง':'เพิ่มเข้าร่วม');
+    $label=$inDirectory && $enabled?'เข้าร่วมแล้ว':$actionLabel;
+    $icon=$enabled?($inDirectory?'check':'close'):($summary['hasData']?'history':'plus');
     ?>
-    <button type="button" class="action<?= !$enabled && !$summary['hasData']?' primary':'' ?>"
-      aria-label="<?= schoolEscape($label.' · '.$name) ?>" title="<?= schoolEscape($label) ?>"
+    <button type="button" class="action<?= !$enabled && !$summary['hasData']?' primary':'' ?><?= $inDirectory?' school-row-toggle':'' ?>"
+      aria-label="<?= schoolEscape($label.' · '.$name) ?>" title="<?= schoolEscape($actionLabel) ?>"
       data-school-participation="<?= schoolEscape($action) ?>" data-school-id="<?= $id ?>"
       data-school-name="<?= schoolEscape($name) ?>" data-school-has-data="<?= $summary['hasData']?'1':'0' ?>"
       data-school-years="<?= schoolEscape(json_encode($summary['years'],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)) ?>"
-      aria-haspopup="dialog"><?= workspaceIcon($enabled?'close':($summary['hasData']?'history':'plus')) ?><?= schoolEscape($label) ?></button>
+      aria-haspopup="dialog"><?= workspaceIcon($icon) ?><?= schoolEscape($label) ?></button>
     <?php
 }
 
@@ -342,35 +344,26 @@ return static function (PDO $db,array $identity): void {
  <table class="admin-table">
   <thead><tr><th scope="col">โรงเรียน</th><th scope="col"><?= $province==='10'?'เขต':'อำเภอ' ?></th><th scope="col">ระดับชั้น</th><th scope="col">จัดการ</th></tr></thead>
   <tbody><?php foreach ($pageRows as $row): ?>
-   <?php $registeredId=$directorySchool($row); ?><tr data-school-code="<?= schoolEscape($row['code']) ?>">
-   <th scope="row"><?= schoolEscape($row['name']) ?><br><small><?= schoolEscape(($row['source']==='dla'?'อ้างอิง ':'').$row['code'].' · '.$row['agency']) ?></small></th>
+   <?php $registeredId=$directorySchool($row); $record=$schools[$registeredId]??null; ?>
+   <tr data-school-code="<?= schoolEscape($row['code']) ?>">
+   <th scope="row">
+    <?php if ($record): ?>
+     <a class="school-directory-name" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities"
+      title="<?= $record['enabled']?'จัดการโรงเรียน':'ดูประวัติ' ?>"><?= schoolEscape($row['name']) ?></a>
+    <?php else: ?><?= schoolEscape($row['name']) ?><?php endif; ?>
+    <br><small><?= schoolEscape(($row['source']==='dla'?'อ้างอิง ':'').$row['code'].' · '.$row['agency']) ?></small>
+   </th>
    <td><?= schoolEscape($row['district']) ?></td>
    <td><?= schoolEscape($row['grades']?implode(', ',str_replace('M','ม.',$row['grades'])):'มัธยมปลาย (ไม่ระบุชั้น)') ?></td>
-   <td><?php if ($registeredId): $record=$schools[$registeredId]; ?>
-    <?php if ($record['enabled']): ?>
-     <details class="school-row-menu" name="school-row-actions">
-      <summary class="action school-row-menu-toggle">
-       <?= workspaceIcon('check') ?>เข้าร่วมแล้ว <?= workspaceIcon('next') ?>
-      </summary>
-      <div class="school-row-actions">
-       <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities">จัดการโรงเรียน</a>
-       <?php if ($admin): schoolParticipationButton((int)$registeredId,$record['name'],true,$participation[$registeredId]); endif; ?>
-      </div>
-     </details>
-    <?php else: ?>
-     <div class="school-row-actions">
-      <?php if ($admin): schoolParticipationButton((int)$registeredId,$record['name'],false,$participation[$registeredId]); endif; ?>
-      <?php if (!$admin || $participation[$registeredId]['hasData']): ?>
-       <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$registeredId])) ?>#school-activities">ดูประวัติ</a>
-      <?php endif; ?>
-     </div>
-    <?php endif; ?>
+   <td><?php if ($record && $admin): ?>
+    <?php schoolParticipationButton((int)$registeredId,$record['name'],(bool)$record['enabled'],$participation[$registeredId],true); ?>
+   <?php elseif ($record): ?><?= $record['enabled']?'เข้าร่วมแล้ว':'หยุดเข้าร่วม' ?>
    <?php elseif ($admin): ?>
     <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" data-school-update>
      <?php schoolFields($csrf,'directory-add'); ?>
      <input type="hidden" name="directory_province" value="<?= schoolEscape($province) ?>">
      <input type="hidden" name="directory_code" value="<?= schoolEscape($row['code']) ?>">
-     <button class="action primary" aria-label="<?= schoolEscape('เพิ่มเข้าร่วม · '.$row['name']) ?>"><?= workspaceIcon('plus') ?>เพิ่มเข้าร่วม</button>
+     <button class="action primary school-row-toggle" aria-label="<?= schoolEscape('เพิ่มเข้าร่วม · '.$row['name']) ?>"><?= workspaceIcon('plus') ?>เพิ่มเข้าร่วม</button>
     </form>
    <?php else: ?>ยังไม่เข้าทะเบียน<?php endif; ?></td>
   </tr><?php endforeach; ?>

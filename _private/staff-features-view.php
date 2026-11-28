@@ -18,9 +18,8 @@ $featureHighlights = [
  </div>
  <div class="feature-grid feature-orbit">
   <svg class="feature-orbit-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-   <path d="M0 16.67L50 50L100 16.67M0 50H50" vector-effect="non-scaling-stroke"/>
-   <path class="feature-orbit-link-fourth" d="M100 83.33L50 50" vector-effect="non-scaling-stroke"/>
-   <path class="feature-orbit-link-fifth" d="M0 83.33L50 50" vector-effect="non-scaling-stroke"/>
+   <path d="M0 25L50 50L100 25M0 75L50 50" vector-effect="non-scaling-stroke"/>
+   <path class="feature-orbit-link-fourth" d="M100 75L50 50" vector-effect="non-scaling-stroke"/>
   </svg>
   <div class="feature-hub"><?= workspaceIcon('drop') ?><strong>Anemia Portal</strong><span>ประสานงาน · ติดตาม · รายงาน</span></div>
  <?php foreach ($featureHighlights as [$destination,$title,$description]):

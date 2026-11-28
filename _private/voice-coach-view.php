@@ -7,23 +7,34 @@ $draft=$editions['draft']??null;
 $published=$editions['published']??null;
 $example=anemiaVoiceExamples()[$slot];
 $articles=anemiaVoiceArticles();
+$slots=anemiaVoiceSlots();
+$group=$slot==='home'?'home':(isset($articles[$slot])?'knowledge':'results');
+$resultLabels=['low'=>'ดูแลต่อเนื่อง','medium'=>'มีบางเรื่องให้ดูเพิ่ม','high'=>'แนะนำให้ตรวจเพิ่ม','unknown'=>'ข้อมูลยังไม่พอสรุป'];
 ?>
 <section class="card voice-coach-admin">
- <nav class="actions voice-coach-tabs" aria-label="จุดใช้งาน Voice Coach">
-  <?php foreach (array_diff_key(anemiaVoiceSlots(),$articles) as $key=>$label): ?>
-   <a class="action<?= $slot===$key?' primary':'' ?>" href="dashboard.php?view=voice-coach&amp;slot=<?= esc($key) ?>" <?= $slot===$key?'aria-current="page"':'' ?>><?= esc($label) ?></a>
+ <nav class="actions voice-coach-tabs" aria-label="หมวด Voice Coach">
+  <?php foreach (['home'=>['หน้าหลัก','home','home'],'results'=>['ผลประเมิน','low','ready'],'knowledge'=>['คลังความรู้',array_key_first($articles),'book']] as $key=>[$label,$first,$icon]): ?>
+   <a class="action<?= $group===$key?' primary':'' ?>" href="dashboard.php?view=voice-coach&amp;slot=<?= esc($group===$key?$slot:$first) ?>" <?= $group===$key?'aria-current="page"':'' ?>><?= workspaceIcon($icon) ?> <?= esc($label) ?></a>
   <?php endforeach; ?>
  </nav>
+ <?php if ($group==='results'): ?>
+ <nav class="actions voice-coach-results" aria-label="เลือกผลประเมิน">
+  <?php foreach ($resultLabels as $key=>$label): ?>
+   <a class="action" href="dashboard.php?view=voice-coach&amp;slot=<?= esc($key) ?>" <?= $slot===$key?'aria-current="page"':'' ?>><?= esc($label) ?></a>
+  <?php endforeach; ?>
+ </nav>
+ <?php elseif ($group==='knowledge'): ?>
  <form method="get" class="network-form voice-article-picker">
   <input type="hidden" name="view" value="voice-coach">
-  <label>คลังความรู้<select name="slot" required>
-   <option value="">เลือกบทความ</option>
+  <label>บทความ<select name="slot" required>
    <?php foreach ($articles as $key=>[$title]): ?>
     <option value="<?= esc($key) ?>" <?= $slot===$key?'selected':'' ?>><?= esc($title) ?></option>
    <?php endforeach; ?>
   </select></label>
   <button class="action"><?= workspaceIcon('book') ?> เปิดบทความ</button>
  </form>
+ <?php endif; ?>
+ <h2 class="voice-coach-slot-heading"><?= esc($slots[$slot]) ?></h2>
  <?php if ($voiceNotice!==''): ?><p class="notice" role="status"><?= esc($voiceNotice) ?></p><?php endif; ?>
  <div class="voice-coach-editor">
   <section>

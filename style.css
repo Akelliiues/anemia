@@ -2800,7 +2800,13 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .voice-coach audio[hidden] {display:none;}
 .voice-coach [data-voice-error]:empty {display:none;}
 .voice-coach-tabs {margin-bottom:1rem;}
-.voice-coach-tabs a {text-decoration:none;}
+.voice-coach-tabs a,.voice-coach-results a {text-decoration:none;}
+.voice-coach-tabs {padding-bottom:.8rem;border-bottom:1px solid var(--line);}
+.voice-coach-results {margin-bottom:1rem;}
+.voice-coach-results [aria-current] {
+ border-color:var(--violet);background:color-mix(in srgb,var(--violet) 12%,transparent);
+}
+.voice-coach-slot-heading {margin:.15rem 0 .8rem;font-size:1.2rem;}
 .voice-coach-editor {display:grid;grid-template-columns:1.15fr 1fr;gap:1rem;}
 .voice-coach-editor > section {min-width:0;border:1px solid var(--line);border-radius:14px;padding:1rem;}
 .voice-coach-editor h2 {margin:0 0 .65rem;font-size:1.125rem;}

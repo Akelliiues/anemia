@@ -712,6 +712,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 <title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v139">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
+<?php if (!$staffAppView): ?><script defer src="staff-navigation.js?v=1"></script><?php endif; ?>
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>

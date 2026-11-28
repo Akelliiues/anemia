@@ -502,6 +502,27 @@ const facilityDirectory=[
 let requestFacilityId=null, facilitySearch=0;
 const directoryTypes=['โรงพยาบาล','รพ.สต.'];
 let directoryType=0,directoryListing=null;
+let bookingAvailability=null,bookingFetchedAt=0,bookingLoading=null;
+function refreshBookingAvailability(force=false){
+ if(bookingLoading)return bookingLoading;
+ if(!force&&bookingAvailability&&Date.now()-bookingFetchedAt<30000)return Promise.resolve();
+ bookingLoading=fetch('booking-availability.php',force?{cache:'reload'}:{})
+  .then(response=>{if(!response.ok)throw Error();return response.json();})
+  .then(data=>{bookingAvailability=data.facilities;bookingFetchedAt=Date.now();})
+  .catch(()=>{bookingAvailability=null;})
+  .finally(()=>{bookingLoading=null;});
+ return bookingLoading;
+}
+function bookingFlags(site){
+ return testAppointmentOtp?{appointment:true,callback:true}:bookingAvailability?.[site.index]??{};
+}
+function bookingLabel(site){
+ const state=bookingFlags(site);
+ if(state.appointment)return 'จองออนไลน์ได้';
+ if(state.callback)return 'ให้เจ้าหน้าที่ติดต่อกลับได้';
+ if(state.paused)return 'พักรับคำขอออนไลน์';
+ return bookingAvailability?'ติดต่อหน่วยบริการโดยตรง':'ยังตรวจสถานะการรับคำขอไม่ได้';
+}
 function distanceKm(lat,lon,site){
  const rad=Math.PI/180;
  const hav=Math.sin((site.lat-lat)*rad/2)**2+Math.cos(lat*rad)*Math.cos(site.lat*rad)*Math.sin((site.lon-lon)*rad/2)**2;
@@ -519,11 +540,14 @@ function facilities(callbackIntent=false){
  <section class="card facility-search"><form id="hospital-search"><label for="hospital-query">ชื่อหน่วยบริการ จังหวัด อำเภอ หรือรหัสไปรษณีย์</label>
  <div class="facility-query"><input id="hospital-query" type="search" placeholder="เช่น อุบลราชธานี" required><button class="action primary" type="submit">${icon('next')}ค้นหา</button></div></form>
  <div class="actions">${button('ค้นจากตำแหน่งปัจจุบัน','facility-location','hospital')}</div>
+ ${testAppointmentOtp?'':'<label class="facility-booking-toggle"><input type="checkbox" id="facility-booking-only"> จองออนไลน์ได้</label>'}
  <p class="notice">พิกัดของคุณใช้คำนวณบนเครื่องและจะไม่ถูกส่งหรือบันทึก</p></section>
  <div id="facility-tabs" class="facility-tabs" role="group" aria-label="ประเภทหน่วยบริการ">${directoryTabs()}</div>
  <p id="facility-feedback" class="notice" role="status">พิมพ์ชื่อหรือพื้นที่ หรือกดค้นจากตำแหน่งปัจจุบัน</p>
  <div id="facility-list" class="facility-list"></div>
  <details class="notice"><summary>แหล่งข้อมูล</summary><p>ชื่อและพิกัดจาก <a href="https://data.go.th/th/dataset/health-citizeninfo" target="_blank" rel="noopener noreferrer">DGA CITIZENinfo (ชุดข้อมูล มีนาคม 2563 · CC BY 4.0)</a> ควรตรวจสอบเวลาเปิดและบริการตรวจเลือดกับหน่วยบริการก่อนเดินทาง</p></details>`));
+ document.querySelector('#facility-booking-only')?.addEventListener('change',()=>renderDirectory());
+ if(!testAppointmentOtp) refreshBookingAvailability().then(()=>renderDirectory());
 }
 function directoryResults(query,coords){
  const terms=query.trim().split(/\s+/).filter(Boolean).map(directoryKey).filter(Boolean);
@@ -538,20 +562,22 @@ function facilityDirections(site){
 function directoryCard({site,km}){
  return `<button type="button" class="card facility-card facility-card-button" data-select-facility="${site.index}" aria-haspopup="dialog">
  ${box('hospital')}<span class="facility-card-copy"><strong>${escapeDirectoryText(site.name)}</strong>
- <span>${escapeDirectoryText(site.address)}${km==null?'':` · ${Math.round(km*10)/10} กม. (เส้นตรง)`}</span></span>${icon('next')}</button>`;
+ <span>${escapeDirectoryText(site.address)}${km==null?'':` · ${Math.round(km*10)/10} กม. (เส้นตรง)`}</span>
+ <span class="facility-booking-badge" data-ready="${Boolean(bookingFlags(site).appointment||bookingFlags(site).callback)}">${bookingLabel(site)}</span></span>${icon('next')}</button>`;
 }
 function selectedFacility(site){
+ const flags=bookingFlags(site);
  main.querySelector('#facility-options')?.remove();
  main.insertAdjacentHTML('beforeend',`<dialog class="signal-dialog facility-options" id="facility-options" aria-labelledby="facility-options-title">
   <div class="facility-options-heading">${box('hospital')}<div><h2 id="facility-options-title">${escapeDirectoryText(site.name)}</h2><p>${escapeDirectoryText(site.address)}</p></div></div>
-  <h3>อยากให้เราช่วยเรื่องไหน?</h3>
+  <h3>${bookingLabel(site)}</h3>
   <div class="actions">
-   <button type="button" class="action primary" data-facility-request="appointment" data-facility-index="${site.index}">${icon('calendar')}ขอนัดเข้าตรวจ</button>
-   <button type="button" class="action" data-facility-request="callback" data-facility-index="${site.index}">${icon('phone')}ฝากเบอร์ให้ติดต่อกลับ</button>
+   ${flags.appointment?`<button type="button" class="action primary" data-facility-request="appointment" data-facility-index="${site.index}">${icon('calendar')}ขอนัดเข้าตรวจ</button>`:''}
+   ${flags.callback?`<button type="button" class="action" data-facility-request="callback" data-facility-index="${site.index}">${icon('phone')}ฝากเบอร์ให้ติดต่อกลับ</button>`:''}
    <a class="action" href="${facilityDirections(site)}" target="_blank" rel="noopener noreferrer">${icon('next')}เปิดเส้นทางไปเอง</a>
    <form method="dialog"><button class="action">${icon('close')}ปิด</button></form>
   </div>
-  <p class="notice">${testAppointmentOtp?'คำขอตัวอย่างจะเข้าคิวทดสอบ':'ส่งคำขอหลังยืนยันเบอร์โทร เจ้าหน้าที่จะประสานก่อนยืนยันวันนัด'}</p>
+  ${flags.appointment||flags.callback?`<p class="notice">${testAppointmentOtp?'คำขอตัวอย่างจะเข้าคิวทดสอบ':'ส่งคำขอหลังยืนยันเบอร์โทร เจ้าหน้าที่จะประสานก่อนยืนยันวันนัด'}</p>`:''}
  </dialog>`);
  main.querySelector('#facility-options').showModal();
 }
@@ -642,13 +668,12 @@ function setRequestVerification(form,verifying,last4='',demoCode=''){
 }
 function directoryTabs(){
  return directoryTypes.map((label,type)=>{
-  const count=directoryListing?.counts[type];
-  return `<button class="action facility-tab" data-directory-type="${type}" aria-pressed="${directoryType===type}">${icon(type===0?'hospital':'check')}${label}${count==null?'':`<span>${count.toLocaleString('th-TH')}</span>`}</button>`;
+  return `<button class="action facility-tab" data-directory-type="${type}" aria-pressed="${directoryType===type}">${icon(type===0?'hospital':'check')}${label}</button>`;
  }).join('');
 }
 function showDirectory(rows,mode){
  directoryType=0;
- directoryListing={rows,mode,counts:directoryTypes.map((_,type)=>rows.filter(row=>row.site.type===type).length)};
+ directoryListing={rows,mode};
  renderDirectory();
 }
 function renderDirectory(limit=12){
@@ -659,10 +684,14 @@ function renderDirectory(limit=12){
  if(!list||!feedback||!tabs)return;
  tabs.innerHTML=directoryTabs();
  if(!directoryListing)return;
- const {rows,mode,counts}=directoryListing;
- const matching=rows.filter(row=>row.site.type===directoryType);
+ const {rows,mode}=directoryListing;
+ const bookingOnly=document.querySelector('#facility-booking-only')?.checked;
+ let matching=rows.filter(row=>row.site.type===directoryType&&(!bookingOnly||bookingFlags(row.site).appointment));
+ if(mode==='nearby'&&!bookingOnly)matching=matching.slice(0,8);
  const name=directoryTypes[directoryType];
- feedback.textContent=mode==='nearby'?name+'ใกล้คุณ '+counts[directoryType]+' แห่ง · เรียงตามระยะเส้นตรง':`พบ${name} ${counts[directoryType].toLocaleString('th-TH')} แห่ง`;
+ feedback.textContent=bookingOnly&&!bookingAvailability?'ยังตรวจสถานะการรับคำขอไม่ได้':mode==='nearby'
+  ?name+(bookingOnly?'ที่จองออนไลน์ได้':'ใกล้คุณ')+' · เรียงตามระยะเส้นตรง'
+  :`พบ${name} ${matching.length.toLocaleString('th-TH')} แห่ง`;
  list.innerHTML=matching.length?matching.slice(0,limit).map(directoryCard).join(''):`<p>ไม่พบ${name}ตามคำค้น ลองสลับแท็บหรือใช้คำค้นที่สั้นลง</p>`;
  if(matching.length>limit){
   const more=document.createElement('button');
@@ -680,9 +709,7 @@ function locateFacilities(){
  navigator.geolocation.getCurrentPosition(({coords})=>{
   if(search!==facilitySearch||!document.querySelector('#facility-list'))return;
   const rows=directoryResults('',coords);
-  const hospitals=rows.filter(row=>row.site.type===0).slice(0,8);
-  const primary=rows.filter(row=>row.site.type===1).slice(0,8);
-  showDirectory([...hospitals,...primary],'nearby');
+  showDirectory(rows,'nearby');
  },()=>{
   if(search===facilitySearch&&document.querySelector('#facility-feedback'))document.querySelector('#facility-feedback').textContent='ยังไม่พบตำแหน่ง ลองพิมพ์ชื่อจังหวัดหรืออำเภอเพื่อค้นหาได้เลย';
  },{timeout:8000,maximumAge:0});
@@ -712,7 +739,11 @@ async function submitFacilityRequest(form){
    response=await send(endpoint,payload);
    data=await response.json();
   }
-  if(!response.ok){status.textContent=data.error||'ดำเนินการไม่ได้ กรุณาลองอีกครั้ง';return;}
+  if(!response.ok){
+   status.textContent=data.error||'ดำเนินการไม่ได้ กรุณาลองอีกครั้ง';
+   if(response.status===409 && endpoint==='contact-request.php') await offerBookingAlternatives(form);
+   return;
+  }
   if(!verifying){
    form.dataset.token=data.token;
    form.dataset.otpMode=endpoint===demoEndpoint?'demo':'live';
@@ -732,6 +763,36 @@ async function submitFacilityRequest(form){
   if(form.isConnected)track();
  }catch{status.textContent='เชื่อมต่อไม่ได้ กรุณาลองอีกครั้ง';}
  finally{delete form.dataset.busy;submit.disabled=false;}
+}
+async function offerBookingAlternatives(form){
+ await refreshBookingAvailability(true);
+ if(!form.isConnected)return;
+ form.querySelector('.facility-booking-alternatives')?.remove();
+ const current=searchableDirectory[Number(form.dataset.facilityIndex)];
+ const options=directoryResults('',{latitude:current.lat,longitude:current.lon})
+  .filter(({site})=>site.index!==current.index&&bookingFlags(site)[form.dataset.kind])
+  .sort((a,b)=>a.km-b.km).slice(0,12);
+ const panel=document.createElement('div');
+ panel.className='facility-booking-alternatives';
+ if(!options.length){
+  panel.textContent='ยังไม่พบหน่วยบริการอื่นที่รับคำขอประเภทนี้';
+ }else{
+  panel.innerHTML=`<label>เลือกหน่วยบริการอื่น<select><option value="">เลือกหน่วยที่รับคำขอ</option>${options.map(({site,km})=>
+   `<option value="${site.index}">${escapeDirectoryText(site.name)} · ${Math.round(km*10)/10} กม. จากหน่วยเดิม</option>`).join('')}</select></label>`;
+  panel.querySelector('select').addEventListener('change',event=>{
+   if(!event.target.value)return;
+   const site=searchableDirectory[Number(event.target.value)];
+   form.dataset.facilityIndex=site.index;
+   const heading=form.closest('.panel')?.querySelector('.page-heading p');
+   if(heading)heading.textContent=site.name;
+   delete form.dataset.token;
+   delete form.dataset.otpMode;
+   setRequestVerification(form,false);
+   form.querySelector('#request-start-status').textContent='เลือก '+site.name+' แล้ว กรุณาขอรหัส SMS ใหม่เพื่อส่งคำขอ';
+   panel.remove();
+  });
+ }
+ form.prepend(panel);
 }
 document.addEventListener('submit',event=>{
  if(event.target.id==='facility-request-form'){

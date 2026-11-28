@@ -117,7 +117,7 @@ try {
     $grantQuery->execute([$staff]);
     $grant=$grantQuery->fetch(PDO::FETCH_ASSOC) ?: null;
     $canQueue=$isAdmin || ($grant['scope_kind']??'')==='facility';
-    $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district'],true);
+    $canNetwork=$isAdmin || in_array($grant['scope_kind']??'',['province','district','facility'],true);
     [$queueScope,$queueParams]=anemiaQueueNetworkScope($isAdmin,$grant);
     if ((in_array($view,['access','assessment','audit','sample','release','sample-settings','services','members','programme-report'],true) && !$isAdmin) ||
         (in_array($view,['contact-queue','scan-request','scanner-install'],true) && !$canQueue) || ($view==='network' && !$canNetwork)) {
@@ -210,17 +210,24 @@ try {
         }
         if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['network_action'])) {
             if (!is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
+            $bookingAction=$_POST['network_action']==='booking';
+            if ($bookingAction) anemiaEnsureBooking($db);
             usageAuditEnsure($db);
             $db->beginTransaction();
             try {
-                $_SESSION['network_notice']=anemiaSaveNetwork($db,$isAdmin,$grant,$staff,$_POST);
+                $_SESSION['network_notice']=$bookingAction?anemiaSaveBooking($db,$isAdmin,$grant,$staff,$_POST):anemiaSaveNetwork($db,$isAdmin,$grant,$staff,$_POST);
                 usageAuditWrite($db,$identity,'data-change','network-'.$_POST['network_action']);
                 $db->commit();
             } catch (DomainException | PDOException $error) {
                 $db->rollBack();
                 $_SESSION['network_notice']=$error instanceof DomainException ? $error->getMessage() : 'บันทึกไม่ได้ กรุณาตรวจรหัสหน่วยหรือรายการที่ซ้ำ';
             }
-            header('Location: dashboard.php?view=network',true,303); exit;
+            $district=$_GET['district']??'';
+            $back=['view'=>'network']+($bookingAction?['network_tab'=>'booking']:[]);
+            if (is_string($district) && preg_match('/^\d{4}$/D',$district)) $back['district']=$district;
+            $bookingProvince=$_GET['booking_province']??'';
+            if ($bookingAction && is_string($bookingProvince) && preg_match('/^\d{2}$/D',$bookingProvince)) $back['booking_province']=$bookingProvince;
+            header('Location: dashboard.php?'.http_build_query($back),true,303); exit;
         }
         $networkNotice=$_SESSION['network_notice']??'';
         unset($_SESSION['network_notice']);

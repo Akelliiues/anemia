@@ -39,6 +39,82 @@ function anemiaManageNetworkScope(bool $admin,?array $grant): array
     };
 }
 
+function anemiaEnsureBooking(PDO $db): void
+{
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=31')->fetchColumn()) return;
+    $db->exec("CREATE TABLE IF NOT EXISTS anemia_network_booking (
+        facility_code VARCHAR(12) CHARACTER SET ascii PRIMARY KEY,
+        appointment TINYINT NOT NULL, callback TINYINT NOT NULL, paused_until DATE NULL,
+        updated_at DATETIME NOT NULL
+    ) ENGINE=InnoDB");
+    if ((int)$db->query("SELECT GET_LOCK(CONCAT(DATABASE(), ':anemia-booking-index'), 10)")->fetchColumn()!==1) {
+        throw new RuntimeException('Booking migration lock unavailable');
+    }
+    try {
+        if (!$db->query("SHOW INDEX FROM anemia_network_grant WHERE Key_name='booking_queue_owner'")->fetchColumn()) {
+            $db->exec('ALTER TABLE anemia_network_grant ADD INDEX booking_queue_owner (scope_kind,scope_code)');
+        }
+    } finally {
+        $db->query("SELECT RELEASE_LOCK(CONCAT(DATABASE(), ':anemia-booking-index'))")->closeCursor();
+    }
+    $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (31)');
+}
+
+function anemiaBookingFlags(array $facility,string $today): array
+{
+    $ready=!empty($facility['queue_owner']) && ($facility['kind']==='hospital' || !empty($facility['effective_hub']));
+    $paused=(!empty($facility['appointment']) || !empty($facility['callback'])) && !empty($facility['paused_until']) && $facility['paused_until']>$today;
+    return ['appointment'=>$ready && !$paused && !empty($facility['appointment']),
+        'callback'=>$ready && !$paused && !empty($facility['callback']),'paused'=>$paused];
+}
+
+function anemiaBookingOwnerSql(): string
+{
+    return "EXISTS (SELECT 1 FROM anemia_network_grant g JOIN anemia_staff s ON s.username=g.username AND s.enabled=1
+        WHERE g.scope_kind='facility' AND g.scope_code=f.code AND s.role<>'school_teacher')";
+}
+
+function anemiaBookingFacility(PDO $db,string $key,bool $lock=false): ?array
+{
+    $query=$db->prepare("SELECT f.code,f.kind,f.district,".anemiaEffectiveHub('f')." AS effective_hub,
+        ".anemiaBookingOwnerSql()." AS queue_owner,b.appointment,b.callback,b.paused_until FROM anemia_network_facility f
+        LEFT JOIN anemia_network_booking b ON b.facility_code=f.code WHERE f.facility_key=?".($lock?' FOR UPDATE':''));
+    $query->execute([$key]);
+    return $query->fetch(PDO::FETCH_ASSOC)?:null;
+}
+
+function anemiaSaveBooking(PDO $db,bool $admin,?array $grant,string $staff,array $input): string
+{
+    $code=$input['facility']??null;
+    if (!is_string($code) || !preg_match('/^[0-9]{1,12}$/D',$code)) throw new DomainException('กรุณาเลือกหน่วยบริการ');
+    [$scope,$params]=($grant['scope_kind']??'')==='facility' && !$admin
+        ? ['f.code=?',[$grant['scope_code']]]:anemiaManageNetworkScope($admin,$grant);
+    $query=$db->prepare("SELECT f.kind,".anemiaEffectiveHub('f')." AS effective_hub
+        FROM anemia_network_facility f WHERE f.code=? AND $scope FOR UPDATE");
+    $query->execute([$code,...$params]);
+    $facility=$query->fetch(PDO::FETCH_ASSOC);
+    if (!$facility) throw new DomainException('ไม่มีสิทธิ์ตั้งค่าหน่วยบริการนี้');
+    $appointment=($input['appointment']??'')==='1';
+    $callback=($input['callback']??'')==='1';
+    $resume=$input['resume']??'';
+    $date=is_string($resume) && $resume!==''?DateTimeImmutable::createFromFormat('!Y-m-d',$resume):false;
+    if ($resume!=='' && (!$date || $date->format('Y-m-d')!==$resume || $resume<=date('Y-m-d'))) {
+        throw new DomainException('กรุณาเลือกวันเปิดรับอีกครั้งหลังวันนี้');
+    }
+    if ($appointment || $callback) {
+        if ($facility['kind']==='primary' && !$facility['effective_hub']) throw new DomainException('กรุณากำหนดโรงพยาบาลแม่ข่ายก่อนเปิดรับ');
+        $owner=$db->prepare('SELECT '.anemiaBookingOwnerSql().' FROM anemia_network_facility f WHERE f.code=?');
+        $owner->execute([$code]);
+        if (!$owner->fetchColumn()) throw new DomainException('กรุณากำหนดเจ้าหน้าที่รับผิดชอบคิวก่อนเปิดรับ');
+    }
+    $db->prepare('INSERT INTO anemia_network_booking VALUES (?,?,?,?,NOW()) ON DUPLICATE KEY UPDATE
+        appointment=VALUES(appointment),callback=VALUES(callback),paused_until=VALUES(paused_until),updated_at=VALUES(updated_at)')
+        ->execute([$code,(int)$appointment,(int)$callback,$resume?:null]);
+    $db->prepare("INSERT INTO anemia_network_audit(actor,action_name,target,old_value,new_value,changed_at) VALUES (?,'booking',?,NULL,?,NOW())")
+        ->execute([$staff,$code,implode(':',[(int)$appointment,(int)$callback,$resume])]);
+    return 'บันทึกสถานะรับคำขอออนไลน์แล้ว';
+}
+
 function anemiaSaveNetwork(PDO $db,bool $admin,?array $grant,string $staff,array $input): string
 {
     $action=$input['network_action']??'';

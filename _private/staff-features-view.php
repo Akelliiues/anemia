@@ -8,6 +8,7 @@ $featureHighlights = [
     ['overview', 'เห็นภาพทั้งเขต ก่อนลงไปดูรายละเอียด', 'เลือกเขตสุขภาพบนแผนที่เพื่อดูยอดคัดกรองและส่งต่อทั้งปี แล้วเปิดรายงานรายเดือนเพื่อดูรายละเอียดตามพื้นที่ที่รับผิดชอบ'],
     ['schools', 'ดูแลหลายโรงเรียนได้จากหลังบ้านเดียว', 'ค้นหาโรงเรียนตามจังหวัดและติดตามการเข้าร่วม ครูจัดการห้องเรียนในพื้นที่ของโรงเรียน ส่วนเจ้าหน้าที่ดูภาพรวมตามสิทธิ์'],
     ['reports', 'ข้อมูลพร้อมส่งต่อในรูปแบบรายงาน', 'เลือกเขตและเดือนก่อนพิมพ์หรือดาวน์โหลด PDF ตารางภาษาไทยจัดตามตัวกรองที่เลือก'],
+    ['voice-coach', 'Voice Coach', 'จัดการข้อความคำแนะนำและอัปโหลดไฟล์เสียงแยกกัน ให้หน้าหลัก ผลคัดกรอง และคลังความรู้ใช้เสียงที่เผยแพร่ไว้'],
 ];
 ?>
 <section class="card admin-report guide-catalog" aria-label="ฟีเจอร์เด่นสำหรับเจ้าหน้าที่">
@@ -15,11 +16,12 @@ $featureHighlights = [
   <h2>ติดตามงานจากคำขอรายคนถึงภาพรวมเขตสุขภาพ</h2>
   <p>Anemia Portal รวมข้อมูลที่ใช้ประสานงาน ติดตามผล และออกรายงานไว้ในหลังบ้านตามสิทธิ์ของแต่ละบัญชี</p>
  </div>
- <div class="feature-grid">
+ <div class="feature-grid feature-orbit">
+  <div class="feature-hub"><?= workspaceIcon('drop') ?><strong>Anemia Portal</strong><span>ประสานงาน · ติดตาม · รายงาน</span></div>
  <?php foreach ($featureHighlights as [$destination,$title,$description]):
     if (!isset($tabs[$destination])) continue;
  ?>
-  <article class="feature-card">
+  <article class="feature-card<?= $destination==='voice-coach'?' feature-card-voice':'' ?>">
    <span class="feature-card-icon"><?= workspaceIcon($tabIcons[$destination]??'info') ?></span>
    <h3><?= esc($title) ?></h3>
    <p><?= esc($description) ?></p><a href="dashboard.php?view=<?= esc($destination) ?>"><?= esc($tabs[$destination]) ?> <?= workspaceIcon('next') ?></a>

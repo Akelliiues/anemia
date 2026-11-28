@@ -171,12 +171,16 @@ function publicFeatures(){
  const entries=[
   ['check','รู้ว่าควรทำอะไรต่อ หลังเห็นผลคัดกรอง','ตอบคำถามเรื่องอาการและพฤติกรรมใกล้ตัว แล้วดูคำแนะนำเบื้องต้นที่สอดคล้องกับผลของคุณ','เริ่มประเมิน','index.html?view=start'],
   ['hospital','จากค้นหาที่ตรวจ ถึงติดตามคำขอ','หาหน่วยบริการใกล้คุณ ดูว่าที่ไหนรับคำขอออนไลน์ และใช้เลขคำขอหรือ QR ติดตามหลังส่ง','ค้นหาหน่วยบริการ','index.html?view=facility-directory'],
-  ['calendar','เปลี่ยนคำแนะนำให้เป็นสิ่งที่ทำได้ทุกสัปดาห์','กิจกรรม 12 สัปดาห์แบ่งการเรียนรู้เป็นช่วงสั้น ๆ ให้ลองทำและกลับมาดูความคืบหน้าในบัญชีของคุณได้','ดูกิจกรรม 12 สัปดาห์','participant-programme.php']
+  ['calendar','เปลี่ยนคำแนะนำให้เป็นสิ่งที่ทำได้ทุกสัปดาห์','กิจกรรม 12 สัปดาห์แบ่งการเรียนรู้เป็นช่วงสั้น ๆ ให้ลองทำและกลับมาดูความคืบหน้าในบัญชีของคุณได้','ดูกิจกรรม 12 สัปดาห์','participant-programme.php'],
+  ['sound','Voice Coach','ฟังคำแนะนำประกอบผลคัดกรองและบทความที่มีเสียงเผยแพร่']
  ];
  set(panel(`<div class="feature-pitch">${pageHeading('check','รู้ความเสี่ยง แล้ววางแผนดูแลตัวเองต่อ','Anemia Portal เชื่อมการคัดกรองภาวะโลหิตจาง การเรียนรู้ และการเข้าถึงหน่วยบริการไว้ในที่เดียว')}</div>
- <div class="feature-grid">${entries.map(([symbol,title,description,label,url])=>`
-   <article class="feature-card">${box(symbol)}<h2>${title}</h2>
-    <p>${description}</p><a href="${url}">${label} ${icon('next')}</a>
+ <div class="feature-grid feature-orbit">
+  <div class="feature-hub">${icon('drop')}<strong>Anemia Portal</strong><span>คัดกรอง · เรียนรู้ · ติดตาม</span></div>
+  ${entries.map(([symbol,title,description,label,url])=>`
+   <article class="feature-card${url?'':' feature-card-voice'}">
+    <span class="feature-card-icon">${icon(symbol)}</span><h2>${title}</h2>
+    <p>${description}</p>${url?`<a href="${url}">${label} ${icon('next')}</a>`:`<details class="feature-voice-preview"><summary>เปิดตัวอย่างคำแนะนำ</summary>${audioUI('home')}</details>`}
    </article>`).join('')}</div>`,true));
 }
 function project(){

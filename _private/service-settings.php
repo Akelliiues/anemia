@@ -81,6 +81,39 @@ function anemiaServiceReady(string $provider,array $settings): bool
     };
 }
 
+function anemiaTestFacebook(): string
+{
+    $settings=anemiaServiceSettings('facebook');
+    if (!empty($settings['locked']) || !anemiaServiceReady('facebook',$settings)) {
+        throw new DomainException('กรุณาบันทึกค่าตั้งค่า Facebook ให้ครบก่อนตรวจ');
+    }
+    if (!function_exists('curl_init')) {
+        throw new DomainException('โฮสต์ยังไม่พร้อมตรวจการเชื่อมต่อกับ Meta');
+    }
+    $id=anemiaServiceValue($settings,'ANEMIA_FACEBOOK_CLIENT_ID');
+    $secret=anemiaServiceValue($settings,'ANEMIA_FACEBOOK_CLIENT_SECRET');
+    $version=anemiaServiceValue($settings,'ANEMIA_FACEBOOK_GRAPH_VERSION');
+    $token=$id.'|'.$secret;
+    $query=http_build_query(['fields'=>'id','appsecret_proof'=>hash_hmac('sha256',$token,$secret)]);
+    $curl=curl_init("https://graph.facebook.com/$version/$id?$query");
+    curl_setopt_array($curl,[
+        CURLOPT_RETURNTRANSFER=>true,
+        CURLOPT_CONNECTTIMEOUT=>4,
+        CURLOPT_TIMEOUT=>8,
+        CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$token],
+    ]);
+    $body=curl_exec($curl);
+    $status=curl_getinfo($curl,CURLINFO_HTTP_CODE);
+    if ($body===false || $status===429 || $status>=500) {
+        throw new DomainException('ติดต่อ Meta ไม่สำเร็จ กรุณาลองใหม่ภายหลัง');
+    }
+    $response=json_decode($body,true);
+    if ($status!==200 || ($response['id']??null)!==$id) {
+        throw new DomainException('Meta ไม่ยืนยันข้อมูลแอป กรุณาตรวจ App ID, App Secret และเวอร์ชัน Graph API');
+    }
+    return 'Meta ยืนยันข้อมูลแอปแล้ว ขั้นต่อไปให้ตรวจ Callback URL และทดสอบเข้าสู่ระบบด้วยบัญชี Facebook';
+}
+
 function anemiaSaveService(string $provider,array $input,string $actor): void
 {
     $definition=anemiaServiceDefinitions()[$provider]??null;

@@ -32,7 +32,7 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
  <?php elseif ($serviceTab!=='otp'): ?>
   <div class="network-form"><label>Callback URL <input id="service-callback" readonly value="<?= esc(anemiaServiceCallback()) ?>"></label></div>
   <button type="button" class="action" onclick="const field=document.getElementById('service-callback');field.select();navigator.clipboard?.writeText(field.value).catch(()=>{});"><?= workspaceIcon('layout') ?>คัดลอก Callback URL</button>
-  <p>คัดลอก URL นี้ไปตั้งค่าที่ผู้ให้บริการ โหมดทดสอบใช้ตรวจความครบถ้วนของค่า หน้าเข้าสู่ระบบจะแสดงช่องทางนี้เมื่อเปิดใช้จริง</p>
+  <p>คัดลอก URL นี้ไปตั้งค่าที่ผู้ให้บริการ หน้าเข้าสู่ระบบจะแสดงช่องทางนี้เมื่อเปิดใช้จริง</p>
   <?php if ($serviceTab==='facebook'):
       $facebookMembers=(int)$db->query("SELECT COUNT(*) FROM anemia_participant_identity WHERE provider='facebook'")->fetchColumn();
   ?>
@@ -62,6 +62,13 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
   </label>
   <div class="network-actions"><button class="action primary" type="submit" name="service_action" value="save" <?= anemiaServiceKey()===null?'disabled':'' ?>><?= workspaceIcon('save') ?>บันทึกการตั้งค่า</button></div>
  </form>
+ <?php if ($serviceTab==='facebook' && $ready): ?>
+  <form class="network-actions" method="post">
+   <input type="hidden" name="csrf" value="<?= esc($token) ?>">
+   <input type="hidden" name="service" value="facebook">
+   <button class="action" type="submit" name="service_action" value="facebook-check"><?= workspaceIcon('check') ?>ตรวจค่าที่บันทึกกับ Meta</button>
+  </form>
+ <?php endif; ?>
  <?php if ($serviceTab==='otp' && $ready && in_array($mode,['test','live'],true)): ?>
   <h3>ทดสอบส่งและตรวจรหัส SMS</h3>
   <?php if (isset($_SESSION['service_otp_verified_at'])): ?><p>ยืนยันรหัสทดสอบล่าสุด <?= esc(workspaceThaiShortDate(date('c',$_SESSION['service_otp_verified_at']))) ?> เวลา <?= esc(date('H:i',$_SESSION['service_otp_verified_at'])) ?> น.</p><?php endif; ?>

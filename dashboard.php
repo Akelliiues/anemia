@@ -391,6 +391,8 @@ try {
                     anemiaSaveService($service,$_POST,$staff);
                     if ($service==='otp') unset($_SESSION['service_otp_test'],$_SESSION['service_otp_verified_at']);
                     $_SESSION['service_notice']='บันทึกค่าบริการแล้ว';
+                } elseif ($service==='facebook' && $action==='facebook-check') {
+                    $_SESSION['service_notice']=anemiaTestFacebook();
                 } elseif ($service==='otp' && in_array($action,['otp-send','otp-check'],true)) {
                     $_SESSION['service_notice']=anemiaTestServiceOtp($action,$_POST);
                 } else {

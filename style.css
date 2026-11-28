@@ -2946,10 +2946,3 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .workspace-data-mode button[aria-checked=true] .workspace-data-track {background:color-mix(in srgb,var(--violet) 52%,transparent);}
 .workspace-data-mode button[aria-checked=true] .workspace-data-track::before {transform:translate(.95rem,-50%);}
 @media(prefers-reduced-motion:reduce) {.workspace-data-track::before {transition:none;}}
-
-.overview-region-filter {color:var(--muted);}
-.overview-region-filter summary {display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;list-style:none;border-radius:.3rem;}
-.overview-region-filter summary::-webkit-details-marker {display:none;}
-.overview-region-filter summary:hover {color:var(--ink);text-decoration:underline;}
-.overview-region-filter[open] .hosted-menu-caret {transform:rotate(225deg);}
-.overview-region-filter[open] form {margin:.65rem 0 0;}

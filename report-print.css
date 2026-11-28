@@ -9,8 +9,8 @@
 .report-landscape {page:landscape-report;}
 * {box-sizing:border-box;}
 body {margin:0;color:#111;background:#ebe9ef;font:16pt/1.15 "TH Sarabun New",sans-serif;}
-.report-paper {max-width:210mm;margin:0 auto 16px;padding:13mm;background:#fff;}
-.report-landscape .report-paper {max-width:297mm;}
+.report-paper {display:flex;flex-direction:column;min-height:297mm;max-width:210mm;margin:0 auto 16px;padding:13mm;background:#fff;}
+.report-landscape .report-paper {min-height:210mm;max-width:297mm;}
 .report-print-toolbar {max-width:210mm;margin:0 auto;padding:12px;text-align:right;}
 .report-landscape .report-print-toolbar {max-width:297mm;}
 .report-print-toolbar button {display:inline-grid;place-items:center;vertical-align:middle;width:44px;height:44px;margin:0 3px;border:1px solid #dbd0ed;border-radius:10px;background:#fff;color:#4c318b;cursor:pointer;}
@@ -19,7 +19,7 @@ body {margin:0;color:#111;background:#ebe9ef;font:16pt/1.15 "TH Sarabun New",san
 .report-print-toolbar svg {width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
 .report-print-toolbar p {margin:5px 0 0;color:#4c318b;}
 .report-paper-header {text-align:center;border-bottom:1px solid #35333b;padding-bottom:3mm;margin-bottom:4mm;break-inside:avoid;}
-.report-paper-footer {display:flex;align-items:center;justify-content:flex-start;gap:1.5mm;margin-top:3mm;text-align:left;color:#737078;font-size:10pt;line-height:1.1;break-inside:avoid;}
+.report-paper-footer {display:flex;align-items:center;justify-content:flex-start;gap:1.5mm;margin-top:auto;padding-top:3mm;text-align:left;color:#737078;font-size:10pt;line-height:1.1;break-inside:avoid;}
 .report-paper-footer img {display:block;flex:none;width:22pt;height:22pt;opacity:.65;}
 .report-paper-footer p {margin:0;}
 .report-paper-header h1 {margin:1mm 0;font-size:24pt;line-height:1.08;}
@@ -44,5 +44,6 @@ td {text-align:center;}
 @media print {
  body {background:#fff;}
  .report-print-toolbar {display:none;}
- .report-paper,.report-landscape .report-paper {max-width:none;margin:0;padding:0;overflow:visible;}
+ .report-paper,.report-landscape .report-paper {display:block;min-height:0;max-width:none;margin:0;padding:0 0 9mm;box-decoration-break:clone;-webkit-box-decoration-break:clone;overflow:visible;}
+ .report-paper-footer {position:fixed;left:0;right:0;bottom:0;margin:0;padding:0;}
 }

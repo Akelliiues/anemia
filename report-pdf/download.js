@@ -50,7 +50,7 @@
 
  function createDefinition(logo) {
   const footer = paper.querySelector('.report-paper-footer');
-  const content = Array.from(paper.children, element => {
+  const content = Array.from(paper.children).filter(element => element !== footer).map(element => {
    switch (element.tagName) {
     case 'HEADER':
      return {alignment:'center', margin:[0,0,0,12], stack:Array.from(element.children, line => ({
@@ -63,19 +63,23 @@
      return {text:contentText(element), bold:true, fontSize:19, margin:[0,10,0,4], headlineLevel:1};
     case 'UL':
      return {ul:Array.from(element.children, contentText)};
-    case 'FOOTER':
-     return {unbreakable:true, margin:[0,9,0,0], columns:[
-      {image:'brand',width:22},
-      {stack:Array.from(footer.querySelectorAll('p'), line => ({text:contentText(line),color:'#737078',fontSize:10,lineHeight:0.83}))}
-     ],columnGap:5};
     default:
      return {text:contentText(element),fontSize:14,margin:[0,5,0,0]};
    }
   });
+  const margin = landscape ? 34 : 37;
   return {
+   footer:{
+    margin:[margin, margin - 34, margin, 0],
+    columns:[
+     {image:'brand',width:22},
+     {stack:Array.from(footer.querySelectorAll('p'), line => ({text:contentText(line),color:'#737078',fontSize:10,lineHeight:0.83}))}
+    ],
+    columnGap:5
+   },
    pageSize:'A4',
    pageOrientation:landscape ? 'landscape' : 'portrait',
-   pageMargins:landscape ? 34 : 37,
+   pageMargins:margin,
    info:{title:paper.querySelector('h1').textContent.trim()},
    defaultStyle:{font:'Sarabun',fontSize:16},
    images:{brand:logo},

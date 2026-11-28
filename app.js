@@ -541,9 +541,10 @@ function facilities(callbackIntent=false){
  set(panel(`${backRow()}${pageHeading('hospital','ค้นหาโรงพยาบาลและ รพ.สต.',callbackIntent?'เลือกหน่วยบริการที่ต้องการให้ติดต่อกลับ':'ค้นจากชื่อ พื้นที่ หรือตำแหน่งปัจจุบัน แล้วเลือกดูตามประเภทหน่วยบริการ')}
  <section class="card facility-search"><form id="hospital-search"><label for="hospital-query">ชื่อหน่วยบริการ จังหวัด อำเภอ หรือรหัสไปรษณีย์</label>
  <div class="facility-query"><input id="hospital-query" type="search" placeholder="เช่น อุบลราชธานี" required><button class="action primary" type="submit">${icon('next')}ค้นหา</button></div></form>
- <div class="actions">${button('ค้นจากตำแหน่งปัจจุบัน','facility-location','hospital')}</div>
+ <div class="actions facility-search-actions">
+ ${button('ค้นจากตำแหน่งปัจจุบัน','facility-location','hospital')}
  ${testAppointmentOtp?'':'<label class="facility-booking-toggle"><input type="checkbox" id="facility-booking-only"> จองออนไลน์ได้</label>'}
- <p class="notice">พิกัดของคุณใช้คำนวณบนเครื่องและจะไม่ถูกส่งหรือบันทึก</p></section>
+ </div></section>
  <div id="facility-tabs" class="facility-tabs" role="group" aria-label="ประเภทหน่วยบริการ">${directoryTabs()}</div>
  <p id="facility-feedback" class="notice" role="status">พิมพ์ชื่อหรือพื้นที่ หรือกดค้นจากตำแหน่งปัจจุบัน</p>
  <div id="facility-list" class="facility-list"></div>

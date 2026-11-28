@@ -2949,3 +2949,8 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 
 #hosted-sample-dashboard [data-overview-metric][aria-pressed=true] {border-color:var(--violet);background:color-mix(in srgb,var(--violet) 11%,transparent);}
 #hosted-sample-dashboard .admin-table .overview-metric-column {background:color-mix(in srgb,var(--violet) 14%,transparent);font-weight:700;}
+
+.overview-report-pages {display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.45rem .75rem;margin-top:.75rem;color:var(--muted);font-size:.86rem;}
+.overview-report-pages > [role=status] {margin-inline-end:auto;}
+.overview-report-pages .action {padding:.3rem .65rem;min-height:36px;}
+.overview-report-pages .action:disabled {opacity:.5;cursor:default;}

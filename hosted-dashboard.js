@@ -56,8 +56,17 @@ function renderHostedSample(scope){
  if(adminView==='overview')animateAdminCounters();
 }
 main.addEventListener('click',event=>{
- const control=event.target.closest('[data-chart-region],[data-go],[data-admin-risk],[data-overview-metric]');
+ const control=event.target.closest('[data-chart-region],[data-go],[data-admin-risk],[data-overview-metric],[data-overview-page]');
  if(!control)return;
+ if(control.dataset.overviewPage){
+  if(control.disabled)return;
+  const step=Number(control.dataset.overviewPage);
+  overviewReportPage=Math.max(1,overviewReportPage+step);
+  staff();
+  const nav=main.querySelector('.overview-report-pages');
+  (nav?.querySelector(`[data-overview-page="${step}"]:enabled`)??nav?.querySelector('button:enabled'))?.focus({preventScroll:true});
+  return;
+ }
  if(control.dataset.overviewMetric){
   selectedOverviewMetric=control.dataset.overviewMetric;
   adminView='reports';
@@ -68,7 +77,7 @@ main.addEventListener('click',event=>{
  if(control.dataset.adminRisk){pickAdminRisk(control);return;}
  if(control.dataset.chartRegion){selectChartRegion(Number(control.dataset.chartRegion));return;}
  switch(control.dataset.go){
- case 'admin-clear-region':adminRegion='';staff();document.querySelector('#admin-region')?.focus({preventScroll:true});break;
+ case 'admin-clear-region':adminRegion='';overviewReportPage=1;staff();document.querySelector('#admin-region')?.focus({preventScroll:true});break;
  case 'admin-reports':selectedOverviewMetric=null;adminView='reports';staff();break;
  case 'admin-csv':adminExport();break;
  case 'admin-print':if(canReport(adminScope())&&adminView==='reports')printDemoReport(adminScope());break;

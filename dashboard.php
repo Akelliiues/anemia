@@ -796,6 +796,10 @@ function workspaceMonthFilters(string $selected, bool $allowAll, string $monthLa
 }
 
 require __DIR__ . '/_private/icons.php';
+if (($_GET['format']??'')==='print' && in_array($view,['reports','evaluation'],true)) {
+    require __DIR__.'/_private/report-print-view.php';
+    exit;
+}
 if ($view==='schools') {
     ob_start();
     try {
@@ -838,8 +842,8 @@ function workspaceInfo(string $page, ?array $release = null): void
 <?php if ($showSample): ?>
 <script defer src="health-region-map.js"></script>
 <script defer src="national-registry.js"></script>
-<script defer src="admin.js?v=staff-details-v18"></script>
-<script defer src="hosted-dashboard.js?v=scroll-v3"></script>
+<script defer src="admin.js?v=staff-details-v19"></script>
+<script defer src="hosted-dashboard.js?v=scroll-v4"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
 <?php if ($view==='schools'): ?><script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=7"></script><?php endif; ?>
@@ -1068,7 +1072,7 @@ function workspaceInfo(string $page, ?array $release = null): void
     <?php workspaceMonthFilters($reportMonth,false); ?>
     <button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดง</button>
    </form>
-   <div class="actions"><?php if (!$sampleMode): ?><a class="action" href="dashboard.php?view=reports&amp;region=<?= $region ?>&amp;month=<?= esc($reportMonth) ?>&amp;download=csv"><?= workspaceIcon('download') ?>ดาวน์โหลด CSV</a><?php endif; ?><button type="button" class="action primary" onclick="window.print()"><?= workspaceIcon('print') ?>พิมพ์รายงาน</button></div>
+   <div class="actions"><?php if (!$sampleMode): ?><a class="action" href="dashboard.php?view=reports&amp;region=<?= $region ?>&amp;month=<?= esc($reportMonth) ?>&amp;download=csv"><?= workspaceIcon('download') ?>ดาวน์โหลด CSV</a><?php endif; ?><a class="action primary" href="dashboard.php?<?= esc(http_build_query(['view'=>'reports','region'=>$region,'month'=>$reportMonth,'preview'=>$sampleMode?'sample':'live','format'=>'print'])) ?>" target="_blank" rel="noopener"><?= workspaceIcon('print') ?>พิมพ์รายงาน</a></div>
   </div>
   <section class="card admin-report province-performance" aria-labelledby="province-performance-title">
    <h2 id="province-performance-title">ผลคัดกรองและการส่งต่อรายจังหวัด</h2>
@@ -1135,7 +1139,7 @@ function workspaceInfo(string $page, ?array $release = null): void
   <div class="actions">
    <a class="action" href="feedback.php"><?= workspaceIcon('ready') ?>เปิดแบบประเมิน</a>
    <?php if (!$sampleMode): ?><a class="action primary" href="<?= esc($exportLink) ?>"><?= workspaceIcon('download') ?>ดาวน์โหลด CSV</a><?php endif; ?>
-   <button type="button" class="action" onclick="window.print()"><?= workspaceIcon('print') ?>พิมพ์</button>
+   <a class="action" href="dashboard.php?<?= esc(http_build_query(['view'=>'evaluation','region'=>$region,'audience'=>$evaluationAudience,'month'=>$evaluationMonth,'version'=>$selectedVersion,'preview'=>$sampleMode?'sample':'live','format'=>'print'])) ?>" target="_blank" rel="noopener"><?= workspaceIcon('print') ?>พิมพ์รายงาน</a>
   </div></div>
   <p class="notice"><?= esc($identity['role']==='provincial_report'?($provinces[0]['name']??'จังหวัดที่รับผิดชอบ'):($region?zoneLabel($region):'ทุกเขตและผู้ไม่ระบุจังหวัด')) ?> · <?= esc(EVALUATION_AUDIENCES[$evaluationAudience]??'ทุกกลุ่ม') ?> · <?= esc($evaluationMonth ? workspaceThaiMonth($evaluationMonth) : 'ทุกเดือน') ?> · <?= esc($selectedVersion) ?></p>
   <div class="admin-kpis hosted-kpis">

@@ -1,0 +1,41 @@
+@font-face {
+ font-family:"TH Sarabun New";src:url("report-fonts/THSarabunNew.ttf") format("truetype");font-weight:400;font-display:swap;
+}
+@font-face {
+ font-family:"TH Sarabun New";src:url("report-fonts/THSarabunNew%20Bold.ttf") format("truetype");font-weight:700;font-display:swap;
+}
+@page {size:A4 portrait;margin:13mm;}
+@page landscape-report {size:A4 landscape;margin:12mm;}
+.report-landscape {page:landscape-report;}
+* {box-sizing:border-box;}
+body {margin:0;color:#111;background:#ebe9ef;font:16pt/1.15 "TH Sarabun New",sans-serif;}
+.report-paper {max-width:210mm;margin:0 auto 16px;padding:13mm;background:#fff;}
+.report-landscape .report-paper {max-width:297mm;}
+.report-print-toolbar {max-width:297mm;margin:0 auto;padding:12px;text-align:center;}
+.report-print-toolbar button {padding:6px 20px;border:0;border-radius:8px;background:#4c318b;color:#fff;font:700 16pt "TH Sarabun New",sans-serif;cursor:pointer;}
+.report-paper-header {text-align:center;border-bottom:1px solid #35333b;padding-bottom:3mm;margin-bottom:4mm;break-inside:avoid;}
+.report-paper-header img {display:block;margin:0 auto 1mm;}
+.report-paper-header h1 {margin:1mm 0;font-size:24pt;line-height:1.08;}
+.report-paper-header p {margin:0;}
+h2 {font-size:19pt;margin:4mm 0 1.5mm;break-after:avoid;}
+table {width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;}
+thead {display:table-header-group;}
+tr,li {break-inside:avoid;}
+th,td {border:1px solid #48464e;padding:1.2mm 2mm;vertical-align:middle;overflow-wrap:break-word;}
+th {font-weight:700;}
+thead th {background:#f0eef5;text-align:center;}
+tbody th {text-align:start;}
+td {text-align:center;}
+.report-province-table {table-layout:fixed;font-size:14pt;}
+.report-province-table th:first-child[rowspan] {width:14%;}
+.report-province-table th,.report-province-table td {padding:.9mm 1mm;}
+.report-note {font-size:14pt;margin:2mm 0 0;}
+@media screen and (max-width:760px) {
+ .report-paper {padding:5mm;overflow-x:auto;}
+ .report-landscape .report-paper table {min-width:660px;}
+}
+@media print {
+ body {background:#fff;}
+ .report-print-toolbar {display:none;}
+ .report-paper,.report-landscape .report-paper {max-width:none;margin:0;padding:0;overflow:visible;}
+}

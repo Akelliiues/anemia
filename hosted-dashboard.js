@@ -59,7 +59,7 @@ main.addEventListener('click',event=>{
  case 'admin-reports':adminView='reports';staff();break;
  case 'hosted-overview':adminView='overview';staff();break;
  case 'admin-csv':adminExport();break;
- case 'admin-print':window.print();break;
+ case 'admin-print':if(canReport(adminScope())&&adminView==='reports')printDemoReport(adminScope());break;
  }
 });
 staff();

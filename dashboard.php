@@ -709,7 +709,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 ?>
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v141">
+<title><?= esc($unitScanner?'สแกน QR ประจำหน่วย':$tabs[$view]) ?> · Anemia Portal</title><script src="theme.js?v=5"></script><script defer src="installed-update.js"></script><link rel="stylesheet" href="style.css?v=portal-ui-v142">
 <link rel="manifest" href="<?= $scannerApp?'staff-scanner.webmanifest':'staff.webmanifest' ?>"><link rel="apple-touch-icon" href="<?= $scannerApp?'staff-scanner-192.png':'staff-icon-192.png' ?>"><meta name="theme-color" content="#392656">
 <script defer src="staff-install.js?v=7"></script>
 <?php if ($showSample): ?>
@@ -1432,15 +1432,39 @@ function workspaceInfo(string $page, ?array $release = null): void
 for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group')) {
  const summary = menu.querySelector('summary');
  const links = menu.querySelector('.hosted-menu-links');
+ const motion = matchMedia('(prefers-reduced-motion: reduce)');
  let closeTimer;
  let mouseLeft = false;
+ let animations = [];
+ let fadingOut = false;
+
+ function cancelAnimations() {
+  animations.forEach(animation => animation.cancel());
+  animations = [];
+  fadingOut = false;
+ }
+
+ function fadeItems(opening) {
+  fadingOut = !opening;
+  const items = [...links.children].filter(item => !item.hidden);
+  animations = items.map((item, index) => item.animate(
+   opening ? [{opacity: 0}, {opacity: 1}] : [{opacity: 1}, {opacity: 0}],
+   {duration: 150, delay: (opening ? index : items.length - 1 - index) * 42, easing: 'ease-out', fill: 'both'}
+  ));
+  return Promise.all(animations.map(animation => animation.finished));
+ }
 
  function scheduleClose() {
   clearTimeout(closeTimer);
-  closeTimer = setTimeout(() => {
-   if (mouseLeft && !links.contains(document.activeElement)) {
-    menu.open = false;
+  closeTimer = setTimeout(async () => {
+   if (!menu.open || !mouseLeft || links.contains(document.activeElement)) return;
+   cancelAnimations();
+   if (!motion.matches && typeof links.animate === 'function') {
+    try { await fadeItems(false); }
+    catch { return; }
    }
+   menu.open = false;
+   cancelAnimations();
   }, 300);
  }
 
@@ -1448,19 +1472,28 @@ for (const menu of document.querySelectorAll('.admin-top-tabs .hosted-menu-group
   if (event.pointerType !== 'mouse') return;
   mouseLeft = false;
   clearTimeout(closeTimer);
+  if (menu.open) {
+   if (fadingOut) cancelAnimations();
+   return;
+  }
   menu.open = true;
+  if (!motion.matches && typeof links.animate === 'function') {
+   fadeItems(true).then(cancelAnimations, () => {});
+  }
  });
  menu.addEventListener('pointerleave', event => {
   if (event.pointerType !== 'mouse') return;
   mouseLeft = true;
   if (menu.open) scheduleClose();
  });
+ links.addEventListener('focusin', cancelAnimations);
  links.addEventListener('focusout', () => {
   if (menu.open && mouseLeft) scheduleClose();
  });
  menu.addEventListener('toggle', () => {
   if (!menu.open) {
    clearTimeout(closeTimer);
+   cancelAnimations();
   }
  });
  menu.addEventListener('keydown', event => {

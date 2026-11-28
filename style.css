@@ -2219,10 +2219,10 @@ body:has(> .portal-neural-page) {isolation:isolate;}
  box-shadow:inset 3px 0 0 var(--violet);
 }
 @media(prefers-reduced-motion:no-preference) {
- :is(.public-nav-group,.hosted-menu-group)[open] > :is(.public-nav-links,.hosted-menu-links) {
+ .public-nav-group[open] > .public-nav-links {
   animation:navigation-menu-unfold .24s cubic-bezier(.2,.75,.25,1);
  }
- :is(.public-nav-group,.hosted-menu-group)[open] > :is(.public-nav-links,.hosted-menu-links):focus-within {animation:none;}
+ .public-nav-group[open] > .public-nav-links:focus-within {animation:none;}
  :is(.public-nav-links,.hosted-menu-links) :is(a,button) {
   transition:background-color .14s,color .14s,box-shadow .14s;
  }

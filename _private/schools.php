@@ -4,7 +4,7 @@ if (!defined('ANEMIA_STAFF_BOOT')) { http_response_code(404); exit; }
 
 function anemiaEnsureSchools(PDO $db): void
 {
-    if ($db->query('SELECT version FROM anemia_schema WHERE version=27')->fetchColumn()) return;
+    if ($db->query('SELECT version FROM anemia_schema WHERE version=28')->fetchColumn()) return;
     $definitions=[
         'school'=>'id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(160) NOT NULL, province_code CHAR(2) NOT NULL, enabled TINYINT NOT NULL DEFAULT 1, UNIQUE(province_code,name)',
         'school_directory_link'=>'code VARCHAR(12) CHARACTER SET ascii PRIMARY KEY, school_id INT UNSIGNED NOT NULL, INDEX(school_id)',
@@ -14,12 +14,13 @@ function anemiaEnsureSchools(PDO $db): void
         'school_coordinator'=>'school_id INT UNSIGNED PRIMARY KEY, username VARCHAR(40) NOT NULL',
         'school_teacher_profile'=>'username VARCHAR(40) PRIMARY KEY, full_name VARCHAR(160) NOT NULL, contact VARCHAR(160) NOT NULL DEFAULT \'\'',
         'school_room'=>'cohort_id INT UNSIGNED PRIMARY KEY, school_id INT UNSIGNED NOT NULL, academic_year SMALLINT UNSIGNED NOT NULL, grade TINYINT UNSIGNED NOT NULL, room_no SMALLINT UNSIGNED NOT NULL, UNIQUE(school_id,academic_year,grade,room_no)',
+        'school_room_target'=>'cohort_id INT UNSIGNED PRIMARY KEY, participants SMALLINT UNSIGNED NOT NULL',
         'school_room_teacher'=>'cohort_id INT UNSIGNED NOT NULL, duty VARCHAR(12) NOT NULL, username VARCHAR(40) NOT NULL, assigned_by VARCHAR(40) NOT NULL, started_at DATETIME NOT NULL, PRIMARY KEY(cohort_id,duty), INDEX(username,cohort_id)',
         'school_room_history'=>'id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, cohort_id INT UNSIGNED NOT NULL, duty VARCHAR(12) NOT NULL, username VARCHAR(40) NOT NULL, assigned_by VARCHAR(40) NOT NULL, started_at DATETIME NOT NULL, ended_at DATETIME NOT NULL, ended_by VARCHAR(40) NOT NULL, INDEX(cohort_id)',
         'school_audit'=>'id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, actor VARCHAR(40) NOT NULL, action_name VARCHAR(72) NOT NULL, school_id INT UNSIGNED NOT NULL, cohort_id INT UNSIGNED NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
     ];
     foreach ($definitions as $table=>$columns) $db->exec("CREATE TABLE IF NOT EXISTS anemia_$table ($columns) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (25),(26),(27)');
+    $db->exec('INSERT IGNORE INTO anemia_schema (version) VALUES (25),(26),(27),(28)');
 }
 
 function schoolEscape(string $value): string

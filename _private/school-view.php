@@ -86,7 +86,7 @@ return static function (PDO $db,array $identity): void {
             $redirect=['province'=>$_POST['province']]+$redirect;
             unset($redirect['region']);
         }
-        if ($schoolId && in_array($_POST['school_action']??'', ['cohort-edit','cohort-toggle'],true)) {
+        if ($schoolId && in_array($_POST['school_action']??'', ['cohort-edit','cohort-toggle','room-target'],true)) {
             $cohort=filter_input(INPUT_POST,'cohort',FILTER_VALIDATE_INT);
             if ($cohort) $redirect['cohort']=$cohort;
         }
@@ -103,7 +103,8 @@ return static function (PDO $db,array $identity): void {
             }
         }
         $redirect=$schoolRoute+$redirect;
-        header('Location: '.$schoolUrl.($redirect?'?'.http_build_query($redirect):''),true,303); exit;
+        $anchor=($_POST['school_action']??'')==='room-target' && isset($redirect['cohort'])?'#school-room-'.$redirect['cohort']:'';
+        header('Location: '.$schoolUrl.($redirect?'?'.http_build_query($redirect):'').$anchor,true,303); exit;
     }
     [$scope,$params]=schoolScope($identity);
     $regions=[];
@@ -147,11 +148,12 @@ return static function (PDO $db,array $identity): void {
     if ($school && $schoolTab!=='tracking') {
         $ownerFilter=$teacher && !$manage ? ' AND ((r.cohort_id IS NULL AND c.teacher=?) OR EXISTS (
             SELECT 1 FROM anemia_school_room_teacher rt WHERE rt.cohort_id=c.id AND rt.username=?))' : '';
-        $query=$db->prepare("SELECT c.*,r.academic_year,r.grade,r.room_no,COUNT(m.account_id) AS members, COUNT(a.account_id) AS completed
-            FROM anemia_school_cohort c LEFT JOIN anemia_school_room r ON r.cohort_id=c.id LEFT JOIN anemia_school_member m ON m.cohort_id=c.id
+        $query=$db->prepare("SELECT c.*,r.academic_year,r.grade,r.room_no,t.participants AS participation_target,COUNT(m.account_id) AS members, COUNT(a.account_id) AS completed
+            FROM anemia_school_cohort c LEFT JOIN anemia_school_room r ON r.cohort_id=c.id
+            LEFT JOIN anemia_school_room_target t ON t.cohort_id=c.id LEFT JOIN anemia_school_member m ON m.cohort_id=c.id
             LEFT JOIN anemia_participant_programme_assessment a ON a.account_id=m.account_id AND a.programme_version=c.programme_version
             AND a.instrument_version=? AND a.phase='after'
-            WHERE c.school_id=?$ownerFilter GROUP BY c.id,r.academic_year,r.grade,r.room_no ORDER BY r.academic_year DESC,r.grade,r.room_no,c.id DESC");
+            WHERE c.school_id=?$ownerFilter GROUP BY c.id,r.academic_year,r.grade,r.room_no,t.participants ORDER BY r.academic_year DESC,r.grade,r.room_no,c.id DESC");
         $query->execute([ANEMIA_PROGRAMME_INSTRUMENT_VERSION,$school['id'],...($ownerFilter?[$identity['username'],$identity['username']]:[])]);
         $cohorts=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'id');
         $cohortId=filter_input(INPUT_GET,'cohort',FILTER_VALIDATE_INT);
@@ -192,6 +194,8 @@ return static function (PDO $db,array $identity): void {
     }
     $tracking=[];
     $trackingYears=[];
+    $staffingIssues=[];
+    $waitingCoordinators=[];
     $trackingYear=filter_input(INPUT_GET,'year',FILTER_VALIDATE_INT,['options'=>['min_range'=>2500,'max_range'=>2642]])?:0;
     $trackingStatus=$_GET['school_status']??'';
     if (!in_array($trackingStatus,['no-coordinator','no-rooms','active','disabled'],true)) $trackingStatus='';
@@ -212,6 +216,8 @@ return static function (PDO $db,array $identity): void {
             WHERE s.province_code=? GROUP BY s.id,s.name,s.enabled,staff.username ORDER BY s.name");
         $query->execute([date('Y-m-d'),...($trackingYear?[$trackingYear]:[]),ANEMIA_PROGRAMME_INSTRUMENT_VERSION,$province]);
         $tracking=$query->fetchAll(PDO::FETCH_ASSOC);
+        $waitingCoordinators=array_filter($tracking,static fn(array $row): bool => $row['enabled'] && !$row['coordinator']);
+        $staffingIssues=schoolStaffingIssues($db,$province,$trackingYear,date('Y-m-d'));
     }
     $trackingRows=array_filter($tracking,static fn(array $row): bool => match ($trackingStatus) {
         'no-coordinator'=> (bool)$row['enabled'] && !$row['coordinator'],
@@ -313,7 +319,7 @@ return static function (PDO $db,array $identity): void {
   <div class="card"><span>โรงเรียนในทะเบียน</span><strong><?= count($tracking) ?></strong></div>
   <div class="card"><span>โรงเรียนที่มีห้องกิจกรรม</span><strong><?= count(array_filter(array_column($tracking,'rooms'))) ?></strong></div>
   <div class="card"><span>ห้องที่เปิดรับ</span><strong><?= array_sum(array_column($tracking,'accepting')) ?></strong></div>
-  <div class="card"><span>โรงเรียนที่รอผู้ประสานงาน</span><strong><?= count(array_filter($tracking,static fn(array $row): bool => $row['enabled'] && !$row['coordinator'])) ?></strong></div>
+  <div class="card"><span>โรงเรียนที่รอผู้ประสานงาน</span><strong><?= count($waitingCoordinators) ?></strong></div>
  </div>
  <form method="get" class="network-form school-directory-filters">
   <input type="hidden" name="view" value="schools"><input type="hidden" name="school_tab" value="tracking">
@@ -328,6 +334,24 @@ return static function (PDO $db,array $identity): void {
   </select></label>
   <button class="action primary">กรองรายงาน</button>
  </form>
+ <details class="school-disclosure" id="school-staffing-issues">
+  <?php schoolDisclosureHeading('งานที่ต้องจัดการ · '.number_format(count($waitingCoordinators)+count($staffingIssues)).' รายการ','bell'); ?>
+  <?php if (!$waitingCoordinators && !$staffingIssues): ?><p class="notice">ไม่มีงานรอจัดการในพื้นที่และปีที่เลือก</p><?php else: ?>
+  <div class="tablewrap school-staffing-table"><table class="admin-table">
+   <thead><tr><th scope="col">โรงเรียน</th><th scope="col">ห้อง / ปีการศึกษา</th><th scope="col">สิ่งที่ต้องจัดการ</th></tr></thead>
+   <tbody>
+   <?php foreach ($waitingCoordinators as $entry): ?>
+    <tr><th scope="row"><a href="<?= schoolEscape($schoolLocation(['school'=>(int)$entry['id']])) ?>#school-activities"><?= schoolEscape($entry['name']) ?></a></th><td>—</td><td>ยังไม่มีผู้ประสานงานที่ใช้งานได้</td></tr>
+   <?php endforeach; ?>
+   <?php foreach ($staffingIssues as $issue): ?>
+    <tr><th scope="row"><a href="<?= schoolEscape($schoolLocation(['school'=>(int)$issue['school_id'],'cohort'=>(int)$issue['cohort_id']])) ?>#school-room-<?= (int)$issue['cohort_id'] ?>"><?= schoolEscape($issue['school_name']) ?></a></th>
+    <td><?= schoolEscape($issue['classroom'].' · '.$issue['academic_year']) ?></td>
+    <td><?= $issue['issue']==='inactive'?'บัญชีครูหลักใช้งานไม่ได้':'ถึงกำหนดเปิดหรือจะเปิดใน 14 วัน แต่ยังไม่มีครูหลัก' ?></td></tr>
+   <?php endforeach; ?>
+   </tbody>
+  </table></div>
+  <?php endif; ?>
+ </details>
  <div class="tablewrap"><table class="admin-table"><thead><tr><th scope="col">โรงเรียน</th><th scope="col">สถานะ</th><th scope="col">ห้อง</th><th scope="col">เปิดรับ</th><th scope="col">เข้าร่วม (คน)</th><th scope="col">ทำครบ (คน)</th></tr></thead><tbody>
  <?php foreach ($trackingRows as $entry): ?>
  <tr><th scope="row"><a href="<?= schoolEscape($schoolLocation(['school'=>(int)$entry['id']])) ?>#school-activities"><?= schoolEscape($entry['name']) ?></a></th>
@@ -455,12 +479,21 @@ return static function (PDO $db,array $identity): void {
  <?php endif; ?>
  <?php if (!$visibleCohorts): ?><p><?= $cohorts?'ไม่พบห้องตามตัวกรอง':'ยังไม่มีรุ่นกิจกรรม' ?></p><?php endif; ?>
  <?php foreach($visibleCohorts as $item): ?>
-  <details class="school-cohort school-disclosure" <?= (int)$item['id']===($cohortId??null)?'open':'' ?>>
+  <details class="school-cohort school-disclosure" id="school-room-<?= (int)$item['id'] ?>" <?= (int)$item['id']===($cohortId??null)?'open':'' ?>>
    <?php schoolDisclosureHeading(($item['academic_year']?'ปี '.$item['academic_year'].' · ':'').$item['title'].' · '.$item['classroom']
-    .' · เข้าร่วม '.(int)$item['members'].' · ทำครบ '.(int)$item['completed'],'book'); ?>
+       .' · เป้าหมาย '.($item['participation_target']===null?'ยังไม่ตั้ง':number_format((int)$item['participation_target']))
+    .' · เข้าร่วม '.number_format((int)$item['members']).' · ทำครบ '.number_format((int)$item['completed']),'book'); ?>
    <p><?= schoolEscape($item['opens_on'].' ถึง '.$item['closes_on']) ?> · <?= $item['accepting'] && $school['enabled']?'เปิดรับตามช่วงวันที่':'ปิดรับ' ?></p>
    <?php if ($manage && $item['academic_year']): ?>
     <p>ครูหลัก <?= schoolEscape($roomTeachers[$item['id']]['primary']['full_name']??'ยังไม่ได้มอบหมาย') ?> · ครูร่วม <?= schoolEscape($roomTeachers[$item['id']]['assistant']['full_name']??'ยังไม่ได้มอบหมาย') ?></p>
+   <?php endif; ?>
+   <?php if (($admin||$teacher) && $school['enabled']): ?>
+   <form method="post" action="<?= schoolEscape($schoolPostUrl) ?>" class="network-form school-fields">
+    <?php schoolFields($csrf,'room-target',(int)$school['id'],(int)$item['id']); ?>
+    <label>จำนวนเป้าหมาย (คน)<input type="number" name="target" min="1" max="65535" step="1" value="<?= $item['participation_target']===null?'':(int)$item['participation_target'] ?>" aria-describedby="school-target-help-<?= (int)$item['id'] ?>"></label>
+    <button class="action" type="submit"><?= workspaceIcon('save') ?>บันทึกเป้าหมาย</button>
+    <small id="school-target-help-<?= (int)$item['id'] ?>">เว้นว่างได้หากยังไม่มีจำนวนเป้าหมาย</small>
+   </form>
    <?php endif; ?>
    <?php if ($admin||$teacher): ?>
     <a class="action" href="<?= schoolEscape($schoolLocation(['school'=>(int)$school['id'],'cohort'=>(int)$item['id']])) ?>">ดูความคืบหน้ารายคน</a>

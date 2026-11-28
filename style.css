@@ -2616,6 +2616,8 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .school-selected-heading :is(h2,p) {margin:0;}
 .school-selected-heading p {font-size:.875rem;}
 .school-selected-heading .action {white-space:nowrap;}
+.school-staffing-table {max-height:21rem;overflow:auto;margin-block:.6rem;}
+.school-staffing-table thead th {position:sticky;top:0;z-index:1;}
 .school-workspace .school-disclosure {margin-block:.45rem;}
 .school-disclosure > .school-disclosure-heading {
  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.6rem;

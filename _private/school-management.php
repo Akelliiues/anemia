@@ -113,6 +113,23 @@ function schoolParticipation(PDO $db,array $schoolIds): array
     return $summary;
 }
 
+function schoolStaffingIssues(PDO $db,string $province,int $year,string $today): array
+{
+    $query=$db->prepare("SELECT s.id AS school_id,s.name AS school_name,c.id AS cohort_id,c.classroom,r.academic_year,c.opens_on,
+        CASE WHEN rt.username IS NULL THEN 'missing' ELSE 'inactive' END AS issue
+        FROM anemia_school s JOIN anemia_school_room r ON r.school_id=s.id
+        JOIN anemia_school_cohort c ON c.id=r.cohort_id AND c.school_id=s.id
+        LEFT JOIN anemia_school_room_teacher rt ON rt.cohort_id=c.id AND rt.duty='primary'
+        LEFT JOIN anemia_staff u ON u.username=rt.username AND u.enabled=1 AND u.role='school_teacher'
+        LEFT JOIN anemia_school_teacher roster ON roster.username=rt.username AND roster.school_id=s.id
+        WHERE s.province_code=? AND s.enabled=1 AND c.closes_on>=?
+          AND (u.username IS NULL OR roster.username IS NULL)
+          AND (rt.username IS NOT NULL OR c.opens_on<=DATE_ADD(?, INTERVAL 14 DAY))".
+        ($year?' AND r.academic_year=?':'').' ORDER BY c.opens_on,s.name,r.grade,r.room_no');
+    $query->execute([$province,$today,$today,...($year?[$year]:[])]);
+    return $query->fetchAll(PDO::FETCH_ASSOC);
+}
+
 function schoolSave(PDO $db,array $identity,array $input): int
 {
     $actor=$identity['username'];
@@ -252,6 +269,27 @@ function schoolSave(PDO $db,array $identity,array $input): int
                         if ($username!=='' && schoolValue($db,'SELECT 1 FROM anemia_school_room_teacher WHERE cohort_id=? AND username=? AND duty<>?',[$roomId,$username,$duty])) throw new DomainException('บัญชีนี้รับผิดชอบอีกบทบาทในห้องที่เลือกอยู่แล้ว');
                         schoolRoomAssignment($db,$roomId,$duty,$username,$actor);
                         schoolAudit($db,$actor,$action.':'.$duty.':'.$username,$school,$roomId);
+                    }
+                    break;
+                case 'room-target':
+                    if (!(int)$record['enabled']) throw new DomainException('กรุณาเปิดใช้งานโรงเรียนก่อนตั้งเป้าหมาย');
+                    $targetRoom=$db->prepare("SELECT c.teacher,r.cohort_id AS room_id,rt.username AS assigned
+                        FROM anemia_school_cohort c LEFT JOIN anemia_school_room r ON r.cohort_id=c.id
+                        LEFT JOIN anemia_school_room_teacher rt ON rt.cohort_id=r.cohort_id AND rt.username=?
+                        WHERE c.id=? AND c.school_id=? FOR UPDATE");
+                    $targetRoom->execute([$actor,$cohort,$school]);
+                    $room=$targetRoom->fetch(PDO::FETCH_ASSOC);
+                    if (!$room || (!$manage && !($teacher && ($room['room_id']?$room['assigned']===$actor:$room['teacher']===$actor)))) {
+                        throw new DomainException('บัญชีนี้ไม่มีสิทธิ์ตั้งเป้าหมายของห้องนี้');
+                    }
+                    $value=$input['target']??'';
+                    if ($value==='') {
+                        $db->prepare('DELETE FROM anemia_school_room_target WHERE cohort_id=?')->execute([$cohort]);
+                    } else {
+                        $target=filter_var($value,FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>65535]]);
+                        if ($target===false) throw new DomainException('กรุณากรอกจำนวนเป้าหมายเป็นจำนวนเต็มตั้งแต่ 1 ถึง 65,535 คน');
+                        $db->prepare('INSERT INTO anemia_school_room_target (cohort_id,participants) VALUES (?,?)
+                            ON DUPLICATE KEY UPDATE participants=VALUES(participants)')->execute([$cohort,$target]);
                     }
                     break;
                 case 'cohort-edit':

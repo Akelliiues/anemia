@@ -6,6 +6,9 @@ $search=is_string($search)?substr(strtolower(trim($search)),0,40):'';
 if (!preg_match('/^[a-z0-9._-]*$/D',$search)) $search='';
 $status=filter_input(INPUT_GET,'member_status')??'';
 if (!in_array($status,['active','suspended'],true)) $status='';
+$providerLabels=['line'=>'LINE','google'=>'Google','facebook'=>'Facebook'];
+$provider=$_GET['member_provider']??'';
+if (!is_string($provider) || !isset($providerLabels[$provider])) $provider='';
 $page=filter_input(INPUT_GET,'member_page',FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>100000]])?:1;
 $offset=($page-1)*30;
 $where=['1=1'];
@@ -16,6 +19,10 @@ if ($search!=='') {
     $params[]=str_replace('_','!_',$search).'%';
 }
 if ($status!=='') $where[]=$status==='suspended'?'a.suspended_at IS NOT NULL':'a.suspended_at IS NULL';
+if ($provider!=='') {
+    $where[]='EXISTS (SELECT 1 FROM anemia_participant_identity i WHERE i.account_id=a.id AND i.provider=?)';
+    $params[]=$provider;
+}
 $query=$db->prepare("SELECT a.id,a.connected_at,a.suspended_at,p.username,
     (SELECT GROUP_CONCAT(i.provider ORDER BY i.provider) FROM anemia_participant_identity i WHERE i.account_id=a.id) AS providers
     FROM anemia_participant_account a LEFT JOIN anemia_participant_password p ON p.account_id=a.id
@@ -25,7 +32,7 @@ $rows=$query->fetchAll(PDO::FETCH_ASSOC);
 $hasNext=count($rows)>30;
 if ($hasNext) array_pop($rows);
 $summary=$db->query('SELECT COUNT(*) AS total,COUNT(suspended_at) AS suspended FROM anemia_participant_account')->fetch(PDO::FETCH_ASSOC);
-$base=['view'=>'members','member_search'=>$search,'member_status'=>$status,'member_page'=>$page];
+$base=['view'=>'members','member_search'=>$search,'member_status'=>$status,'member_provider'=>$provider,'member_page'=>$page];
 $memberUrl=static fn(array $add=[]): string=>'dashboard.php?'.http_build_query(array_replace($base,$add));
 $member=filter_input(INPUT_GET,'member')??'';
 $task=filter_input(INPUT_GET,'member_task')??'';
@@ -35,6 +42,7 @@ if (is_string($member)&&preg_match('/^[a-f0-9]{32}$/D',$member)) {
     $query=$db->prepare('SELECT a.id,a.connected_at,a.suspended_at,p.username,m.completed_at,
         EXISTS(SELECT 1 FROM anemia_demo_member_network d WHERE d.account_id=a.id) AS has_demo_network,
         (SELECT GROUP_CONCAT(i.provider ORDER BY i.provider) FROM anemia_participant_identity i WHERE i.account_id=a.id) AS providers,
+        (SELECT i.connected_at FROM anemia_participant_identity i WHERE i.account_id=a.id AND i.provider=\'facebook\') AS facebook_connected_at,
         (SELECT COUNT(*) FROM anemia_team_bonus b WHERE b.inviter=m.id) AS invited_completions
         FROM anemia_participant_account a LEFT JOIN anemia_participant_password p ON p.account_id=a.id
         LEFT JOIN anemia_team_member m ON m.account_id=a.id WHERE a.id=?');
@@ -46,10 +54,9 @@ if (is_string($member)&&preg_match('/^[a-f0-9]{32}$/D',$member)) {
         $audit=$query->fetchAll(PDO::FETCH_ASSOC);
     }
 }
-$methods=static function(array $row): string {
-    $labels=['line'=>'LINE','google'=>'Google','facebook'=>'Facebook'];
+$methods=static function(array $row) use ($providerLabels): string {
     $items=$row['username']?['PIN']:[];
-    foreach (explode(',',$row['providers']??'') as $key) if (isset($labels[$key])) $items[]=$labels[$key];
+    foreach (explode(',',$row['providers']??'') as $key) if (isset($providerLabels[$key])) $items[]=$providerLabels[$key];
     return implode(' · ',$items)?:'—';
 };
 ?>
@@ -65,6 +72,9 @@ $methods=static function(array $row): string {
   <input type="hidden" name="view" value="members">
   <label>ค้นหาสมาชิก<input type="search" name="member_search" value="<?= esc($search) ?>" placeholder="ชื่อบัญชีหรือรหัสสมาชิก" maxlength="40"></label>
   <label>สถานะ<select name="member_status"><option value="">ทั้งหมด</option><option value="active" <?= $status==='active'?'selected':'' ?>>ใช้งานได้</option><option value="suspended" <?= $status==='suspended'?'selected':'' ?>>ระงับ</option></select></label>
+  <label>ช่องทางที่เชื่อม<select name="member_provider"><option value="">ทุกช่องทาง</option>
+   <?php foreach ($providerLabels as $key=>$label): ?><option value="<?= esc($key) ?>" <?= $provider===$key?'selected':'' ?>><?= esc($label) ?></option><?php endforeach; ?>
+  </select></label>
   <button class="action" type="submit"><?= workspaceIcon('filter') ?>แสดงข้อมูล</button>
  </form>
  <?php if ($rows): ?>
@@ -98,6 +108,7 @@ $methods=static function(array $row): string {
  <header class="workspace-dialog-heading"><h2 id="member-details-title"><?= $task==='rename'?'แก้ไขชื่อบัญชี':($task==='status'?($detail['suspended_at']?'เปิดบัญชีคืน':'ระงับบัญชี'):'รายละเอียดสมาชิก') ?></h2><a class="action" href="<?= esc($memberUrl()) ?>" aria-label="ปิด"><?= workspaceIcon('close') ?></a></header>
  <?php if ($memberNotice!==''): ?><p class="status" role="status"><?= esc($memberNotice) ?></p><?php endif; ?>
  <p><strong><?= esc($detail['username']??'บัญชีจากช่องทางภายนอก') ?></strong><br><small><?= esc($detail['id']) ?></small></p>
+ <?php if ($detail['facebook_connected_at']): ?><p>เชื่อม Facebook เมื่อ <?= esc(workspaceThaiShortDate($detail['facebook_connected_at'])) ?></p><?php endif; ?>
  <p><?= esc($methods($detail)) ?> · <?= $detail['suspended_at']?'ระงับ':'ใช้งานได้' ?></p>
  <p>แต้มที่บันทึก <?= ($detail['providers']?5:0)+($detail['completed_at']?10:0)+5*(int)$detail['invited_completions'] ?></p>
  <?php if ($task==='status'||($task==='rename'&&$detail['username'])): ?>

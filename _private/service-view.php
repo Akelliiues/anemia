@@ -33,7 +33,14 @@ $mode=$settings['mode']??($ready && $serviceTab!=='thaid'?'live':'off');
   <div class="network-form"><label>Callback URL <input id="service-callback" readonly value="<?= esc(anemiaServiceCallback()) ?>"></label></div>
   <button type="button" class="action" onclick="const field=document.getElementById('service-callback');field.select();navigator.clipboard?.writeText(field.value).catch(()=>{});"><?= workspaceIcon('layout') ?>คัดลอก Callback URL</button>
   <p>คัดลอก URL นี้ไปตั้งค่าที่ผู้ให้บริการ โหมดทดสอบใช้ตรวจความครบถ้วนของค่า หน้าเข้าสู่ระบบจะแสดงช่องทางนี้เมื่อเปิดใช้จริง</p>
-  <?php if ($serviceTab==='facebook'): ?><p>ใช้ App ID, App Secret และเวอร์ชัน Graph API จากแอปใน Meta for Developers แล้วเพิ่ม Callback URL ใน Valid OAuth Redirect URIs</p><?php endif; ?>
+  <?php if ($serviceTab==='facebook'):
+      $facebookMembers=(int)$db->query("SELECT COUNT(*) FROM anemia_participant_identity WHERE provider='facebook'")->fetchColumn();
+  ?>
+   <p>ใช้ App ID, App Secret และเวอร์ชัน Graph API จากแอปใน Meta for Developers แล้วเพิ่ม Callback URL ใน Valid OAuth Redirect URIs</p>
+   <div class="actions">
+    <a class="action" href="dashboard.php?view=members&amp;member_provider=facebook"><?= workspaceIcon('users') ?>สมาชิกที่เชื่อม Facebook (<?= number_format($facebookMembers) ?>)</a>
+   </div>
+  <?php endif; ?>
   <?php if ($mode==='live' && $ready): ?><p><a href="participant-account.php?return=portal" target="_blank" rel="noopener">เปิดหน้าเข้าสู่ระบบเพื่อทดสอบ</a></p><?php endif; ?>
  <?php endif; ?>
  <form class="network-form service-form" method="post">

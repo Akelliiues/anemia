@@ -68,6 +68,39 @@ try {
     $isAdmin = $identity['role'] === 'account_admin';
     $canChooseRegion = $isAdmin || $identity['role'] === 'central_report';
     $roleLabel = $isAdmin ? 'ผู้ดูแลระบบ' : ANEMIA_REPORT_ROLES[$identity['role']];
+    $schoolSummaryRequest=$view==='overview' && $_SERVER['REQUEST_METHOD']==='GET' && ($_GET['school_summary']??'')==='1';
+    if ($view==='overview' || ($view==='programme-report' && $isAdmin)) {
+        if (!$canChooseRegion) $region=(int)($identity['province_region']??$identity['region']);
+        $schoolSummary=null;
+        $schoolProgress=null;
+        try {
+            require_once __DIR__.'/_private/schools.php';
+            require_once __DIR__.'/_private/participant-programme.php';
+            require_once __DIR__.'/_private/school-report.php';
+            anemiaEnsureSchools($db);
+            $includeWeeks=$view==='programme-report' || ($schoolSummaryRequest && $isAdmin && ($_GET['weekly']??'')==='1');
+            if ($includeWeeks) $db->beginTransaction();
+            $schoolSummary=schoolReport($db,$identity,$region,'',0,date('Y-m-d'));
+            if ($includeWeeks) {
+                $schoolProgress=schoolWeeklyProgress($db,$identity,$region);
+                $db->commit();
+            }
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            $schoolSummary=null;
+            $schoolProgress=null;
+            error_log('Anemia school dashboard: '.get_class($error));
+        }
+        if ($schoolSummaryRequest) {
+            header('Content-Type: application/json; charset=UTF-8');
+            if ($schoolSummary===null) http_response_code(503);
+            $payload=$schoolSummary;
+            if ($payload!==null && $schoolProgress!==null) $payload['weekly']=$schoolProgress;
+            echo json_encode($payload,JSON_THROW_ON_ERROR);
+            exit;
+        }
+    }
+
     require __DIR__.'/_private/network.php';
     $grantQuery=$db->prepare('SELECT scope_kind,scope_code FROM anemia_network_grant WHERE username=?');
     $grantQuery->execute([$staff]);
@@ -833,6 +866,7 @@ function workspaceInfo(string $page, ?array $release = null): void
    <div><dt>ทำรอบแรกครบ</dt><dd><?= number_format($activity['counts']['first']) ?></dd></div></dl>
    <a class="action staff-detail-link" href="dashboard.php?view=activity&amp;region=<?= $region ?>"><?= workspaceIcon('chart') ?>ดูสถิติแต่ละขั้นตอน</a>
   </section>
+  <?php require __DIR__ . '/_private/school-summary-card.php'; ?>
   <section class="hosted-registry-section" aria-label="ทะเบียนพื้นที่จากฐานข้อมูลจริง">
   <h2><?= $sampleMode ? 'ทะเบียนพื้นที่ตัวอย่าง' : 'ทะเบียนจากฐานข้อมูลบนโฮสต์' ?></h2>
   <div class="admin-kpis hosted-kpis">
@@ -961,17 +995,21 @@ function workspaceInfo(string $page, ?array $release = null): void
   <?php foreach ($provinces as $p): ?><tr><td><?= esc($p['code']) ?></td><th scope="row"><?= esc($p['name']) ?></th><td><?= esc(zoneLabel((int)$p['region'])) ?></td><td><?= (int)$p['enabled'] ? 'ตั้งสถานะเปิด' : 'ปิด' ?></td></tr><?php endforeach; ?>
   </tbody></table></div></details>
   <?php elseif ($view === 'programme-report'): ?>
+  <?php require __DIR__ . '/_private/school-summary-card.php'; ?>
   <section class="card admin-report">
-   <h2>กิจกรรม 12 สัปดาห์</h2>
-   <p>ข้อมูลจากกิจกรรมฉบับร่าง เปรียบเทียบคะแนนของผู้ที่ตอบครบทั้งก่อนและหลังในแบบประเมินรุ่นเดียวกัน</p>
+   <h2>กิจกรรม 12 สัปดาห์ · รุ่นทั่วไป</h2>
+   <p>รายงานกิจกรรมรุ่นทั่วไปจากข้อมูลฉบับร่าง เปรียบเทียบคะแนนของผู้ที่ตอบครบทั้งก่อนและหลังในแบบประเมินรุ่นเดียวกัน</p>
    <div class="tablewrap"><table class="admin-table"><thead><tr><th>เริ่มทำแบบประเมิน</th><th>ตอบครบทั้งสองครั้ง</th><th>เฉลี่ยก่อนเรียน</th><th>เฉลี่ยหลังเรียน</th></tr></thead><tbody><tr>
     <td><?= number_format((int)$programmeStats['started']) ?> คน</td><td><?= number_format((int)$programmeStats['paired']) ?> คน</td>
     <td><?= $programmeStats['before_mean']===null?'—':number_format((float)$programmeStats['before_mean'],1).'%' ?></td>
     <td><?= $programmeStats['after_mean']===null?'—':number_format((float)$programmeStats['after_mean'],1).'%' ?></td>
    </tr></tbody></table></div>
-   <h3>ความคืบหน้ารายสัปดาห์</h3>
-   <div class="tablewrap"><table class="admin-table"><thead><tr><th>สัปดาห์</th><th>กิจกรรม</th><th>ทำเสร็จแล้ว</th></tr></thead><tbody>
-    <?php foreach (anemiaProgrammeWeeks() as $week=>[$title]): ?><tr><th scope="row"><?= $week ?></th><td><?= esc($title) ?></td><td><?= number_format((int)($programmeProgress[$week] ?? 0)) ?> คน</td></tr><?php endforeach; ?>
+     </section>
+  <section class="card admin-report">
+   <h2>ความคืบหน้ารายสัปดาห์</h2>
+   <p>ยอดกิจกรรมโรงเรียนตาม <?= esc($scopeName) ?> นับผู้เรียนไม่ซ้ำในแต่ละสัปดาห์</p>
+   <div class="tablewrap"><table class="admin-table"><thead><tr><th>สัปดาห์</th><th>กิจกรรม</th><th>รุ่นทั่วไป (คน)</th><th>กิจกรรมโรงเรียน (คน)</th></tr></thead><tbody>
+    <?php foreach (anemiaProgrammeWeeks() as $week=>[$title]): ?><tr><th scope="row"><?= $week ?></th><td><?= esc($title) ?></td><td><?= number_format((int)($programmeProgress[$week] ?? 0)) ?></td><td data-school-week-metric="<?= $week ?>"><?= $schoolProgress===null?'—':number_format($schoolProgress[$week]??0) ?></td></tr><?php endforeach; ?>
    </tbody></table></div>
   </section>
   <?php elseif ($view === 'evaluation'):
@@ -1587,6 +1625,47 @@ document.querySelectorAll('[data-workspace-dialog]').forEach(link => {
  });
 })();
 </script>
+<?php if ($view==='overview' || $view==='programme-report'): ?>
+<script>
+(() => {
+ const card = document.querySelector('[data-school-summary-url]');
+ if (!card) return;
+ const status = card.querySelector('[data-school-summary-status]');
+ let running = false;
+ async function updateSchoolSummary() {
+  if (document.hidden || running) return;
+  running = true;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+   const response = await fetch(card.dataset.schoolSummaryUrl,{cache:'no-store',signal:controller.signal});
+   if (!response.ok || !response.headers.get('Content-Type')?.includes('application/json')) throw new Error();
+   const data = await response.json();
+   const metrics = [...card.querySelectorAll('[data-school-summary-metric]')];
+   if (!data || metrics.some(node => !Number.isSafeInteger(data[node.dataset.schoolSummaryMetric]) || data[node.dataset.schoolSummaryMetric] < 0)) throw new Error();
+   const weeks = [...document.querySelectorAll('[data-school-week-metric]')];
+   if (weeks.length && (!data.weekly || weeks.some(node => {
+    const value = data.weekly[node.dataset.schoolWeekMetric] ?? 0;
+    return !Number.isSafeInteger(value) || value < 0;
+   }))) throw new Error();
+   for (const node of metrics) node.textContent = data[node.dataset.schoolSummaryMetric].toLocaleString('th-TH');
+   for (const node of weeks) node.textContent = (data.weekly[node.dataset.schoolWeekMetric] ?? 0).toLocaleString('th-TH');
+   status.hidden = true;
+  } catch {
+   status.textContent = 'อัปเดตยอดโรงเรียนไม่ได้ชั่วคราว';
+   status.hidden = false;
+  } finally {
+   clearTimeout(timeout);
+   running = false;
+  }
+ }
+ setInterval(updateSchoolSummary, 30000);
+ document.addEventListener('visibilitychange', updateSchoolSummary);
+ window.addEventListener('online', updateSchoolSummary);
+ window.addEventListener('pageshow', event => { if (event.persisted) updateSchoolSummary(); });
+})();
+</script>
+<?php endif; ?>
 <?php if ($canQueue): ?>
 <script>
 (() => {

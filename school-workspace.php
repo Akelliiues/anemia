@@ -46,7 +46,7 @@ try {
     $csrf=$_SESSION['csrf']??=bin2hex(random_bytes(32));
     $teacherBrand=static function () use ($actor,$preview,$csrf): void { ?>
      <div class="admin-top-main teacher-brand-row">
-      <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">พื้นที่ครู</span></div></div>
+      <div class="admin-brand"><span class="workspace-brand-icon"><?= workspaceIcon('drop') ?></span><div><strong>Anemia Portal</strong><span class="workspace-brand-caption">จัดการกิจกรรมโรงเรียน</span></div></div>
       <div class="workspace-account">
        <div class="workspace-identity"><span class="workspace-account-icon"><?= workspaceIcon('person') ?></span><span><strong><?= schoolEscape($actor['username']) ?></strong><small><?= $preview?'บัญชีผู้ดูแล':'บัญชีครู' ?></small></span></div>
        <form class="hosted-logout" method="post" action="login.php"><input type="hidden" name="csrf" value="<?= schoolEscape($csrf) ?>"><button class="action hosted-logout-button" name="action" value="logout" aria-label="ออกจากระบบ" title="ออกจากระบบ"><?= workspaceIcon('logout') ?></button></form>

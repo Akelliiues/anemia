@@ -495,7 +495,7 @@ return static function (PDO $db,array $identity,?int $previewSchool=null,?callab
   <span class="teacher-intro-icon"><?= workspaceIcon('school') ?></span>
   <div><span class="teacher-eyebrow"><?= $manage?'ผู้ประสานงานโรงเรียน':'ครูประจำห้อง' ?> · <?= schoolEscape($school['province']) ?></span>
    <h1 id="teacher-school-title"><?= schoolEscape($school['name']) ?></h1>
-   <p>กิจกรรมเรียนรู้ 12 สัปดาห์<?php if (!$school['enabled']): ?> · หยุดรับนักเรียนใหม่<?php endif; ?></p>
+   <?php if (!$school['enabled']): ?><p>หยุดรับนักเรียนใหม่</p><?php endif; ?>
   </div>
   <nav aria-label="ทางลัดพื้นที่ครู">
    <a href="<?= schoolEscape($schoolLocation($roomFilters)) ?>#teacher-rooms"><?= workspaceIcon('book') ?> ห้องเรียน</a>

@@ -12,7 +12,7 @@ $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' && $_SERVER['H
 $staff = null;
 $inlineLogin = ($_GET['entry'] ?? '') === 'inline';
 $afterLogin = match ($_GET['next'] ?? '') {
-    'schools'=>'school-workspace.php',
+    'schools'=>'dashboard.php?view=schools',
     'scan'=>'dashboard.php?view=scan-request',
     'unit-scan'=>'dashboard.php?view=scan-request&app=unit',
     'unit-launch'=>'dashboard.php?view=scan-request&app=unit&launch=scanner',

@@ -60,7 +60,7 @@ try {
     require __DIR__ . '/_private/access.php';
     $identity = anemiaStaffIdentity($db, (string)$_SESSION['username']);
     if (!$identity) { $_SESSION = []; loginRequired(); }
-    if ($identity['role']==='school_teacher' || $view==='schools') {
+    if ($identity['role']==='school_teacher') {
         header('Location: school-workspace.php',true,303);
         exit;
     }
@@ -673,6 +673,20 @@ function workspaceMonthFilters(string $selected, bool $allowAll, string $monthLa
 }
 
 require __DIR__ . '/_private/icons.php';
+if ($view==='schools') {
+    ob_start();
+    try {
+        $renderSchools=require __DIR__.'/_private/school-view.php';
+        $renderSchools($db,$identity);
+        $schoolContent=ob_get_clean();
+    } catch (Throwable $error) {
+        ob_end_clean();
+        http_response_code(503);
+        error_log('Anemia schools unavailable: '.get_class($error));
+        $schoolContent='<p class="notice" role="alert">ยังเปิดกิจกรรมโรงเรียนไม่ได้ กรุณาลองอีกครั้ง</p>';
+    }
+}
+
 
 function workspaceInfo(string $page, ?array $release = null): void
 {
@@ -705,6 +719,7 @@ function workspaceInfo(string $page, ?array $release = null): void
 <script defer src="hosted-dashboard.js?v=scroll-v3"></script>
 <?php endif; ?>
 <?php if ($view === 'scan-request'): ?><script defer src="jsQR.js?v=1.4.0"></script><script defer src="request-scanner.js?v=3"></script><?php endif; ?>
+<?php if ($view==='schools'): ?><script defer src="qrcode.js?v=2.0.4"></script><script defer src="school-qr.js?v=1"></script><?php endif; ?>
 </head><body class="staff-dashboard-page<?= $staffAppView?' staff-app-page':'' ?><?= $view==='mobile'?' staff-app-home':'' ?><?= $scannerApp?' staff-scanner-page':'' ?>">
 <main style="max-width:1220px">
 <?php if (!$staffAppView) workspaceBack($view === 'overview' ? 'index.html' : 'dashboard.php?view=overview'); ?>
@@ -852,6 +867,8 @@ function workspaceInfo(string $page, ?array $release = null): void
    <?php endforeach; ?>
    </div>
   </details></section>
+  <?php elseif ($view === 'schools'): ?>
+   <?= $schoolContent ?>
   <?php elseif ($view === 'activity'): ?>
   <form class="admin-filters hosted-scope-filter hosted-filter-row" method="get"><input type="hidden" name="view" value="activity">
    <?php if ($canChooseRegion): ?><label>เขตสุขภาพ<select name="region"><option value="0">ทุกเขต</option>

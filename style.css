@@ -2877,3 +2877,8 @@ body:has(> .portal-neural-page) {isolation:isolate;}
 .feature-card p {color:var(--muted);}
 .feature-card a {display:inline-flex;align-items:center;gap:.35rem;margin-top:auto;padding-top:.2rem;font-weight:700;color:inherit;text-underline-offset:.2em;}
 .feature-card a svg,.feature-card-icon svg {width:1rem;height:1rem;}
+
+.feature-pitch {padding:clamp(1rem,3vw,2rem);margin-bottom:1rem;border:1px solid var(--line);border-radius:1rem;background:linear-gradient(125deg,color-mix(in srgb,var(--violet) 16%,transparent),transparent 80%);}
+.feature-pitch h2,.feature-pitch p {margin:0;}
+.feature-pitch h2 {font-size:clamp(1.5rem,3vw,2.2rem);}
+.feature-pitch p {margin-top:.45rem;}

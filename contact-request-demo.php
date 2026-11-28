@@ -17,15 +17,16 @@ if ((!$secure && PHP_SAPI!=='cli-server') || ($_SERVER['REQUEST_METHOD']??'')!==
     strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE']??'')[0]))!=='application/json') {
     demoContactReply(403,['error'=>'คำขอทดสอบไม่ถูกต้อง']);
 }
-$publicDemo=($_GET['public']??'')==='1';
+$bookingTrial=($_GET['booking']??'')==='1';
+$publicDemo=$bookingTrial || ($_GET['public']??'')==='1';
 define('ANEMIA_STAFF_BOOT',true);
 require_once __DIR__.'/_private/service-settings.php';
 $otp=anemiaServiceSettings('otp');
-if ($publicDemo && (($otp['mode']??null)!=='test') && (isset($otp['mode']) || anemiaServiceValue($otp,'ANEMIA_VERIFY_KEY') || anemiaServiceValue($otp,'ANEMIA_VERIFY_SECRET') || anemiaServiceValue($otp,'ANEMIA_VERIFY_SERVICE'))) {
+if ($publicDemo && !$bookingTrial && (($otp['mode']??null)!=='test') && (isset($otp['mode']) || anemiaServiceValue($otp,'ANEMIA_VERIFY_KEY') || anemiaServiceValue($otp,'ANEMIA_VERIFY_SECRET') || anemiaServiceValue($otp,'ANEMIA_VERIFY_SERVICE'))) {
     demoContactReply(403,['error'=>'โฮสต์นี้ใช้การยืนยันเบอร์ทาง SMS']);
 }
 ini_set('session.use_strict_mode','1');
-session_name($publicDemo?'anemia_public_demo':'anemia_staff_session');
+session_name($bookingTrial?'anemia_booking_trial':($publicDemo?'anemia_public_demo':'anemia_staff_session'));
 session_set_cookie_params(['secure'=>$secure,'httponly'=>true,'samesite'=>'Strict']);
 session_start();
 if (!$publicDemo && (empty($_SESSION['username']) || (int)($_SESSION['until']??0)<=time())) demoContactReply(403,['error'=>'กรุณาเข้าสู่ระบบผู้ดูแลก่อนทดสอบ']);
@@ -38,8 +39,9 @@ try {
     require __DIR__.'/_private/network.php';
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
-    $sampleEnabled=(int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetchColumn()===1;
+    $sampleEnabled=$bookingTrial?anemiaBookingTrialEnabled($db):(int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample'")->fetchColumn()===1;
     if (!$sampleEnabled) demoContactReply(503,['error'=>'โฮสต์นี้ปิดโหมดทดสอบแล้ว']);
+    if ($bookingTrial) anemiaEnsureBooking($db);
     if (!$publicDemo) {
         $identity=anemiaStaffIdentity($db,(string)$_SESSION['username']);
         if (($identity['role']??null)!=='account_admin') demoContactReply(403,['error'=>'บัญชีนี้ไม่มีสิทธิ์ทดสอบ OTP']);
@@ -52,6 +54,10 @@ try {
         $date=$data['date']??'';
         $prefix=$data['prefix']??null; $firstName=$data['firstName']??null; $lastName=$data['lastName']??null;
         $phone=$data['phone']??null;
+        if ($bookingTrial) {
+            if ($kind!=='appointment') demoContactReply(422,['error'=>'โหมดนี้ใช้ทดลองขอนัดตรวจ']);
+            [$prefix,$firstName,$lastName,$phone]=['น.ส.','ผู้ทดสอบ','ระบบจอง','0800000000'];
+        }
         if (!is_int($index) || $index<0 || !in_array($kind,['appointment','callback'],true) ||
             ($data['consent']??null)!==true || !is_string($date) ||
             !in_array($prefix,['น.ส.','นาง'],true) || !is_string($firstName) || !preg_match('/^.{1,35}$/uD',trim($firstName)) ||
@@ -65,6 +71,13 @@ try {
         }
         $facility=anemiaFacilityDirectory()[$index]??null;
         if (!$facility) demoContactReply(422,['error'=>'ไม่พบหน่วยบริการ']);
+        $facilityKey=anemiaFacilityKey($facility);
+        if ($bookingTrial) {
+            $booking=anemiaBookingFacility($db,$facilityKey);
+            if (!anemiaBookingTrialEligible($booking) || anemiaBookingFlags($booking,date('Y-m-d'))['paused']) {
+                demoContactReply(409,['error'=>'โรงพยาบาลนี้ไม่เปิดทดลองจอง']);
+            }
+        }
         if ($publicDemo) {
             if (time()-(int)($_SESSION['demo_otp_started']??0)<15) demoContactReply(429,['error'=>'กรุณารอ 15 วินาทีก่อนลองใหม่']);
             $bucket=hash('sha256','public-demo:'.($_SERVER['REMOTE_ADDR']??''));
@@ -77,7 +90,7 @@ try {
             $_SESSION['demo_otp_started']=time();
         }
         $token=bin2hex(random_bytes(16));
-        $_SESSION['demo_otp']=['token'=>$token,'facility'=>$facility[0],'facility_key'=>anemiaFacilityKey($facility),'kind'=>$kind,'date'=>$date?:null,'contact'=>$prefix.' '.trim($firstName).' '.trim($lastName),'phone'=>$phone,'until'=>time()+600];
+        $_SESSION['demo_otp']=['token'=>$token,'facility'=>$facility[0],'facility_key'=>$facilityKey,'kind'=>$kind,'date'=>$date?:null,'contact'=>$prefix.' '.trim($firstName).' '.trim($lastName),'phone'=>$phone,'until'=>time()+600];
         demoContactReply(200,['token'=>$token,'last4'=>substr($phone,-4),'demoCode'=>'482731']);
     }
     if (($data['action']??null)!=='confirm') demoContactReply(400,['error'=>'คำขอไม่ถูกต้อง']);
@@ -89,9 +102,17 @@ try {
     if (($data['code']??'')!=='482731') demoContactReply(422,['error'=>'รหัสตัวอย่างไม่ตรง']);
     if (isset($pending['receipt'])) demoContactReply(200,['receipt'=>$pending['receipt']]);
     $db->beginTransaction();
-    if ((int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample' FOR UPDATE")->fetchColumn()!==1) {
+    $stillEnabled=$bookingTrial?anemiaBookingTrialEnabled($db,true):(int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='staff_sample' FOR UPDATE")->fetchColumn()===1;
+    if (!$stillEnabled) {
         $db->rollBack();
         demoContactReply(503,['error'=>'โฮสต์นี้ปิดโหมดทดสอบแล้ว']);
+    }
+    if ($bookingTrial) {
+        $booking=anemiaBookingFacility($db,$pending['facility_key'],true);
+        if (!anemiaBookingTrialEligible($booking) || anemiaBookingFlags($booking,date('Y-m-d'))['paused']) {
+            $db->rollBack();
+            demoContactReply(409,['error'=>'โรงพยาบาลนี้ไม่เปิดทดลองจองแล้ว']);
+        }
     }
     $receipt='DE-'.strtoupper(substr($token,0,16));
     $save=$db->prepare("INSERT INTO anemia_contact_demo_queue (receipt,facility,facility_key,request_kind,contact_name,phone,preferred_date,submitted_at)

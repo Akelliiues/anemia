@@ -211,11 +211,23 @@ try {
         if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['network_action'])) {
             if (!is_string($_POST['csrf']??null) || !hash_equals($token,$_POST['csrf'])) { http_response_code(403); exit('คำขอหมดอายุ'); }
             $bookingAction=$_POST['network_action']==='booking';
+            $trialAction=$_POST['network_action']==='booking-trial';
+            $trialEnabled=$_POST['trial_enabled']??null;
+            if ($trialAction && (!$isAdmin || !in_array($trialEnabled,['0','1'],true))) {
+                http_response_code(403); exit('ไม่มีสิทธิ์ตั้งค่าโหมดทดลองจอง');
+            }
             if ($bookingAction) anemiaEnsureBooking($db);
             usageAuditEnsure($db);
             $db->beginTransaction();
             try {
-                $_SESSION['network_notice']=$bookingAction?anemiaSaveBooking($db,$isAdmin,$grant,$staff,$_POST):anemiaSaveNetwork($db,$isAdmin,$grant,$staff,$_POST);
+                if ($trialAction) {
+                    $db->prepare("INSERT INTO anemia_host_setting (setting_key,enabled,changed_by,changed_at) VALUES ('booking_trial',?,?,NOW())
+                        ON DUPLICATE KEY UPDATE enabled=VALUES(enabled),changed_by=VALUES(changed_by),changed_at=VALUES(changed_at)")
+                        ->execute([(int)$trialEnabled,$staff]);
+                    $_SESSION['network_notice']=$trialEnabled==='1'?'เปิดทดลองจองโรงพยาบาลแล้ว':'ปิดทดลองจองโรงพยาบาลแล้ว';
+                } else {
+                    $_SESSION['network_notice']=$bookingAction?anemiaSaveBooking($db,$isAdmin,$grant,$staff,$_POST):anemiaSaveNetwork($db,$isAdmin,$grant,$staff,$_POST);
+                }
                 usageAuditWrite($db,$identity,'data-change','network-'.$_POST['network_action']);
                 $db->commit();
             } catch (DomainException | PDOException $error) {
@@ -223,10 +235,10 @@ try {
                 $_SESSION['network_notice']=$error instanceof DomainException ? $error->getMessage() : 'บันทึกไม่ได้ กรุณาตรวจรหัสหน่วยหรือรายการที่ซ้ำ';
             }
             $district=$_GET['district']??'';
-            $back=['view'=>'network']+($bookingAction?['network_tab'=>'booking']:[]);
+            $back=['view'=>'network']+($bookingAction||$trialAction?['network_tab'=>'booking']:[]);
             if (is_string($district) && preg_match('/^\d{4}$/D',$district)) $back['district']=$district;
             $bookingProvince=$_GET['booking_province']??'';
-            if ($bookingAction && is_string($bookingProvince) && preg_match('/^\d{2}$/D',$bookingProvince)) $back['booking_province']=$bookingProvince;
+            if (($bookingAction||$trialAction) && is_string($bookingProvince) && preg_match('/^\d{2}$/D',$bookingProvince)) $back['booking_province']=$bookingProvince;
             header('Location: dashboard.php?'.http_build_query($back),true,303); exit;
         }
         $networkNotice=$_SESSION['network_notice']??'';

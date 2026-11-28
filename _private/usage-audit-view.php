@@ -39,6 +39,7 @@ $events=$tabs+[
     'member-suspend'=>'ระงับบัญชีสมาชิก','member-restore'=>'คืนสถานะบัญชีสมาชิก',
     'member-demo-create'=>'สร้างลูกทีมจำลอง','member-demo-clear'=>'ล้างลูกทีมจำลอง',
     'network-register'=>'เพิ่มทะเบียนหน่วยบริการ','network-grant'=>'เปลี่ยนสิทธิ์เครือข่าย','network-link'=>'เปลี่ยนแม่ข่าย','network-booking'=>'ตั้งค่ารับคำขอออนไลน์',
+    'network-booking-trial'=>'เปลี่ยนสถานะทดลองจองโรงพยาบาล',
     'queue-update'=>'เปลี่ยนสถานะคำขอ','queue-delete'=>'ลบคำขอ',
     'demo-queue-update'=>'เปลี่ยนสถานะคำขอทดสอบ','demo-queue-delete'=>'ลบคำขอทดสอบ',
     'service-otp'=>'บันทึกตั้งค่า OTP','service-google'=>'บันทึกตั้งค่า Google','service-line'=>'บันทึกตั้งค่า LINE',

@@ -11,9 +11,12 @@ try {
     $db=anemiaDatabase($config);
     initializeAnemia($db,$config);
     anemiaEnsureBooking($db);
+    $trial=anemiaBookingTrialEnabled($db);
+    $trialCondition=$trial?" OR f.kind='hospital'":'';
     $query=$db->query("SELECT f.facility_key,f.kind,".anemiaEffectiveHub('f')." AS effective_hub,
         ".anemiaBookingOwnerSql()." AS queue_owner,b.appointment,b.callback,b.paused_until
-        FROM anemia_network_booking b JOIN anemia_network_facility f ON f.code=b.facility_code WHERE b.appointment=1 OR b.callback=1");
+        FROM anemia_network_facility f LEFT JOIN anemia_network_booking b ON b.facility_code=f.code
+        WHERE b.appointment=1 OR b.callback=1$trialCondition");
     $configured=array_column($query->fetchAll(PDO::FETCH_ASSOC),null,'facility_key');
     $available=[];
     $today=(new DateTimeImmutable('now',new DateTimeZone('Asia/Bangkok')))->format('Y-m-d');
@@ -21,6 +24,7 @@ try {
         $state=$configured[anemiaFacilityKey($facility)]??null;
         if (!$state) continue;
         $flags=anemiaBookingFlags($state,$today);
+        $flags['trial']=$trial && anemiaBookingTrialEligible($state) && !$flags['paused'];
         if (in_array(true,$flags,true)) $available[$index]=$flags;
     }
     header('Cache-Control: public, max-age=30');

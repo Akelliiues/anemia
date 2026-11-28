@@ -74,6 +74,16 @@ function anemiaBookingOwnerSql(): string
         WHERE g.scope_kind='facility' AND g.scope_code=f.code AND s.role<>'school_teacher')";
 }
 
+function anemiaBookingTrialEnabled(PDO $db,bool $lock=false): bool
+{
+    return (int)$db->query("SELECT enabled FROM anemia_host_setting WHERE setting_key='booking_trial'".($lock?' FOR UPDATE':''))->fetchColumn()===1;
+}
+
+function anemiaBookingTrialEligible(?array $facility): bool
+{
+    return ($facility['kind']??null)==='hospital' && !empty($facility['queue_owner']) && empty($facility['appointment']);
+}
+
 function anemiaBookingFacility(PDO $db,string $key,bool $lock=false): ?array
 {
     $query=$db->prepare("SELECT f.code,f.kind,f.district,".anemiaEffectiveHub('f')." AS effective_hub,

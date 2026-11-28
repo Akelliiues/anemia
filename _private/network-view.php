@@ -41,6 +41,17 @@ $hospitals=array_column(array_filter($facilities,static fn($facility)=>$facility
   <a class="action<?= $bookingTab?' primary':'' ?>" href="dashboard.php?view=network&amp;network_tab=booking&amp;district=<?= esc($districtFilter) ?>" <?= $bookingTab?'aria-current="page"':'' ?>><?= workspaceIcon('calendar') ?> การรับจองออนไลน์</a>
  </nav><?php endif; ?>
  <?php if ($networkNotice!==''): ?><p role="status" class="status"><?= esc($networkNotice) ?></p><?php endif; ?>
+ <?php if ($isAdmin && $bookingTab): $trialEnabled=anemiaBookingTrialEnabled($db); ?>
+ <section class="card">
+  <h3><?= workspaceIcon('play') ?> ทดลองจองกับโรงพยาบาล</h3>
+  <p>เปิดให้ทดลองกับโรงพยาบาลในทะเบียนที่มีเจ้าหน้าที่รับผิดชอบและยังไม่เปิดรับนัดจริง คำขอใช้ข้อมูลจำลองและเข้าคิวทดสอบ</p>
+  <form method="post" class="actions">
+   <input type="hidden" name="csrf" value="<?= esc($token) ?>"><input type="hidden" name="network_action" value="booking-trial">
+   <button class="action<?= $trialEnabled?'':' primary' ?>" name="trial_enabled" value="<?= $trialEnabled?'0':'1' ?>"><?= workspaceIcon('power') ?> <?= $trialEnabled?'ปิดทดลองจอง':'เปิดทดลองจอง' ?></button>
+   <a class="action" href="dashboard.php?view=contact-queue&amp;demo=1"><?= workspaceIcon('history') ?> เปิดคิวทดสอบ</a>
+  </form>
+ </section>
+ <?php endif; ?>
  <?php if ($isAdmin && !$bookingTab): ?>
  <div class="network-tools">
  <details class="network-tool">

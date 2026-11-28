@@ -521,6 +521,7 @@ function bookingFlags(site){
 function bookingLabel(site){
  const state=bookingFlags(site);
  if(state.appointment)return 'จองออนไลน์ได้';
+ if(state.trial)return 'ทดลองจองได้';
  if(state.callback)return 'ให้เจ้าหน้าที่ติดต่อกลับได้';
  if(state.paused)return 'พักรับคำขอออนไลน์';
  return bookingAvailability?'ติดต่อหน่วยบริการโดยตรง':'ยังตรวจสถานะการรับคำขอไม่ได้';
@@ -566,11 +567,11 @@ function directoryCard({site,km}){
  return `<button type="button" class="card facility-card facility-card-button" data-select-facility="${site.index}" aria-haspopup="dialog">
  ${box('hospital')}<span class="facility-card-copy"><strong>${escapeDirectoryText(site.name)}</strong>
  <span>${escapeDirectoryText(site.address)}${km==null?'':` · ${Math.round(km*10)/10} กม. (เส้นตรง)`}</span>
- <span class="facility-booking-badge" data-ready="${Boolean(bookingFlags(site).appointment||bookingFlags(site).callback)}">${bookingLabel(site)}</span></span>${icon('next')}</button>`;
+ <span class="facility-booking-badge" data-ready="${Boolean(bookingFlags(site).appointment||bookingFlags(site).callback||bookingFlags(site).trial)}">${bookingLabel(site)}</span></span>${icon('next')}</button>`;
 }
 function selectedFacility(site){
  const flags=bookingFlags(site);
- const available=flags.appointment||flags.callback;
+ const available=flags.appointment||flags.callback||flags.trial;
  main.querySelector('#facility-options')?.remove();
  main.insertAdjacentHTML('beforeend',`<dialog class="signal-dialog facility-options" id="facility-options" aria-labelledby="facility-options-title">
   <header class="facility-options-heading">
@@ -583,10 +584,11 @@ function selectedFacility(site){
   <p class="facility-options-state" data-available="${Boolean(available)}">${icon(available?'check':'info')}${bookingLabel(site)}</p>
   <div class="actions facility-options-actions">
    ${flags.appointment?`<button type="button" class="action primary" data-facility-request="appointment" data-facility-index="${site.index}">${icon('calendar')}ขอนัดเข้าตรวจ</button>`:''}
+   ${flags.trial?`<button type="button" class="action primary" data-facility-request="appointment" data-facility-trial="1" data-facility-index="${site.index}">${icon('calendar')}ทดลองขอนัด</button>`:''}
    ${flags.callback?`<button type="button" class="action" data-facility-request="callback" data-facility-index="${site.index}">${icon('phone')}ฝากเบอร์ให้ติดต่อกลับ</button>`:''}
    <a class="action${available?'':' primary'}" href="${facilityDirections(site)}" target="_blank" rel="noopener noreferrer">${icon('map')}เปิดเส้นทาง</a>
   </div>
-  ${available?`<p class="notice">${testAppointmentOtp?'คำขอตัวอย่างจะเข้าคิวทดสอบ':'ส่งคำขอหลังยืนยันเบอร์โทร เจ้าหน้าที่จะประสานก่อนยืนยันวันนัด'}</p>`:''}
+  ${available?`<p class="notice">${testAppointmentOtp||flags.trial?'คำขอทดลองจะเข้าคิวทดสอบและไม่มีการส่ง SMS':'ส่งคำขอหลังยืนยันเบอร์โทร เจ้าหน้าที่จะประสานก่อนยืนยันวันนัด'}</p>`:''}
   </div>
  </dialog>`);
  main.querySelector('#facility-options').showModal();
@@ -634,22 +636,22 @@ function pickRequestDate(calendar,date){
  calendar.querySelector('summary').focus({preventScroll:true});
 }
 const testAppointmentOtp=new URLSearchParams(location.search).get('test-otp')==='1';
-function facilityRequestForm(site,kind){
+function facilityRequestForm(site,kind,bookingTrial=false){
  const appointment=kind==='appointment';
- set(panel(`${backRow()}${pageHeading(appointment?'calendar':'phone',appointment?'ขอนัดเข้าตรวจ':'ฝากเบอร์ให้ติดต่อกลับ',escapeDirectoryText(site.name))}
- <form class="card facility-request-form" id="facility-request-form" data-facility-index="${site.index}" data-kind="${kind}" autocomplete="off">
-  <p class="notice">${testAppointmentOtp?'โหมดทดสอบ ชื่อและเบอร์ที่กรอกจะบันทึกในคิวทดสอบ โดยไม่มีการส่ง SMS':'โครงการใช้ชื่อและเบอร์โทรเพื่อประสานเรื่องการตรวจ และใช้เบอร์โทรเพื่อส่งรหัสยืนยันทาง SMS'}</p>
+ set(panel(`${backRow()}${pageHeading(appointment?'calendar':'phone',bookingTrial?'ทดลองขอนัดตรวจ':appointment?'ขอนัดเข้าตรวจ':'ฝากเบอร์ให้ติดต่อกลับ',escapeDirectoryText(site.name))}
+ <form class="card facility-request-form" id="facility-request-form" data-facility-index="${site.index}" data-kind="${kind}" data-booking-trial="${bookingTrial?'1':'0'}" autocomplete="off">
+  <p class="notice">${bookingTrial?'ใช้ข้อมูลติดต่อจำลอง คำขอเข้าคิวทดสอบและไม่มีการส่ง SMS':testAppointmentOtp?'โหมดทดสอบ ชื่อและเบอร์ที่กรอกจะบันทึกในคิวทดสอบ โดยไม่มีการส่ง SMS':'โครงการใช้ชื่อและเบอร์โทรเพื่อประสานเรื่องการตรวจ และใช้เบอร์โทรเพื่อส่งรหัสยืนยันทาง SMS'}</p>
   <fieldset class="facility-request-details"><legend>${icon('person')}ข้อมูลติดต่อ</legend>
-  <div class="facility-name-fields">
+  ${bookingTrial?'':`<div class="facility-name-fields">
    <label><span>คำนำหน้า</span><select id="request-prefix" required><option value="">เลือกคำนำหน้า</option><option>น.ส.</option><option>นาง</option></select></label>
    <label><span>ชื่อ</span><input id="request-first-name" type="text" autocomplete="given-name" required maxlength="35" pattern=".*\\S.*"></label>
    <label><span>นามสกุล</span><input id="request-last-name" type="text" autocomplete="family-name" required maxlength="35" pattern=".*\\S.*"></label>
   </div>
-  <label><span>${icon('phone')} เบอร์โทรสำหรับติดต่อ</span><input id="request-phone" type="tel" inputmode="numeric" autocomplete="tel-national" pattern="0[0-9]{2}\\-[0-9]{3}\\-[0-9]{4}" required placeholder="08X-XXX-XXXX"></label>
+  <label><span>${icon('phone')} เบอร์โทรสำหรับติดต่อ</span><input id="request-phone" type="tel" inputmode="numeric" autocomplete="tel-national" pattern="0[0-9]{2}\\-[0-9]{3}\\-[0-9]{4}" required placeholder="08X-XXX-XXXX"></label>`}
   ${appointment?`<details class="request-calendar"><summary>${icon('calendar')}<span>วันที่สะดวก <small>(ไม่บังคับ)</small></span><strong id="request-date-label">เลือกวันที่</strong></summary>
    <input id="request-date" type="hidden"><div class="request-calendar-content"></div></details>`:''}
-  <fieldset><legend>${icon('check')}ความประสงค์</legend><label class="facility-request-consent"><input id="request-consent" type="checkbox" required> ${appointment?'ต้องการขอเข้ารับการตรวจประเมิน และให้ติดต่อเพื่อยืนยันวันนัด':'ต้องการให้เจ้าหน้าที่ติดต่อกลับเพื่อประสานเรื่องการตรวจ'}</label></fieldset>
-  <button class="action primary" type="submit">${icon('phone')}${testAppointmentOtp?'ขอรหัส OTP ทดสอบ':'ส่งรหัส OTP ทาง SMS'}</button>
+  <fieldset><legend>${icon('check')}ความประสงค์</legend><label class="facility-request-consent"><input id="request-consent" type="checkbox" required> ${bookingTrial?'ยืนยันว่าต้องการส่งคำขอทดสอบ':appointment?'ต้องการขอเข้ารับการตรวจประเมิน และให้ติดต่อเพื่อยืนยันวันนัด':'ต้องการให้เจ้าหน้าที่ติดต่อกลับเพื่อประสานเรื่องการตรวจ'}</label></fieldset>
+  <button class="action primary" type="submit">${icon('phone')}${testAppointmentOtp||bookingTrial?'ขอรหัส OTP ทดสอบ':'ส่งรหัส OTP ทาง SMS'}</button>
   <p id="request-start-status" role="status"></p>
   </fieldset>
   <fieldset class="facility-request-otp" hidden disabled><legend>ยืนยันเบอร์โทร</legend>
@@ -657,7 +659,7 @@ function facilityRequestForm(site,kind){
    <label>รหัส OTP <input id="request-otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="request-otp-hint request-otp-status"></label>
    <p id="request-otp-status" role="status"></p>
    <div class="actions"><button class="action primary" type="submit">${icon('check')}ยืนยันและส่งคำขอ</button>
-   <button class="action" type="button" data-go="edit-request-phone">${icon('arrow')}แก้ข้อมูลหรือขอรหัสใหม่</button></div>
+   <button class="action" type="button" data-go="edit-request-phone">${icon('arrow')}${bookingTrial?'กลับไปแก้วันที่หรือขอรหัสใหม่':'แก้ข้อมูลหรือขอรหัสใหม่'}</button></div>
   </fieldset>
  </form>`));
  if(appointment)renderRequestCalendar(document.querySelector('.request-calendar'));
@@ -672,9 +674,11 @@ function setRequestVerification(form,verifying,last4='',demoCode=''){
  code.value='';
  form.querySelector('#request-otp-status').textContent='';
  if(verifying){
-  form.querySelector('#request-otp-hint').textContent=demoCode?'รหัสทดสอบ '+demoCode+' · เบอร์ลงท้าย '+last4+' · ชื่อและเบอร์ที่กรอกจะบันทึกในคิวทดสอบ โดยไม่มีการส่ง SMS':'กรอกรหัส 6 หลักจาก SMS ที่ส่งไปยังเบอร์ลงท้าย '+last4;
+  form.querySelector('#request-otp-hint').textContent=demoCode
+   ?'รหัสทดสอบ '+demoCode+(form.dataset.bookingTrial==='1'?' · ใช้ข้อมูลจำลองและไม่มีการส่ง SMS':' · เบอร์ลงท้าย '+last4+' · ชื่อและเบอร์ที่กรอกจะบันทึกในคิวทดสอบ โดยไม่มีการส่ง SMS')
+   :'กรอกรหัส 6 หลักจาก SMS ที่ส่งไปยังเบอร์ลงท้าย '+last4;
   code.focus();
- }else form.querySelector('#request-phone').focus();
+ }else (form.querySelector('#request-phone')??form.querySelector('#request-consent')).focus();
 }
 function directoryTabs(){
  return directoryTypes.map((label,type)=>{
@@ -727,20 +731,21 @@ function locateFacilities(){
 async function submitFacilityRequest(form){
  if(!form.reportValidity()||form.dataset.busy==='1')return;
  const verifying=!form.querySelector('.facility-request-otp').disabled;
+ const bookingTrial=form.dataset.bookingTrial==='1';
  const status=form.querySelector(verifying?'#request-otp-status':'#request-start-status');
  const payload=verifying?{action:'confirm',token:form.dataset.token,code:form.querySelector('#request-otp-code').value}:{
   action:'start',facility:Number(form.dataset.facilityIndex),kind:form.dataset.kind,
-  prefix:form.querySelector('#request-prefix').value,firstName:form.querySelector('#request-first-name').value,
-  lastName:form.querySelector('#request-last-name').value,phone:requestPhoneDigits(form.querySelector('#request-phone').value),
+  ...(!bookingTrial?{prefix:form.querySelector('#request-prefix').value,firstName:form.querySelector('#request-first-name').value,
+  lastName:form.querySelector('#request-last-name').value,phone:requestPhoneDigits(form.querySelector('#request-phone').value)}:{}),
   date:form.querySelector('#request-date')?.value??'',consent:form.querySelector('#request-consent').checked
  };
  const submit=form.querySelector((verifying?'.facility-request-otp':'.facility-request-details')+' button[type=submit]');
  form.dataset.busy='1';submit.disabled=true;
- status.textContent=verifying?'กำลังยืนยันรหัส…':'กำลังส่ง SMS…';
+ status.textContent=verifying?'กำลังยืนยันรหัส…':bookingTrial?'กำลังเตรียมรหัสทดสอบ…':'กำลังส่ง SMS…';
  try{
   const publicDemoEndpoint='contact-request-demo.php?public=1';
-  const demoEndpoint=testAppointmentOtp?'contact-request-demo.php':publicDemoEndpoint;
-  let endpoint=testAppointmentOtp||form.dataset.otpMode==='demo'?demoEndpoint:'contact-request.php';
+  const demoEndpoint=bookingTrial?'contact-request-demo.php?booking=1':testAppointmentOtp?'contact-request-demo.php':publicDemoEndpoint;
+  let endpoint=bookingTrial||testAppointmentOtp||form.dataset.otpMode==='demo'?demoEndpoint:'contact-request.php';
   const send=(url,body)=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   let response=await send(endpoint,payload);
   let data=await response.json();
@@ -1326,7 +1331,7 @@ document.addEventListener('click',event=>{
   const kind=el.dataset.facilityRequest;
   if(site&&['appointment','callback'].includes(kind)){
    if(kind==='callback')logActivity('callback_open');
-   facilityRequestForm(site,kind);
+   facilityRequestForm(site,kind,el.dataset.facilityTrial==='1');
   }
   return;
  }

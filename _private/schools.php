@@ -67,4 +67,33 @@ function schoolDirectoryEntry(string $province,string $code): ?array
     return null;
 }
 
+function schoolJoinState(PDO $db,string $code,?string $account,bool $posting,string $today): array
+{
+    if ($posting && !$db->inTransaction()) throw new LogicException('School enrollment requires a transaction');
+    $query=$db->prepare('SELECT c.id,c.title,c.classroom,c.accepting,c.opens_on,c.closes_on,s.name,s.enabled,r.academic_year
+        FROM anemia_school_cohort c JOIN anemia_school s ON s.id=c.school_id LEFT JOIN anemia_school_room r ON r.cohort_id=c.id
+        WHERE c.invite=?'.($posting?' FOR UPDATE':''));
+    $query->execute([$code]);
+    $cohort=$query->fetch(PDO::FETCH_ASSOC);
+    if (!$cohort) throw new DomainException('ไม่พบรุ่นกิจกรรม กรุณาตรวจรหัสกับครู');
+    $open=(bool)$cohort['enabled'] && (bool)$cohort['accepting'] && $today>=$cohort['opens_on'] && $today<=$cohort['closes_on'];
+    $joined=false;
+    if ($account!==null) {
+        $member=$db->prepare('SELECT 1 FROM anemia_school_member WHERE cohort_id=? AND account_id=?');
+        $member->execute([$cohort['id'],$account]);
+        $joined=(bool)$member->fetchColumn();
+    }
+    return ['cohort'=>$cohort,'open'=>$open,'joined'=>$joined];
+}
+
+function schoolConfirmEnrollment(PDO $db,array $state,?string $account): void
+{
+    if (!$db->inTransaction()) throw new LogicException('School enrollment requires a transaction');
+    if (!$account || (!$state['open'] && !$state['joined'])) throw new DomainException('รุ่นกิจกรรมยังไม่เปิดรับ หรือเซสชันหมดอายุ');
+    if (!$state['joined']) {
+        $db->prepare('INSERT INTO anemia_school_member (cohort_id,account_id,joined_at) VALUES (?,?,NOW())')
+           ->execute([$state['cohort']['id'],$account]);
+    }
+}
+
 require_once __DIR__.'/school-management.php';

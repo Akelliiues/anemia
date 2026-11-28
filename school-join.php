@@ -36,25 +36,11 @@ if ($valid) {
             http_response_code(403); exit('คำขอหมดอายุ');
         }
         if ($posting) $db->beginTransaction();
-        $query=$db->prepare('SELECT c.id,c.title,c.classroom,c.accepting,c.opens_on,c.closes_on,s.name,s.enabled,r.academic_year
-            FROM anemia_school_cohort c JOIN anemia_school s ON s.id=c.school_id LEFT JOIN anemia_school_room r ON r.cohort_id=c.id WHERE c.invite=?'.($posting?' FOR UPDATE':''));
-        $query->execute([$code]);
-        $cohort=$query->fetch(PDO::FETCH_ASSOC)?:null;
-        if (!$cohort) throw new DomainException('ไม่พบรุ่นกิจกรรม กรุณาตรวจรหัสกับครู');
-        $today=date('Y-m-d');
-        $open=(bool)$cohort['enabled'] && (bool)$cohort['accepting'] && $today>=$cohort['opens_on'] && $today<=$cohort['closes_on'];
         if (!is_string($account) || anemiaParticipantEpoch($db,$account)!==$epoch) $account=null;
-        if ($account!==null) {
-            $member=$db->prepare('SELECT 1 FROM anemia_school_member WHERE cohort_id=? AND account_id=?');
-            $member->execute([$cohort['id'],$account]);
-            $joined=(bool)$member->fetchColumn();
-        }
+        $state=schoolJoinState($db,$code,$account,$posting,date('Y-m-d'));
+        ['cohort'=>$cohort,'open'=>$open,'joined'=>$joined]=$state;
         if ($posting) {
-            if (!$account || (!$open && !$joined)) throw new DomainException('รุ่นกิจกรรมยังไม่เปิดรับ หรือเซสชันหมดอายุ');
-            if (!$joined) {
-                $db->prepare('INSERT INTO anemia_school_member (cohort_id,account_id,joined_at) VALUES (?,?,NOW())')
-                   ->execute([$cohort['id'],$account]);
-            }
+            schoolConfirmEnrollment($db,$state,$account);
             $db->commit();
             unset($_SESSION['school_invite']);
             header('Location: participant-programme.php?room='.(int)$cohort['id'],true,303); exit;

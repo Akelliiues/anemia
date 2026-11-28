@@ -25,7 +25,7 @@ const accounts = [
  {id:'DEMO-05',name:'บัญชีโรงพยาบาล',role:'hospital',region:10,active:true},
  {id:'DEMO-06',name:'บัญชีผู้ดูแลสิทธิ์',role:'administrator',active:true}
 ];
-let adminAccount='DEMO-01', adminView='overview', adminRegion='', adminPeriod=latestAdminPeriod, adminMessage='';
+let adminAccount='DEMO-01', adminView='overview', adminRegion='', adminPeriod='', adminYear=latestAdminPeriod.slice(-4), adminMessage='';
 // Synthetic monthly aggregates for chart and report testing.
 const demoRegionVolumes = [4150, 2360, 2840, 5460, 3660, 4710, 3380, 3140, 3820, 3020, 3440, 2880, 6050];
 const demoMonthFactors = [.76, .94, .85, 1.04, .97, 1.12];
@@ -54,7 +54,7 @@ const canReport=scope=>scope&&['central','regional','provincial'].includes(scope
 function reportRows(scope,period=adminPeriod){
  if(!canReport(scope))return [];
  const dataset=scope.key==='provincial'?demoProvinceAggregates:demoAggregates;
- return dataset.filter(row=>(scope.region==null?(!adminRegion||row.region===Number(adminRegion)):row.region===scope.region)&&(!period||row.period===period));
+ return dataset.filter(row=>(scope.region==null?(!adminRegion||row.region===Number(adminRegion)):row.region===scope.region)&&(period?row.period===period:(!adminYear||demoPeriodYear(row.period)===adminYear)));
 }
 const countLabel=value=>value.toLocaleString('th-TH');
 const scopeLabel=scope=>scope.key==='provincial'?'จังหวัดอุบลราชธานี':scope.facility??(scope.region?regionLabel(scope.region):'ทั่วประเทศ');
@@ -69,15 +69,14 @@ function adminTab(key){
 const demoPeriodYear=period=>period.slice(-4);
 const demoPeriodYears=[...new Set(adminPeriods.map(demoPeriodYear))].reverse();
 const latestDemoPeriodForYear=year=>adminPeriods.filter(period=>demoPeriodYear(period)===year).at(-1)??'';
-function demoPeriodFilters(id,selected,label='เดือน'){
- const year=demoPeriodYear(selected);
+function demoPeriodFilters(id,selected,label='เดือน',year=demoPeriodYear(selected),allowAllMonths=false){
  return `<label class="admin-month-filter">ปี พ.ศ.<select id="${id}-year">
  <option value="">ทุกปี</option>${demoPeriodYears.map(item=>`<option value="${item}" ${item===year?'selected':''}>${item}</option>`).join('')}</select></label>
  <label class="admin-month-filter">${label}<select id="${id}" ${year?'':'disabled'}>
- ${year?'':'<option value="">ทุกเดือน</option>'}${adminPeriods.filter(period=>year&&demoPeriodYear(period)===year).map(period=>`<option value="${period}" ${period===selected?'selected':''}>${period.slice(0,-5)}</option>`).join('')}</select></label>`;
+ ${allowAllMonths?'<option value="">ทั้งหมด</option>':year?'':'<option value="">ทุกเดือน</option>'}${adminPeriods.filter(period=>year&&demoPeriodYear(period)===year).map(period=>`<option value="${period}" ${period===selected?'selected':''}>${period.slice(0,-5)}</option>`).join('')}</select></label>`;
 }
 function adminMonthFilter(id,label='เดือน'){
- return demoPeriodFilters(id,adminPeriod,label);
+ return demoPeriodFilters(id,adminPeriod,label,adminYear,true);
 }
 function adminFilters(scope){
  return `<div class="admin-filters no-print"><label>พื้นที่<select id="admin-region" ${scope.region?'disabled':''}>${scope.region?`<option>${scopeLabel(scope)}</option>`:`<option value="">ครบ 13 เขต</option>${adminRegions.map(region=>`<option value="${region}" ${String(region)===adminRegion?'selected':''}>${regionLabel(region)}</option>`).join('')}`}</select></label>
@@ -138,7 +137,7 @@ function printDemoReport(scope){
  <p id="report-pdf-hint" role="status" hidden></p>
 </div>
  <main class="report-paper"><header class="report-paper-header">
- <h1>รายงานการคัดกรองและติดตาม</h1><p>พื้นที่ ${area} · ช่วงเวลา ${adminPeriod||'ทุกเดือน'}</p>
+ <h1>รายงานการคัดกรองและติดตาม</h1><p>พื้นที่ ${area} · ช่วงเวลา ${adminPeriod||(adminYear?'ทุกเดือน ปี '+adminYear:'ทุกเดือน')}</p>
  <p>แหล่งข้อมูล ข้อมูลจำลอง · จัดทำ ${issued} น.</p></header>
  ${adminTable(reportRows(scope),scope)}
  <p class="report-note">ยอดประเมินและเสี่ยงสูงนับเป็นครั้ง ส่วนคำขอประสานและตรวจแล้วนับจากรายการส่งต่อ</p>
@@ -249,7 +248,7 @@ function monthlyTrend(months){
  ${adminPeriod?'':'<p class="notice">แสดง 4 เดือนล่าสุดในชุดข้อมูล</p>'}</section>`;
 }
 function adminChartMonths(scope){
- const end=adminPeriods.indexOf(adminPeriod||latestAdminPeriod);
+ const end=adminPeriods.indexOf(adminPeriod||latestDemoPeriodForYear(adminYear)||latestAdminPeriod);
  return [end-3,end-2,end-1,end].map(index=>{
   const date=new Date(Date.UTC(2023,11+index,1));
   const period=demoMonthNames[date.getUTCMonth()]+' '+(date.getUTCFullYear()+543);
@@ -258,7 +257,7 @@ function adminChartMonths(scope){
  });
 }
 function regionMapPanel(scope){
- const year=demoPeriodYear(adminPeriod||latestAdminPeriod);
+ const year=adminYear||demoPeriodYear(latestAdminPeriod);
  const rows=reportRows(scope,'').filter(row=>demoPeriodYear(row.period)===year);
  const selected=scope.region??(adminRegion?Number(adminRegion):null);
  const interactive=scope.key==='central';
@@ -342,7 +341,7 @@ function reportView(scope,showHeading=true){
  const exporting=adminView==='reports';
  const area=scope.region?scopeLabel(scope):adminRegion?regionLabel(Number(adminRegion)):'ครบ 13 เขต';
  return `${showHeading?adminHeading(exporting?'รายงานการคัดกรองและติดตาม':'แดชบอร์ดการคัดกรองและติดตาม','ข้อมูลจำลองสำหรับสาธิตกระบวนการรายงาน'):''}
- <div class="admin-report-toolbar"><p class="admin-report-meta">${icon('calendar')} <span>${area} · ${adminPeriod||'ทุกเดือน'}</span></p>${adminFilters(scope)}</div>
+ <div class="admin-report-toolbar"><p class="admin-report-meta">${icon('calendar')} <span>${area} · ${adminPeriod||(adminYear?'ทุกเดือน ปี '+adminYear:'ทุกเดือน')}</span></p>${adminFilters(scope)}</div>
  ${adminStats(rows)}
  ${exporting?'':`${adminCharts(rows,scope)}<div class="admin-map-slot">${regionMapPanel(scope)}</div>`}
  <section class="card admin-report"><div class="admin-report-top"><h2>${exporting?'รายละเอียดตามพื้นที่และเดือน':'ผลการดำเนินงานรายพื้นที่'}</h2>
@@ -461,9 +460,9 @@ document.addEventListener('change',event=>{
  const {id,value}=event.target;
  if(id==='admin-account'){
   if(!accounts.some(account=>account.id===value&&account.active))return;
-  adminAccount=value;adminRegion='';adminPeriod=latestAdminPeriod;adminMessage='';
+  adminAccount=value;adminRegion='';adminPeriod='';adminYear=demoPeriodYear(latestAdminPeriod);adminMessage='';
  }else if(id==='admin-region')adminRegion=value;
- else if(id==='admin-period-year'||id==='admin-table-period-year')adminPeriod=latestDemoPeriodForYear(value);
+ else if(id==='admin-period-year'||id==='admin-table-period-year'){adminYear=value;adminPeriod='';}
  else if(id==='admin-period'||id==='admin-table-period')adminPeriod=value;
  else return;
  staff();
